@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "py2mlog"
+version = "0.1.0"
+description = "A python to mindustry logic (mlog) compiler."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+
+[project.optional-dependencies]
+dev = [
+    "black",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/py2mlog"]
+
+[tool.hatch.envs.default]
+python = "3.10"
+features = [
+    "dev",
+]
