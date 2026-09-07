@@ -92,7 +92,7 @@ class OperationSuboperation(Suboperation, Enum):
     ATAN = "atan"
 
 
-class JumpSuboperation(Suboperation, Enum):
+class ConditionOpSuboperation(Suboperation, Enum):
     EQUAL = "equal"
     NOT_EQUAL = "notEqual"
     LESS_THAN = "lessThan"
@@ -125,6 +125,13 @@ class UnitControlSuboperation(Suboperation, Enum):
     GET_BLOCK = "getBlock"
     WITHIN = "within"
     UNBIND = "unbind"
+
+
+class UnitLocateSuboperation(Suboperation, Enum):
+    ORE = "ore"
+    BUILDING = "building"
+    SPAWN = "spawn"
+    DAMAGED = "damaged"
 
 
 class QuerySuboperation(Suboperation, Enum):
@@ -276,8 +283,10 @@ suboperation_map: dict[InstructionType, type[Suboperation]] = {
     InstructionType.DRAW: DrawSuboperation,
     InstructionType.CONTROL: ControlSuboperation,
     InstructionType.OPERATION: OperationSuboperation,
-    InstructionType.JUMP: JumpSuboperation,
+    InstructionType.SELECT: ConditionOpSuboperation,
+    InstructionType.JUMP: ConditionOpSuboperation,
     InstructionType.UNIT_CONTROL: UnitControlSuboperation,
+    InstructionType.UNIT_LOCATE: UnitLocateSuboperation,
     InstructionType.QUERY: QuerySuboperation,
     InstructionType.SET_BLOCK: SetBlockSuboperation,
     InstructionType.APPLY_STATUS: ApplyStatusSuboperation,
