@@ -9,14 +9,14 @@ In `lookup item result 0`,
 from enum import Enum
 
 
-class SelectableParam:
+class SelectableParam(Enum):
     pass
 
 
 # class names are either based on instruction name or name in mimex repo
 
 
-class RadarTargetSelectableParam(SelectableParam, Enum):
+class RadarTargetSelectableParam(SelectableParam):
     ANY = "any"
     ENEMY = "enemy"
     ALLY = "ally"
@@ -27,7 +27,7 @@ class RadarTargetSelectableParam(SelectableParam, Enum):
     GROUND = "ground"
 
 
-class RadarSortSelectableParam(SelectableParam, Enum):
+class RadarSortSelectableParam(SelectableParam):
     DISTANCE = "distance"
     HEALTH = "health"
     SHIELD = "shield"
@@ -35,7 +35,7 @@ class RadarSortSelectableParam(SelectableParam, Enum):
     MAX_HEALTH = "maxHealth"
 
 
-class LookupSelectableParam(SelectableParam, Enum):
+class LookupSelectableParam(SelectableParam):
     BLOCK = "block"
     UNIT = "unit"
     ITEM = "item"
@@ -43,7 +43,7 @@ class LookupSelectableParam(SelectableParam, Enum):
     TEAM = "team"
 
 
-class UnitLocateBuildingSelectableParam(SelectableParam, Enum):
+class UnitLocateBuildingSelectableParam(SelectableParam):
     CORE = "core"
     STORAGE = "storage"
     GENERATOR = "generator"
@@ -56,12 +56,12 @@ class UnitLocateBuildingSelectableParam(SelectableParam, Enum):
     SHIELD = "shield"
 
 
-class QuerySelectableParam(SelectableParam, Enum):
+class QuerySelectableParam(SelectableParam):
     UNIT = "unit"
     BUILDING = "building"
 
 
-class TileLayerSelectableParam(SelectableParam, Enum):
+class TileLayerSelectableParam(SelectableParam):
     FLOOR = "floor"
     ORE = "ore"
     BLOCK = "block"
@@ -70,11 +70,11 @@ class TileLayerSelectableParam(SelectableParam, Enum):
 
 # it is treated as a regular arg in-game
 # avoid hardcoding to support data-patches (?)
-# class ApplyStatusSelectableParam(SelectableParam, Enum):
+# class ApplyStatusSelectableParam(SelectableParam):
 #    pass
 
 
-class MakeMarkerSelectableParam(SelectableParam, Enum):
+class MakeMarkerSelectableParam(SelectableParam):
     SHAPE_TEXT = "shapeText"
     POINT = "point"
     SHAPE = "shape"

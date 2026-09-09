@@ -10,11 +10,11 @@ from enum import Enum
 from .instruction_types import InstructionType
 
 
-class Suboperation:
+class Suboperation(Enum):
     pass
 
 
-class DrawSuboperation(Suboperation, Enum):
+class DrawSuboperation(Suboperation):
     CLEAR = "clear"
     COLOR = "color"
     COL = "col"
@@ -33,7 +33,7 @@ class DrawSuboperation(Suboperation, Enum):
     RESET = "reset"
 
 
-class ControlSuboperation(Suboperation, Enum):
+class ControlSuboperation(Suboperation):
     ENABLED = "enabled"
     SHOOT = "shoot"
     SHOOTP = "shootp"
@@ -41,7 +41,7 @@ class ControlSuboperation(Suboperation, Enum):
     COLOR = "color"
 
 
-class OperationSuboperation(Suboperation, Enum):
+class OperationSuboperation(Suboperation):
     ADD = "add"
     SUB = "sub"
     MUL = "mul"
@@ -92,7 +92,7 @@ class OperationSuboperation(Suboperation, Enum):
     ATAN = "atan"
 
 
-class ConditionOpSuboperation(Suboperation, Enum):
+class ConditionOpSuboperation(Suboperation):
     EQUAL = "equal"
     NOT_EQUAL = "notEqual"
     LESS_THAN = "lessThan"
@@ -103,7 +103,7 @@ class ConditionOpSuboperation(Suboperation, Enum):
     ALWAYS = "always"
 
 
-class UnitControlSuboperation(Suboperation, Enum):
+class UnitControlSuboperation(Suboperation):
     IDLE = "idle"
     STOP = "stop"
     MOVE = "move"
@@ -127,30 +127,30 @@ class UnitControlSuboperation(Suboperation, Enum):
     UNBIND = "unbind"
 
 
-class UnitLocateSuboperation(Suboperation, Enum):
+class UnitLocateSuboperation(Suboperation):
     ORE = "ore"
     BUILDING = "building"
     SPAWN = "spawn"
     DAMAGED = "damaged"
 
 
-class QuerySuboperation(Suboperation, Enum):
+class QuerySuboperation(Suboperation):
     CIRCLE = "circle"
     RECT = "rect"
 
 
-class SetBlockSuboperation(Suboperation, Enum):
+class SetBlockSuboperation(Suboperation):
     FLOOR = "floor"
     ORE = "ore"
     BLOCK = "block"
 
 
-class ApplyStatusSuboperation(Suboperation, Enum):
+class ApplyStatusSuboperation(Suboperation):
     APPLY = "false"
     CLEAR = "true"
 
 
-class SetRuleSuboperation(Suboperation, Enum):
+class SetRuleSuboperation(Suboperation):
     CURRENT_WAVE_TIME = "currentWaveTime"
     WAVE_TIMER = "waveTimer"
     WAVES = "waves"
@@ -186,20 +186,20 @@ class SetRuleSuboperation(Suboperation, Enum):
     RTS_MIN_SQUAD = "rtsMinSquad"
 
 
-class FlushMessageSuboperation(Suboperation, Enum):
+class FlushMessageSuboperation(Suboperation):
     NOTIFY = "notify"
     ANNOUNCE = "announce"
     TOAST = "toast"
     MISSION = "mission"
 
 
-class CutsceneSuboperation(Suboperation, Enum):
+class CutsceneSuboperation(Suboperation):
     PAN = "pan"
     ZOOM = "zoom"
     STOP = "stop"
 
 
-class EffectSuboperation(Suboperation, Enum):
+class EffectSuboperation(Suboperation):
     WARN = "warn"
     CROSS = "cross"
     BLOCK_FALL = "blockFall"
@@ -235,7 +235,7 @@ class EffectSuboperation(Suboperation, Enum):
     BUBBLE = "bubble"
 
 
-class FetchSuboperation(Suboperation, Enum):
+class FetchSuboperation(Suboperation):
     UNIT = "unit"
     UNIT_COUNT = "unitCount"
     PLAYER = "player"
@@ -246,12 +246,12 @@ class FetchSuboperation(Suboperation, Enum):
     BUILD_COUNT = "buildCount"
 
 
-class PlaySoundSuboperation(Suboperation, Enum):
+class PlaySoundSuboperation(Suboperation):
     GLOBAL = "false"
     POSITIONAL = "true"
 
 
-class SetMarkerSuboperation(Suboperation, Enum):
+class SetMarkerSuboperation(Suboperation):
     REMOVE = "remove"
     WORLD = "world"
     MINIMAP = "minimap"
