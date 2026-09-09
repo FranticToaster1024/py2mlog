@@ -13,6 +13,6 @@ class Instruction:
     """
 
     type: InstructionType
-    suboperation: Suboperation
+    suboperation: Suboperation | None
     selectable_args: tuple[SelectableParam, ...]
     args: tuple[MlogIdentifier, ...]

@@ -34,7 +34,7 @@ def _build_arg_list(
     for param_type in param_order:
         match param_type:
             case ParamType.SUBOPERATION:
-                yield instr.suboperation.value
+                yield instr.suboperation.value if instr.suboperation is not None else ""
             case ParamType.SELECTABLE:
                 yield next(selectables).value
             case ParamType.VAR:
@@ -51,8 +51,11 @@ def generate_mlog(instructions: list[Instruction]) -> str:
             mlog.append(" ".join(_build_arg_list(instr, param_order)))
 
         else:
+            suboperation_str = (
+                instr.suboperation.value if instr.suboperation is not None else ""
+            )
             s = " ".join(
-                instr.suboperation.value,
+                suboperation_str,
                 *(a.value for a in instr.selectable_args),
                 *map(str, instr.args),
             )
