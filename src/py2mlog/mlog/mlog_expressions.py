@@ -25,7 +25,7 @@ class MlogBoolLiteral(MlogExpr):
     value: bool
 
 
-class MlogNullLiteral:
+class MlogNullLiteral(MlogExpr):
     pass
 
 

@@ -7,6 +7,8 @@ from .mlog_expressions import (
     MlogBuiltin,
     MlogNumberLiteral,
     MlogStringLiteral,
+    MlogBoolLiteral,
+    MlogNullLiteral,
     MlogExpr,
 )
 
@@ -40,8 +42,14 @@ def _arg_to_str(arg: MlogExpr) -> str:
             return f'"{value}"'
         case MlogNumberLiteral(value):
             return str(value)
+        case MlogBoolLiteral(value):
+            return "true" if value else "false"
+        case MlogNullLiteral():
+            return "null"
         case MlogVar(name):
             return name
+        case _:
+            raise ValueError("Unknown arg type")
 
 
 # list of all args including suboperation & selectable params
