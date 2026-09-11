@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from .instruction_types import InstructionType
-from .mlog_identifiers import MlogIdentifier
+from .mlog_expressions import MlogExpr
 from .suboperations import Suboperation
 from .selectable_params import SelectableParam
 
@@ -15,4 +15,4 @@ class Instruction:
     type: InstructionType
     suboperation: Suboperation | None
     selectable_args: tuple[SelectableParam, ...]
-    args: tuple[MlogIdentifier, ...]
+    args: tuple[MlogExpr, ...]

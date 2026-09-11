@@ -2,6 +2,13 @@ from collections.abc import Iterator
 
 from .instruction import Instruction
 from .param_map import PARAM_MAP, ParamType
+from .mlog_expressions import (
+    MlogVar,
+    MlogBuiltin,
+    MlogNumberLiteral,
+    MlogStringLiteral,
+    MlogExpr,
+)
 
 
 def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
@@ -25,9 +32,24 @@ def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
     return None
 
 
+def _arg_to_str(arg: MlogExpr) -> str:
+    match arg:
+        case MlogBuiltin(name):
+            return "@" + name
+        case MlogStringLiteral(value):
+            return f'"{value}"'
+        case MlogNumberLiteral(value):
+            return str(value)
+        case MlogVar(name):
+            return name
+
+
+# list of all args including suboperation & selectable params
 def _build_arg_list(
     instr: Instruction, param_order: tuple[ParamType, ...]
 ) -> Iterator[str]:
+    yield instr.type.value
+
     selectables = iter(instr.selectable_args)
     args = iter(instr.args)
 
@@ -38,7 +60,7 @@ def _build_arg_list(
             case ParamType.SELECTABLE:
                 yield next(selectables).value
             case ParamType.VAR:
-                yield str(next(args))
+                yield _arg_to_str(next(args))
 
 
 def generate_mlog(instructions: list[Instruction]) -> str:
@@ -51,14 +73,16 @@ def generate_mlog(instructions: list[Instruction]) -> str:
             mlog.append(" ".join(_build_arg_list(instr, param_order)))
 
         else:
-            suboperation_str = (
-                instr.suboperation.value if instr.suboperation is not None else ""
-            )
-            s = " ".join(
-                suboperation_str,
+            arg_list = [
+                instr.type.value,
                 *(a.value for a in instr.selectable_args),
-                *map(str, instr.args),
-            )
+                *map(_arg_to_str, instr.args),
+            ]
+
+            if instr.suboperation is not None:
+                arg_list.insert(1, instr.suboperation.value)
+
+            s = " ".join(arg_list)
             mlog.append(s)
 
     return "\n".join(mlog)
