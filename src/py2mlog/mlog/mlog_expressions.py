@@ -1,25 +1,34 @@
 from dataclasses import dataclass
-from typing import TypeAlias
+
+
+class MlogExpr:
+    pass
 
 
 @dataclass(frozen=True)
-class MlogBuiltin:
+class MlogBuiltin(MlogExpr):
     name: str
 
 
 @dataclass(frozen=True)
-class MlogStringLiteral:
+class MlogStringLiteral(MlogExpr):
     value: str
 
 
 @dataclass(frozen=True)
-class MlogNumberLiteral:
+class MlogNumberLiteral(MlogExpr):
     value: int | float
 
 
 @dataclass(frozen=True)
-class MlogVar:
+class MlogBoolLiteral(MlogExpr):
+    value: bool
+
+
+class MlogNullLiteral:
+    pass
+
+
+@dataclass(frozen=True)
+class MlogVar(MlogExpr):
     name: str
-
-
-MlogExpr: TypeAlias = MlogBuiltin | MlogStringLiteral | MlogNumberLiteral | MlogVar
