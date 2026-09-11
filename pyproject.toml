@@ -26,22 +26,12 @@ packages = ["src/py2mlog"]
 
 [tool.hatch.envs.default]
 python = "3.10"
-
-
-[tool.hatch.envs.test]
 dependencies = [
     "pytest",
-]
-
-[tool.hatch.envs.test.scripts]
-run = "pytest"
-
-
-[tool.hatch.envs.format]
-dependencies = [
     "black",
 ]
 
-[tool.hatch.envs.format.scripts]
-run = "black ."
-check = "black . --check --diff"
+[tool.hatch.envs.default.scripts]
+test = "pytest"
+format = "black ."
+format-check = "black . --check --diff"

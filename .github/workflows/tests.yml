@@ -24,7 +24,7 @@ jobs:
       run: pipx install hatch
 
     - name: Check code formatting
-      run: hatch run format:check
+      run: hatch run format-check
 
     - name: Test code
-      run: hatch run test:run
+      run: hatch run test-srun
