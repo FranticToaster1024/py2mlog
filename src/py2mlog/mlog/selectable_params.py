@@ -68,12 +68,6 @@ class TileLayerSelectableParam(SelectableParam):
     BUILDING = "building"
 
 
-# it is treated as a regular arg in-game
-# avoid hardcoding to support data-patches (?)
-# class ApplyStatusSelectableParam(SelectableParam):
-#    pass
-
-
 class MakeMarkerSelectableParam(SelectableParam):
     SHAPE_TEXT = "shapeText"
     POINT = "point"
