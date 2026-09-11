@@ -33,6 +33,7 @@ class InstructionType(Enum):
     STOP = "stop"
     END = "end"
     JUMP = "jump"
+    SET_RATE = "setrate"
 
     # Unit Control
     UNIT_BIND = "ubind"
@@ -55,7 +56,6 @@ class InstructionType(Enum):
     CUTSCENE = "cutscene"
     EFFECT = "effect"
     EXPLOSION = "explosion"
-    SET_RATE = "setrate"
     FETCH = "fetch"
     SYNC = "sync"
     # hidden instruction
