@@ -27,4 +27,4 @@ jobs:
       run: hatch run format-check
 
     - name: Test code
-      run: hatch run test-srun
+      run: hatch run test-run
