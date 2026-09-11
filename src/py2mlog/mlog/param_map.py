@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from typing import TypeAlias, Any
 
 from .instruction_types import InstructionType
 from .suboperations import *
@@ -11,16 +12,19 @@ class ParamType(Enum):
     FILLER = auto()
 
 
+_arg_order: TypeAlias = tuple[ParamType, ...]
 # default arg order:
 # [*suboperation], [*selectable], *var
-PARAM_MAP = {
+PARAM_MAP: dict[
+    InstructionType,
+    _arg_order | dict[Suboperation | tuple[Suboperation, ...], _arg_order],
+] = {
     InstructionType.SELECT: {
         ConditionOpSuboperation.ALWAYS: (
             ParamType.VAR,
             ParamType.SUBOPERATION,
             ParamType.FILLER,
             ParamType.FILLER,
-            ParamType.VAR,
             ParamType.VAR,
         ),
         (

@@ -22,13 +22,15 @@ def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
     if not isinstance(instr_entry, dict):
         return instr_entry
 
+    assert instr.suboperation is not None, "Invalid param_map/invalid instruction"
+
     param_order = instr_entry.get(instr.suboperation, None)
 
     if param_order is not None:
         return param_order
 
     for key, val in instr_entry.items():
-        if instr.suboperation in key:
+        if isinstance(key, tuple) and instr.suboperation in key:
             return val
 
     return None
@@ -69,6 +71,9 @@ def _build_arg_list(
                 yield next(selectables).value
             case ParamType.VAR:
                 yield _arg_to_str(next(args))
+            case ParamType.FILLER:
+                next(args)
+                yield "_"
 
 
 def generate_mlog(instructions: list[Instruction]) -> str:
