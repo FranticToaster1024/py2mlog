@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from .instruction import Instruction
+from .instruction import Instruction, Label, MlogItem
 from .param_map import PARAM_MAP, ParamType
 from .mlog_expressions import (
     MlogVar,
@@ -85,26 +85,32 @@ def _build_arg_list(
             ) from None
 
 
-def generate_mlog(instructions: list[Instruction]) -> str:
+def _generate_mlog_from_instruction(instr: Instruction) -> str:
+    param_order = _get_param_order(instr)
+
+    if param_order is not None:
+        return " ".join(_build_arg_list(instr, param_order))
+
+    else:
+        arg_list = [
+            instr.type.value,
+            *(a.value for a in instr.selectable_args),
+            *map(_arg_to_str, instr.args),
+        ]
+
+        if instr.suboperation is not None:
+            arg_list.insert(1, instr.suboperation.value)
+
+        return " ".join(arg_list)
+
+
+def generate_mlog(mlog_items: list[MlogItem]) -> str:
     mlog: list[str] = []
 
-    for instr in instructions:
-        param_order = _get_param_order(instr)
-
-        if param_order is not None:
-            mlog.append(" ".join(_build_arg_list(instr, param_order)))
-
-        else:
-            arg_list = [
-                instr.type.value,
-                *(a.value for a in instr.selectable_args),
-                *map(_arg_to_str, instr.args),
-            ]
-
-            if instr.suboperation is not None:
-                arg_list.insert(1, instr.suboperation.value)
-
-            s = " ".join(arg_list)
-            mlog.append(s)
+    for item in mlog_items:
+        if isinstance(item, Instruction):
+            mlog.append(_generate_mlog_from_instruction(item))
+        elif isinstance(item, Label):
+            mlog.append(item.name + ":")
 
     return "\n".join(mlog)

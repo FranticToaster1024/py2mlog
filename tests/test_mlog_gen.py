@@ -1,7 +1,7 @@
 import pytest
 
 from py2mlog.mlog.instruction_types import InstructionType
-from py2mlog.mlog.instruction import Instruction
+from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.codegen import generate_mlog
 from py2mlog.mlog.selectable_params import *
 from py2mlog.mlog.mlog_expressions import *
@@ -240,8 +240,9 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.JUMP,
                     ConditionOpSuboperation.ALWAYS,
                     (),
-                    (MlogVar("label"),),
+                    (MlogVar("someLabel"),),
                 ),
+                Label("someLabel"),
             ],
             "\n".join(
                 (
@@ -250,7 +251,8 @@ from py2mlog.mlog.suboperations import *
                     "stop",
                     "end",
                     "jump 67 equal x @copper",
-                    "jump label always",
+                    "jump someLabel always",
+                    "someLabel:",
                 )
             ),
             id="flow-control-instructions",

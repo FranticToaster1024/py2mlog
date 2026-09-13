@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import TypeAlias, Any
+from typing import TypeAlias
 
 from .instruction_types import InstructionType
 from .suboperations import *
