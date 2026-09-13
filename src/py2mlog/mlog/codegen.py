@@ -64,16 +64,25 @@ def _build_arg_list(
     args = iter(instr.args)
 
     for param_type in param_order:
-        match param_type:
-            case ParamType.SUBOPERATION:
-                yield instr.suboperation.value if instr.suboperation is not None else ""
-            case ParamType.SELECTABLE:
-                yield next(selectables).value
-            case ParamType.VAR:
-                yield _arg_to_str(next(args))
-            case ParamType.FILLER:
-                next(args)
-                yield "_"
+        try:
+            match param_type:
+                case ParamType.SUBOPERATION:
+                    yield (
+                        instr.suboperation.value
+                        if instr.suboperation is not None
+                        else ""
+                    )
+                case ParamType.SELECTABLE:
+                    yield next(selectables).value
+                case ParamType.VAR:
+                    yield _arg_to_str(next(args))
+                case ParamType.FILLER:
+                    yield "_"
+
+        except StopIteration:
+            raise ValueError(
+                f"Instruction {instr} did not match PARAM_MAP: missing {param_type}."
+            ) from None
 
 
 def generate_mlog(instructions: list[Instruction]) -> str:

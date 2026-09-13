@@ -167,8 +167,6 @@ from py2mlog.mlog.suboperations import *
                     (),
                     (
                         MlogVar("result7"),
-                        MlogVar("this_is_a_filler_so_the_output_should_be_underscore"),
-                        MlogVar("this_is_also_a_filler"),
                         MlogVar("c"),
                     ),
                 ),
@@ -256,6 +254,77 @@ from py2mlog.mlog.suboperations import *
                 )
             ),
             id="flow-control-instructions",
+        ),
+        pytest.param(
+            [
+                Instruction(
+                    InstructionType.UNIT_BIND, None, (), (MlogVar("unitType"),)
+                ),
+                Instruction(
+                    InstructionType.UNIT_CONTROL, UnitControlSuboperation.IDLE, (), ()
+                ),
+                Instruction(
+                    InstructionType.UNIT_CONTROL,
+                    UnitControlSuboperation.BOOST,
+                    (),
+                    (MlogBoolLiteral(True),),
+                ),
+                Instruction(
+                    InstructionType.UNIT_CONTROL,
+                    UnitControlSuboperation.ITEM_TAKE,
+                    (),
+                    (MlogVar("nucleus1"), MlogVar("itemType"), MlogNumberLiteral(99)),
+                ),
+                Instruction(
+                    InstructionType.UNIT_RADAR,
+                    None,
+                    (
+                        RadarTargetSelectableParam.FLYING,
+                        RadarTargetSelectableParam.ENEMY,
+                        RadarTargetSelectableParam.ANY,
+                        RadarSortSelectableParam.ARMOR,
+                    ),
+                    (
+                        MlogNumberLiteral(1),
+                        MlogVar("enemy"),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.UNIT_LOCATE,
+                    UnitLocateSuboperation.ORE,
+                    (),
+                    (
+                        MlogBuiltin("lead"),
+                        MlogVar("oreX"),
+                        MlogVar("oreY"),
+                        MlogVar("oreFound"),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.UNIT_LOCATE,
+                    UnitLocateSuboperation.BUILDING,
+                    (UnitLocateBuildingSelectableParam.CORE,),
+                    (
+                        MlogBoolLiteral(True),
+                        MlogVar("coreX"),
+                        MlogVar("coreY"),
+                        MlogVar("coreFound"),
+                        MlogVar("core"),
+                    ),
+                ),
+            ],
+            "\n".join(
+                (
+                    "ubind unitType",
+                    "ucontrol idle",
+                    "ucontrol boost true",
+                    "ucontrol itemTake nucleus1 itemType 99",
+                    "uradar flying enemy any armor _ 1 enemy",
+                    "ulocate ore _ _ @lead oreX oreY oreFound",
+                    "ulocate building core true _ coreX coreY coreFound core",
+                )
+            ),
+            id="unit-control-instructions",
         ),
     ],
 )

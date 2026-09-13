@@ -64,6 +64,15 @@ PARAM_MAP: dict[
             ParamType.VAR,
         ),
     },
+    InstructionType.UNIT_RADAR: (
+        ParamType.SELECTABLE,
+        ParamType.SELECTABLE,
+        ParamType.SELECTABLE,
+        ParamType.SELECTABLE,
+        ParamType.FILLER,  # ?????
+        ParamType.VAR,
+        ParamType.VAR,
+    ),
     InstructionType.UNIT_LOCATE: {
         UnitLocateSuboperation.BUILDING: (
             ParamType.SUBOPERATION,
