@@ -194,9 +194,13 @@ class FlushMessageSuboperation(Suboperation):
 
 
 class CutsceneSuboperation(Suboperation):
+    ACTIVE = "active"
     PAN = "pan"
     ZOOM = "zoom"
     STOP = "stop"
+    SHAKE = "shake"
+    GET_HUD = "getHud"
+    SET_HUD = "setHud"
 
 
 class EffectSuboperation(Suboperation):

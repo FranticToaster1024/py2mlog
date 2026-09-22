@@ -25,6 +25,11 @@ class MlogBoolLiteral(MlogExpr):
     value: bool
 
 
+@dataclass(frozen=True)
+class MlogColorLiteral(MlogExpr):
+    value: str
+
+
 class MlogNullLiteral(MlogExpr):
     pass
 

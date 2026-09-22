@@ -243,6 +243,9 @@ from py2mlog.mlog.suboperations import *
                     (MlogVar("someLabel"),),
                 ),
                 Label("someLabel"),
+                Instruction(
+                    InstructionType.SET_RATE, None, (), (MlogNumberLiteral(10),)
+                ),
             ],
             "\n".join(
                 (
@@ -253,6 +256,7 @@ from py2mlog.mlog.suboperations import *
                     "jump 67 equal x @copper",
                     "jump someLabel always",
                     "someLabel:",
+                    "setrate 10",
                 )
             ),
             id="flow-control-instructions",
@@ -328,10 +332,266 @@ from py2mlog.mlog.suboperations import *
             ),
             id="unit-control-instructions",
         ),
+        pytest.param(
+            [
+                Instruction(
+                    InstructionType.QUERY,
+                    QuerySuboperation.CIRCLE,
+                    (QuerySelectableParam.UNIT,),
+                    (
+                        MlogBuiltin("sharded"),
+                        MlogNumberLiteral(67),
+                        MlogNumberLiteral(42),
+                        MlogNumberLiteral(5),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.SET_BLOCK,
+                    SetBlockSuboperation.ORE,
+                    (),
+                    (MlogBuiltin("air"), MlogNumberLiteral(6), MlogNumberLiteral(7)),
+                ),
+                Instruction(
+                    InstructionType.GET_BLOCK,
+                    None,
+                    (TileLayerSelectableParam.FLOOR,),
+                    (MlogVar("result1"), MlogNumberLiteral(0), MlogNumberLiteral(0)),
+                ),
+                Instruction(
+                    InstructionType.SPAWN_UNIT,
+                    None,
+                    (),
+                    (
+                        MlogBuiltin("dagger"),
+                        MlogNumberLiteral(42),
+                        MlogNumberLiteral(67),
+                        MlogNumberLiteral(90),
+                        MlogBuiltin("sharded"),
+                        MlogVar("result2"),
+                        MlogBoolLiteral(True),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.SPAWN_BULLET,
+                    None,
+                    (),
+                    (
+                        MlogVar("result3"),
+                        MlogBuiltin("nova"),
+                        MlogNumberLiteral(1),
+                        MlogBuiltin("thisx"),
+                        MlogBuiltin("thisy"),
+                        MlogNumberLiteral(359),
+                        MlogBuiltin("crux"),
+                        MlogNullLiteral(),
+                        MlogNumberLiteral(150),
+                        MlogNumberLiteral(1),
+                        MlogNumberLiteral(1),
+                        MlogNumberLiteral(-1),
+                        MlogNumberLiteral(-1),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.APPLY_STATUS,
+                    ApplyStatusSuboperation.APPLY,
+                    (),
+                    (
+                        MlogBuiltin("status-wet"),
+                        MlogBuiltin("unit"),
+                        MlogNumberLiteral(67),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.WEATHER_SENSE,
+                    None,
+                    (),
+                    (MlogVar("result4"), MlogBuiltin("rain")),
+                ),
+                Instruction(
+                    InstructionType.WEATHER_SET,
+                    None,
+                    (),
+                    (MlogBuiltin("snowing"), MlogBoolLiteral(True)),
+                ),
+                Instruction(
+                    InstructionType.SPAWN_WAVE,
+                    None,
+                    (),
+                    (
+                        MlogNumberLiteral(67),
+                        MlogNumberLiteral(42),
+                        MlogBoolLiteral(False),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.SET_RULE,
+                    SetRuleSuboperation.CURRENT_WAVE_TIME,
+                    (),
+                    (MlogNumberLiteral(67),),
+                ),
+                Instruction(
+                    InstructionType.SET_RULE,
+                    SetRuleSuboperation.MAP_AREA,
+                    (),
+                    (
+                        MlogNumberLiteral(67),
+                        MlogNumberLiteral(42),
+                        MlogVar("width"),
+                        MlogVar("height"),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.FLUSH_MESSAGE,
+                    FlushMessageSuboperation.NOTIFY,
+                    (),
+                    (MlogBuiltin("wait"),),
+                ),
+                Instruction(
+                    InstructionType.FLUSH_MESSAGE,
+                    FlushMessageSuboperation.TOAST,
+                    (),
+                    (MlogNumberLiteral(6), MlogBuiltin("wait")),
+                ),
+                Instruction(
+                    InstructionType.CUTSCENE, CutsceneSuboperation.STOP, (), ()
+                ),
+                Instruction(
+                    InstructionType.EFFECT,
+                    EffectSuboperation.SPARK_BIG,
+                    (),
+                    (
+                        MlogVar("sparkX"),
+                        MlogVar("sparkY"),
+                        MlogColorLiteral("008888"),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.EXPLOSION,
+                    None,
+                    (),
+                    (
+                        MlogBuiltin("crux"),
+                        MlogNumberLiteral(50),
+                        MlogNumberLiteral(50),
+                        MlogVar("radius"),
+                        MlogNumberLiteral(100),
+                        MlogBoolLiteral(True),
+                        MlogBoolLiteral(False),
+                        MlogVar("isPierce"),
+                        MlogVar("effect"),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.FETCH,
+                    FetchSuboperation.UNIT,
+                    (),
+                    (
+                        MlogVar("result5"),
+                        MlogBuiltin("malis"),
+                        MlogVar("index"),
+                        MlogNullLiteral(),
+                    ),
+                ),
+                Instruction(InstructionType.SYNC, None, (), (MlogVar("var"),)),
+                Instruction(
+                    InstructionType.GET_FLAG,
+                    None,
+                    (),
+                    (MlogVar("result6"), MlogStringLiteral("flag")),
+                ),
+                Instruction(
+                    InstructionType.SET_FLAG,
+                    None,
+                    (),
+                    (MlogStringLiteral("flag"), MlogBoolLiteral(True)),
+                ),
+                Instruction(
+                    InstructionType.SET_PROPERTY,
+                    None,
+                    (),
+                    (
+                        MlogBuiltin("titanium"),
+                        MlogVar("nucleus1"),
+                        MlogNumberLiteral(9999),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.PLAY_SOUND,
+                    PlaySoundSuboperation.GLOBAL,
+                    (),
+                    (
+                        MlogBuiltin("sfx-shoot"),
+                        MlogNumberLiteral(1),
+                        MlogNumberLiteral(1),
+                        MlogNumberLiteral(0),
+                        MlogBoolLiteral(True),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.PLAY_MUSIC,
+                    None,
+                    (),
+                    (MlogStringLiteral("game1"), MlogBoolLiteral(True)),
+                ),
+                Instruction(
+                    InstructionType.SET_MARKER,
+                    SetMarkerSuboperation.POS,
+                    (),
+                    (
+                        MlogNumberLiteral(0),
+                        MlogNumberLiteral(0),
+                        MlogNumberLiteral(0),
+                        MlogNumberLiteral(0),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.MAKE_MARKER,
+                    None,
+                    (MakeMarkerSelectableParam.SHAPE,),
+                    (
+                        MlogNumberLiteral(0),
+                        MlogNumberLiteral(0),
+                        MlogNumberLiteral(0),
+                        MlogBoolLiteral(True),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.LOCALE_PRINT, None, (), (MlogStringLiteral("name"),)
+                ),
+            ],
+            "\n".join(
+                (
+                    "query circle unit @sharded 67 42 5",
+                    "setblock ore @air 6 7",
+                    "getblock floor result1 0 0",
+                    "spawn @dagger 42 67 90 @sharded result2 true",
+                    "bullet result3 @nova 1 @thisx @thisy 359 @crux null 150 1 1 -1 -1",
+                    "status false @status-wet @unit 67",
+                    "weathersense result4 @rain",
+                    "weatherset @snowing true",
+                    "spawnwave 67 42 false",
+                    "setrule currentWaveTime 67",
+                    "setrule mapArea _ 67 42 width height",
+                    "message notify _ @wait",
+                    "message toast 6 @wait",
+                    "cutscene stop",
+                    'effect sparkBig sparkX sparkY _ "%008888"',
+                    "explosion @crux 50 50 radius 100 true false isPierce effect",
+                    "fetch unit result5 @malis index null",
+                    "sync var",
+                    'getflag result6 "flag"',
+                    'setflag "flag" true',
+                    "setprop @titanium nucleus1 9999",
+                    "playsound false @sfx-shoot 1 1 0 _ _ true",
+                    'playmusic "game1" true',
+                    "setmarker pos 0 0 0 0",
+                    "makemarker shape 0 0 0 true",
+                    'localeprint "name"',
+                )
+            ),
+            id="world-instructions",
+        ),
     ],
 )
 def test_generate_mlog(script, expected):
     assert generate_mlog(script) == expected
-
-
-# TODO: add tests for all instructions

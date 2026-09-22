@@ -8,6 +8,7 @@ from .mlog_expressions import (
     MlogNumberLiteral,
     MlogStringLiteral,
     MlogBoolLiteral,
+    MlogColorLiteral,
     MlogNullLiteral,
     MlogExpr,
 )
@@ -48,6 +49,8 @@ def _arg_to_str(arg: MlogExpr) -> str:
             return "true" if value else "false"
         case MlogNullLiteral():
             return "null"
+        case MlogColorLiteral(value):
+            return "%" + value
         case MlogVar(name):
             return name
         case _:
