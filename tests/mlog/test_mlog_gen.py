@@ -575,7 +575,7 @@ from py2mlog.mlog.suboperations import *
                     "message notify _ @wait",
                     "message toast 6 @wait",
                     "cutscene stop",
-                    'effect sparkBig sparkX sparkY _ "%008888"',
+                    "effect sparkBig sparkX sparkY _ %008888",
                     "explosion @crux 50 50 radius 100 true false isPierce effect",
                     "fetch unit result5 @malis index null",
                     "sync var",
