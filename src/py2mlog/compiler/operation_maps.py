@@ -13,7 +13,7 @@ from py2mlog.mlog.mlog_expressions import (
 )
 
 UNARY_OP_MAP: dict[
-    type[ast.unaryop], Callable[[MlogVar, MlogExpr], Instruction | None]
+    type[ast.unaryop], Callable[[MlogExpr, MlogExpr], Instruction | None]
 ] = {
     ast.UAdd: lambda *_: None,
     ast.USub: lambda in_expr, out_expr: Instruction(
