@@ -4,12 +4,11 @@ from .emitter import Emitter
 from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP
 from .error import CompilerError, CompilerErrorType, SourceLocation
 
-from py2mlog.mlog.instruction import Instruction, Label
+from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
     MlogExpr,
-    LabelRef,
     MlogBoolLiteral,
     MlogBuiltin,
     MlogNullLiteral,
@@ -282,6 +281,30 @@ class Compiler:
 
                 if skip_else_label is not None:
                     self.emitter.emit_label(skip_else_label)
+
+            # TODO: implement while/else
+            case ast.While(test=test, body=body, orelse=orelse):
+                loop_label, loop_label_ref = self.emitter.new_label()
+
+                self.emitter.emit_label(loop_label)
+
+                for stmt_ in body:
+                    self.compile_stmt(stmt_)
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        ConditionOpSuboperation.EQUAL,
+                        (),
+                        (
+                            loop_label_ref,
+                            self.compile_expr(test),
+                            MlogBoolLiteral(True),
+                        ),
+                    )
+                )
+
+            # TODO: implement break statements
 
             case _:
                 raise self._unsupported_stmt_error(stmt)

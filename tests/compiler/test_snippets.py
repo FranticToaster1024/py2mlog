@@ -152,7 +152,7 @@ from py2mlog.mlog.codegen import generate_mlog
                     "__p2m_label0:",
                 )
             ),
-            id="if",
+            id="if-with-name-condition",
         ),
         pytest.param(
             dedent("""
@@ -234,6 +234,52 @@ from py2mlog.mlog.codegen import generate_mlog
                 )
             ),
             id="if-multiple-elif-without-else",
+        ),
+        pytest.param(
+            dedent("""
+                while condition:
+                    result = value
+            """).strip(),
+            "\n".join(
+                (
+                    "__p2m_label0:",
+                    "set result value",
+                    "jump __p2m_label0 equal condition true",
+                )
+            ),
+            id="while-with-name-condition",
+        ),
+        pytest.param(
+            dedent("""
+                while count < limit:
+                    count = count + 1
+            """).strip(),
+            "\n".join(
+                (
+                    "__p2m_label0:",
+                    "op add count count 1",
+                    "op lessThan __p2m_tmp0 count limit",
+                    "jump __p2m_label0 equal __p2m_tmp0 true",
+                )
+            ),
+            id="while-with-comparison-condition",
+        ),
+        pytest.param(
+            dedent("""
+                while outer_condition:
+                    while inner_condition:
+                        result = value
+            """).strip(),
+            "\n".join(
+                (
+                    "__p2m_label0:",
+                    "__p2m_label1:",
+                    "set result value",
+                    "jump __p2m_label1 equal inner_condition true",
+                    "jump __p2m_label0 equal outer_condition true",
+                )
+            ),
+            id="nested-while-loops",
         ),
     ],
 )
