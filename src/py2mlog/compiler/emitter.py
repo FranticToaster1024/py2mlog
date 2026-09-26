@@ -1,6 +1,8 @@
 from py2mlog.mlog.instruction import MlogItem, Instruction, Label
 from py2mlog.mlog.mlog_expressions import MlogVar
 
+from .error import CompilerError, CompilerErrorType, SourceLocation
+
 
 class Emitter:
     def __init__(self) -> None:
@@ -19,23 +21,36 @@ class Emitter:
         self._label_counter += 1
         return label
 
-    def emit_instruction(self, instr: Instruction) -> bool:
-        """Returns whether given instruction is valid. (WIP)"""
-        self.instructions.append(instr)
+    def emit_instruction(self, instr: Instruction) -> None:
+        """Raises an error if given instruction is invalid. (WIP)"""
+        if self._check_instruction_validity(instr):
+            self.instructions.append(instr)
+        else:
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err=f"Attempted to create invalid mlog instruction:\n{instr!r}",
+            )
+
+    def _check_instruction_validity(self, instr: Instruction) -> bool:
         # TODO: instruction validation
         return True
 
-    def emit_label(self, label: Label) -> bool:
-        """Returns whether given label is valid."""
-        is_valid = True
-        try:
-            # TODO: align validity checking with mindustry/arc parseDouble validity
-            float(label.name)
-            is_valid = False
-        except ValueError:
-            pass
-
-        if is_valid:
+    def emit_label(self, label: Label) -> None:
+        """Raises an error if given label is invalid."""
+        if self._check_label_validity(label):
             self.instructions.append(label)
+        else:
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err=f"Attempted to emit invalid label: {label!r}",
+            )
 
-        return is_valid
+    def _check_label_validity(self, label: Label) -> bool:
+        # TODO: align validity checking with mindustry/arc parseDouble validity
+        try:
+            float(label.name)
+            return False
+        except ValueError:
+            return True

@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
-from py2mlog.mlog.suboperations import OperationSuboperation
+from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
     MlogExpr,
     MlogNumberLiteral,
@@ -49,4 +49,21 @@ BIN_OP_MAP: dict[type[ast.operator], OperationSuboperation] = {
     ast.BitXor: OperationSuboperation.BITWISE_XOR,
     ast.LShift: OperationSuboperation.BITSHIFT_LEFT,
     ast.RShift: OperationSuboperation.BITSHIFT_RIGHT,
+}
+
+CMP_OP_MAP: dict[
+    type[ast.cmpop], tuple[OperationSuboperation, ConditionOpSuboperation]
+] = {
+    ast.Eq: (OperationSuboperation.EQUAL, ConditionOpSuboperation.EQUAL),
+    ast.NotEq: (OperationSuboperation.NOT_EQUAL, ConditionOpSuboperation.NOT_EQUAL),
+    ast.Lt: (OperationSuboperation.LESS_THAN, ConditionOpSuboperation.LESS_THAN),
+    ast.LtE: (
+        OperationSuboperation.LESS_THAN_OR_EQ,
+        ConditionOpSuboperation.LESS_THAN_OR_EQ,
+    ),
+    ast.Gt: (OperationSuboperation.GREATER_THAN, ConditionOpSuboperation.GREATER_THAN),
+    ast.GtE: (
+        OperationSuboperation.GREATER_THAN_OR_EQ,
+        ConditionOpSuboperation.GREATER_THAN_OR_EQ,
+    ),
 }

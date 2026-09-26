@@ -1,11 +1,12 @@
 import ast
 
 from .emitter import Emitter
-from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP
+from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP
 from .error import CompilerError, CompilerErrorType, SourceLocation
 
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
+from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
     MlogExpr,
     MlogBoolLiteral,
@@ -60,44 +61,136 @@ class Compiler:
             case ast.Name(id=name):
                 return MlogVar(name)
 
-            case ast.BinOp(op=op):
+            case ast.BinOp(op=op, left=left, right=right):
+                output_expr = get_output_expr()
+
                 opSubop = BIN_OP_MAP.get(type(op), None)
 
                 if opSubop is None:
                     raise self._unsupported_expr_error(expr)
 
-                output_expr = get_output_expr()
                 instr = Instruction(
                     InstructionType.OPERATION,
                     opSubop,
                     (),
                     (
                         output_expr,
-                        self.compile_expr(expr.left),
-                        self.compile_expr(expr.right),
+                        self.compile_expr(left),
+                        self.compile_expr(right),
                     ),
                 )
 
-                if not self.emitter.emit_instruction(instr):
-                    raise self._invalid_mlog_instr_internal_error(instr)
+                self.emitter.emit_instruction(instr)
 
                 return output_expr
 
-            case ast.UnaryOp(op=op):
+            case ast.UnaryOp(op=op, operand=operand):
+                output_expr = get_output_expr()
+
                 factory = UNARY_OP_MAP.get(type(op), None)
 
                 if factory is None:
                     raise self._unsupported_expr_error(expr)
 
-                output_expr = get_output_expr()
-                compiled_operand = self.compile_expr(expr.operand)
+                compiled_operand = self.compile_expr(operand)
                 instr = factory(compiled_operand, output_expr)
 
                 if instr is None:
                     return compiled_operand
 
-                if not self.emitter.emit_instruction(instr):
-                    raise self._invalid_mlog_instr_internal_error(instr)
+                self.emitter.emit_instruction(instr)
+
+                return output_expr
+
+            case ast.BoolOp(op=op, values=values):
+                output_expr = get_output_expr()
+
+                # python BoolOp returns operand value based on short-circuiting
+                if isinstance(op, ast.And):
+                    prev = self.compile_expr(values[0])
+
+                    for val in values[1:]:
+                        val = self.compile_expr(val)
+                        self.emitter.emit_instruction(
+                            Instruction(
+                                InstructionType.SELECT,
+                                ConditionOpSuboperation.EQUAL,
+                                (),
+                                (output_expr, prev, MlogBoolLiteral(True), val, prev),
+                            )
+                        )
+                        prev = output_expr
+
+                elif isinstance(op, ast.Or):
+                    prev = self.compile_expr(values[0])
+
+                    for val in values[1:]:
+                        val = self.compile_expr(val)
+                        self.emitter.emit_instruction(
+                            Instruction(
+                                InstructionType.SELECT,
+                                ConditionOpSuboperation.EQUAL,
+                                (),
+                                (output_expr, val, MlogBoolLiteral(True), val, prev),
+                            )
+                        )
+                        prev = output_expr
+
+                else:
+                    raise self._unsupported_expr_error(expr)
+
+                return output_expr
+
+            case ast.Compare(ops=ops, left=left, comparators=comparators):
+
+                def get_subops(
+                    i: int,
+                ) -> tuple[OperationSuboperation, ConditionOpSuboperation]:
+                    Subops = CMP_OP_MAP.get(type(ops[i]), None)
+
+                    if Subops is None:
+                        raise self._unsupported_expr_error(expr)
+
+                    return Subops
+
+                output_expr = get_output_expr()
+
+                opSubop = get_subops(0)[0]
+
+                prev = self.compile_expr(comparators[0])
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.OPERATION,
+                        opSubop,
+                        (),
+                        (
+                            output_expr,
+                            self.compile_expr(left),
+                            prev,
+                        ),
+                    )
+                )
+
+                for i, comparator in enumerate(comparators[1:], 1):
+                    condOpSubop = get_subops(i)[1]
+
+                    comparator = self.compile_expr(comparator)
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.SELECT,
+                            condOpSubop,
+                            (),
+                            (
+                                output_expr,
+                                prev,
+                                comparator,
+                                output_expr,
+                                MlogBoolLiteral(False),
+                            ),
+                        )
+                    )
+                    prev = comparator
 
                 return output_expr
 
@@ -166,11 +259,4 @@ class Compiler:
             CompilerErrorType.UNSUPPORTED,
             SourceLocation.from_ast_node(stmt, self._src_lines),
             feature=f'Ast statement "{type(stmt).__name__}"',
-        )
-
-    def _invalid_mlog_instr_internal_error(self, instr: Instruction) -> CompilerError:
-        return CompilerError(
-            CompilerErrorType.INTERNAL,
-            None,
-            err=f"Attempted to create invalid mlog instruction:\n{instr!r}",
         )

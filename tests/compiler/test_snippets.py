@@ -79,6 +79,61 @@ from py2mlog.mlog.codegen import generate_mlog
                 ("~", "op not result value", "invert"),
             )
         ],
+        *[
+            pytest.param(
+                f"result = left {operator} right",
+                f"op {mlog_operator} result left right",
+                id=f"comparison-{mlog_operator}",
+            )
+            for operator, mlog_operator in (
+                ("==", "equal"),
+                ("!=", "notEqual"),
+                ("<", "lessThan"),
+                ("<=", "lessThanEq"),
+                (">", "greaterThan"),
+                (">=", "greaterThanEq"),
+            )
+        ],
+        pytest.param(
+            "result = first and second",
+            "select result equal first true second first",
+            id="boolean-and",
+        ),
+        pytest.param(
+            "result = first or second",
+            "select result equal second true second first",
+            id="boolean-or",
+        ),
+        pytest.param(
+            "result = first and second and third",
+            "\n".join(
+                (
+                    "select result equal first true second first",
+                    "select result equal result true third result",
+                )
+            ),
+            id="chained-boolean-and",
+        ),
+        pytest.param(
+            "result = first or second or third",
+            "\n".join(
+                (
+                    "select result equal second true second first",
+                    "select result equal third true third result",
+                )
+            ),
+            id="chained-boolean-or",
+        ),
+        pytest.param(
+            "result = left < middle <= right",
+            "\n".join(
+                (
+                    "op lessThan result left middle",
+                    "select result lessThanEq middle right result false",
+                )
+            ),
+            id="chained-comparison-with-different-operators",
+        ),
         pytest.param(
             "left + right",
             "op add __p2m_tmp0 left right",
