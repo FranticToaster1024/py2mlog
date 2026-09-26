@@ -69,6 +69,27 @@ from py2mlog.mlog.codegen import generate_mlog
         ],
         *[
             pytest.param(
+                f"result {operator}= value",
+                f"op {mlog_operator} result result value",
+                id=f"augmented-assignment-{mlog_operator}",
+            )
+            for operator, mlog_operator in (
+                ("+", "add"),
+                ("-", "sub"),
+                ("*", "mul"),
+                ("/", "div"),
+                ("//", "idiv"),
+                ("%", "emod"),
+                ("**", "pow"),
+                ("&", "and"),
+                ("|", "or"),
+                ("^", "xor"),
+                ("<<", "shl"),
+                (">>", "shr"),
+            )
+        ],
+        *[
+            pytest.param(
                 f"result = {operator}value",
                 expected,
                 id=f"unary-{name}",

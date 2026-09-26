@@ -69,18 +69,18 @@ class Compiler:
                 if opSubop is None:
                     raise self._unsupported_expr_error(expr)
 
-                instr = Instruction(
-                    InstructionType.OPERATION,
-                    opSubop,
-                    (),
-                    (
-                        output_expr,
-                        self.compile_expr(left),
-                        self.compile_expr(right),
-                    ),
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.OPERATION,
+                        opSubop,
+                        (),
+                        (
+                            output_expr,
+                            self.compile_expr(left),
+                            self.compile_expr(right),
+                        ),
+                    )
                 )
-
-                self.emitter.emit_instruction(instr)
 
                 return output_expr
 
@@ -216,6 +216,14 @@ class Compiler:
 
     def compile_target(self, expr: ast.expr) -> MlogExpr:
         """Resolves an expression in store context and returns its location."""
+
+        if not isinstance(getattr(expr, "ctx", None), ast.Store):
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                SourceLocation.from_ast_node(expr, self._src_lines),
+                err="Called compile_target() on an expression with store context",
+            )
+
         match expr:
             case ast.Name(id=name):
                 return MlogVar(name)
@@ -240,6 +248,26 @@ class Compiler:
                             (self.compile_target(target), value_expr),
                         )
                     )
+            case ast.AugAssign(target=target, op=op, value=value):
+                opSubop = BIN_OP_MAP.get(type(op), None)
+
+                if opSubop is None:
+                    raise self._unsupported_stmt_error(
+                        stmt, f" with operation {opSubop}"
+                    )
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.OPERATION,
+                        opSubop,
+                        (),
+                        (
+                            self.compile_target(target),
+                            self.compile_expr(target),
+                            self.compile_expr(value),
+                        ),
+                    )
+                )
 
             case ast.If(test=test, body=body, orelse=orelse):
                 else_label, else_label_ref = self.emitter.new_label()
@@ -319,9 +347,9 @@ class Compiler:
             feature=f'Ast expression {ctx_str}"{type(expr).__name__}"',
         )
 
-    def _unsupported_stmt_error(self, stmt: ast.stmt) -> CompilerError:
+    def _unsupported_stmt_error(self, stmt: ast.stmt, info: str = "") -> CompilerError:
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
             SourceLocation.from_ast_node(stmt, self._src_lines),
-            feature=f'Ast statement "{type(stmt).__name__}"',
+            feature=f'Ast statement "{type(stmt).__name__}{info}"',
         )
