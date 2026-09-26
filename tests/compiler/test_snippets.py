@@ -1,4 +1,5 @@
 import ast
+from textwrap import dedent
 
 import pytest
 
@@ -138,6 +139,101 @@ from py2mlog.mlog.codegen import generate_mlog
             "left + right",
             "op add __p2m_tmp0 left right",
             id="expression-statement",
+        ),
+        pytest.param(
+            dedent("""
+                if condition:
+                    result = first
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label0 equal condition false",
+                    "set result first",
+                    "__p2m_label0:",
+                )
+            ),
+            id="if",
+        ),
+        pytest.param(
+            dedent("""
+                if x < 5:
+                    x = x + 1
+            """).strip(),
+            "\n".join(
+                (
+                    "op lessThan __p2m_tmp0 x 5",
+                    "jump __p2m_label0 equal __p2m_tmp0 false",
+                    "op add x x 1",
+                    "__p2m_label0:",
+                )
+            ),
+            id="if-with-comparison-condition",
+        ),
+        pytest.param(
+            dedent("""
+                if condition:
+                    result = first
+                else:
+                    result = second
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label0 equal condition false",
+                    "set result first",
+                    "jump __p2m_label1 always",
+                    "__p2m_label0:",
+                    "set result second",
+                    "__p2m_label1:",
+                )
+            ),
+            id="if-else",
+        ),
+        pytest.param(
+            dedent("""
+                if first_condition:
+                    result = first
+                elif second_condition:
+                    result = second
+                else:
+                    result = fallback
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label0 equal first_condition false",
+                    "set result first",
+                    "jump __p2m_label1 always",
+                    "__p2m_label0:",
+                    "jump __p2m_label2 equal second_condition false",
+                    "set result second",
+                    "jump __p2m_label3 always",
+                    "__p2m_label2:",
+                    "set result fallback",
+                    "__p2m_label3:",
+                    "__p2m_label1:",
+                )
+            ),
+            id="if-elif-else",
+        ),
+        pytest.param(
+            "if first_condition:\n    result = first\nelif second_condition:\n    result = second\nelif third_condition:\n    result = third",
+            "\n".join(
+                (
+                    "jump __p2m_label0 equal first_condition false",
+                    "set result first",
+                    "jump __p2m_label1 always",
+                    "__p2m_label0:",
+                    "jump __p2m_label2 equal second_condition false",
+                    "set result second",
+                    "jump __p2m_label3 always",
+                    "__p2m_label2:",
+                    "jump __p2m_label4 equal third_condition false",
+                    "set result third",
+                    "__p2m_label4:",
+                    "__p2m_label3:",
+                    "__p2m_label1:",
+                )
+            ),
+            id="if-multiple-elif-without-else",
         ),
     ],
 )

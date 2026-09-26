@@ -4,11 +4,12 @@ from .emitter import Emitter
 from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP
 from .error import CompilerError, CompilerErrorType, SourceLocation
 
-from py2mlog.mlog.instruction import Instruction
+from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
     MlogExpr,
+    LabelRef,
     MlogBoolLiteral,
     MlogBuiltin,
     MlogNullLiteral,
@@ -240,6 +241,47 @@ class Compiler:
                             (self.compile_target(target), value_expr),
                         )
                     )
+
+            case ast.If(test=test, body=body, orelse=orelse):
+                else_label, else_label_ref = self.emitter.new_label()
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        ConditionOpSuboperation.EQUAL,
+                        (),
+                        (
+                            else_label_ref,
+                            self.compile_expr(test),
+                            MlogBoolLiteral(False),
+                        ),
+                    )
+                )
+
+                for stmt_ in body:
+                    self.compile_stmt(stmt_)
+
+                if orelse:
+                    skip_else_label, skip_else_label_ref = self.emitter.new_label()
+
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.JUMP,
+                            ConditionOpSuboperation.ALWAYS,
+                            (),
+                            (skip_else_label_ref,),
+                        )
+                    )
+                else:
+                    skip_else_label = None
+
+                self.emitter.emit_label(else_label)
+
+                for stmt_ in orelse:
+                    self.compile_stmt(stmt_)
+
+                if skip_else_label is not None:
+                    self.emitter.emit_label(skip_else_label)
 
             case _:
                 raise self._unsupported_stmt_error(stmt)

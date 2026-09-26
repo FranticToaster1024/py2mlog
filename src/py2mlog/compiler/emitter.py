@@ -1,7 +1,7 @@
 from py2mlog.mlog.instruction import MlogItem, Instruction, Label
-from py2mlog.mlog.mlog_expressions import MlogVar
+from py2mlog.mlog.mlog_expressions import MlogVar, LabelRef
 
-from .error import CompilerError, CompilerErrorType, SourceLocation
+from .error import CompilerError, CompilerErrorType
 
 
 class Emitter:
@@ -16,10 +16,13 @@ class Emitter:
         self._tmp_counter += 1
         return tmp
 
-    def new_label(self) -> Label:
+    def new_label(self) -> tuple[Label, LabelRef]:
         label = Label(f"__p2m_label{self._label_counter}")
+        label_ref = LabelRef(label.name)
+
         self._label_counter += 1
-        return label
+
+        return (label, label_ref)
 
     def emit_instruction(self, instr: Instruction) -> None:
         """Raises an error if given instruction is invalid. (WIP)"""
