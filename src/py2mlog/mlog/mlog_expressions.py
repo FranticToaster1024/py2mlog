@@ -6,6 +6,11 @@ class MlogExpr:
 
 
 @dataclass(frozen=True)
+class LabelRef(MlogExpr):
+    name: str
+
+
+@dataclass(frozen=True)
 class MlogBuiltin(MlogExpr):
     name: str
 

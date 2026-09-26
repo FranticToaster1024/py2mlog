@@ -240,7 +240,7 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.JUMP,
                     ConditionOpSuboperation.ALWAYS,
                     (),
-                    (MlogVar("someLabel"),),
+                    (LabelRef("someLabel"),),
                 ),
                 Label("someLabel"),
                 Instruction(

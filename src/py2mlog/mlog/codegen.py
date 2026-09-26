@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from .instruction import Instruction, Label, MlogItem
 from .param_map import PARAM_MAP, ParamType
 from .mlog_expressions import (
+    LabelRef,
     MlogVar,
     MlogBuiltin,
     MlogNumberLiteral,
@@ -39,6 +40,8 @@ def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
 
 def _arg_to_str(arg: MlogExpr) -> str:
     match arg:
+        case LabelRef(name):
+            return name
         case MlogBuiltin(name):
             return "@" + name
         case MlogStringLiteral(value):
