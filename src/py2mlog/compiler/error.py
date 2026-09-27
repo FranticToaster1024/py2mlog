@@ -7,11 +7,13 @@ from enum import Enum, auto
 
 class CompilerErrorType(Enum):
     UNSUPPORTED = auto()
+    SYNTAX = auto()
     INTERNAL = auto()
 
 
 _ERR_DESCRIPTIONS = {
     CompilerErrorType.UNSUPPORTED: "Unsupported feature: {feature}.",
+    CompilerErrorType.SYNTAX: "A syntax error occurred: {err}.",
     CompilerErrorType.INTERNAL: "An internal error occurred: {err}.",
 }
 

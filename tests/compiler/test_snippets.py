@@ -263,9 +263,11 @@ from py2mlog.mlog.codegen import generate_mlog
             """).strip(),
             "\n".join(
                 (
+                    "jump __p2m_label1 equal condition false",
                     "__p2m_label0:",
                     "set result value",
                     "jump __p2m_label0 equal condition true",
+                    "__p2m_label1:",
                 )
             ),
             id="while-with-name-condition",
@@ -277,10 +279,13 @@ from py2mlog.mlog.codegen import generate_mlog
             """).strip(),
             "\n".join(
                 (
+                    "op lessThan __p2m_tmp0 count limit",
+                    "jump __p2m_label1 equal __p2m_tmp0 false",
                     "__p2m_label0:",
                     "op add count count 1",
-                    "op lessThan __p2m_tmp0 count limit",
-                    "jump __p2m_label0 equal __p2m_tmp0 true",
+                    "op lessThan __p2m_tmp1 count limit",
+                    "jump __p2m_label0 equal __p2m_tmp1 true",
+                    "__p2m_label1:",
                 )
             ),
             id="while-with-comparison-condition",
@@ -293,14 +298,73 @@ from py2mlog.mlog.codegen import generate_mlog
             """).strip(),
             "\n".join(
                 (
+                    "jump __p2m_label1 equal outer_condition false",
                     "__p2m_label0:",
-                    "__p2m_label1:",
+                    "jump __p2m_label3 equal inner_condition false",
+                    "__p2m_label2:",
                     "set result value",
-                    "jump __p2m_label1 equal inner_condition true",
+                    "jump __p2m_label2 equal inner_condition true",
+                    "__p2m_label3:",
                     "jump __p2m_label0 equal outer_condition true",
+                    "__p2m_label1:",
                 )
             ),
             id="nested-while-loops",
+        ),
+        pytest.param(
+            dedent("""
+                while condition:
+                    break
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label1 equal condition false",
+                    "__p2m_label0:",
+                    "jump __p2m_label1 always",
+                    "jump __p2m_label0 equal condition true",
+                    "__p2m_label1:",
+                )
+            ),
+            id="while-break",
+        ),
+        pytest.param(
+            dedent("""
+                while condition:
+                    continue
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label1 equal condition false",
+                    "__p2m_label0:",
+                    "jump __p2m_label0 always",
+                    "jump __p2m_label0 equal condition true",
+                    "__p2m_label1:",
+                )
+            ),
+            id="while-continue",
+        ),
+        pytest.param(
+            dedent("""
+                while outer_condition:
+                    while inner_condition:
+                        break
+                    continue
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label1 equal outer_condition false",
+                    "__p2m_label0:",
+                    "jump __p2m_label3 equal inner_condition false",
+                    "__p2m_label2:",
+                    "jump __p2m_label3 always",
+                    "jump __p2m_label2 equal inner_condition true",
+                    "__p2m_label3:",
+                    "jump __p2m_label0 always",
+                    "jump __p2m_label0 equal outer_condition true",
+                    "__p2m_label1:",
+                )
+            ),
+            id="nested-while-break-continue",
         ),
     ],
 )

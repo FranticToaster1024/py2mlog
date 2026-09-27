@@ -1,5 +1,7 @@
 import ast
 
+from contextlib import contextmanager
+
 from .emitter import Emitter
 from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP
 from .error import CompilerError, CompilerErrorType, SourceLocation
@@ -9,6 +11,7 @@ from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
     MlogExpr,
+    LabelRef,
     MlogBoolLiteral,
     MlogBuiltin,
     MlogNullLiteral,
@@ -26,6 +29,9 @@ class Compiler:
         self.emitter = emitter
 
         self._src_lines = src.splitlines()
+
+        self.current_loop_break: LabelRef | None = None
+        self.current_loop_continue: LabelRef | None = None
 
     def compile(self):
         for node in self._ast.body:
@@ -313,11 +319,26 @@ class Compiler:
             # TODO: implement while/else
             case ast.While(test=test, body=body, orelse=orelse):
                 loop_label, loop_label_ref = self.emitter.new_label()
+                break_label, break_label_ref = self.emitter.new_label()
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        ConditionOpSuboperation.EQUAL,
+                        (),
+                        (
+                            break_label_ref,
+                            self.compile_expr(test),
+                            MlogBoolLiteral(False),
+                        ),
+                    )
+                )
 
                 self.emitter.emit_label(loop_label)
 
-                for stmt_ in body:
-                    self.compile_stmt(stmt_)
+                with self._loop_context(break_label_ref, loop_label_ref) as _:
+                    for stmt_ in body:
+                        self.compile_stmt(stmt_)
 
                 self.emitter.emit_instruction(
                     Instruction(
@@ -332,10 +353,57 @@ class Compiler:
                     )
                 )
 
-            # TODO: implement break statements
+                self.emitter.emit_label(break_label)
+
+            case ast.Break():
+                if self.current_loop_break is None:
+                    raise CompilerError(
+                        CompilerErrorType.SYNTAX,
+                        SourceLocation.from_ast_node(stmt, self._src_lines),
+                        err="'break' outside loop",
+                    )
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        ConditionOpSuboperation.ALWAYS,
+                        (),
+                        (self.current_loop_break,),
+                    )
+                )
+
+            case ast.Continue():
+                if self.current_loop_continue is None:
+                    raise CompilerError(
+                        CompilerErrorType.SYNTAX,
+                        SourceLocation.from_ast_node(stmt, self._src_lines),
+                        err="'continue' outside loop",
+                    )
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        ConditionOpSuboperation.ALWAYS,
+                        (),
+                        (self.current_loop_continue,),
+                    )
+                )
 
             case _:
                 raise self._unsupported_stmt_error(stmt)
+
+    @contextmanager
+    def _loop_context(self, break_ref: LabelRef, continue_ref: LabelRef):
+        prev_break = self.current_loop_break
+        prev_continue = self.current_loop_continue
+
+        self.current_loop_break = break_ref
+        self.current_loop_continue = continue_ref
+
+        yield
+
+        self.current_loop_break = prev_break
+        self.current_loop_continue = prev_continue
 
     def _unsupported_expr_error(self, expr: ast.expr) -> CompilerError:
         ctx = getattr(expr, "ctx", None)
