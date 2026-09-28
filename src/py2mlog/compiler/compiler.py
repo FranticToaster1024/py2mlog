@@ -3,8 +3,8 @@ import ast
 from contextlib import contextmanager
 
 from .emitter import Emitter
-from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP
 from .error import CompilerError, CompilerErrorType, SourceLocation
+from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP, NEGATED_CMP_OPS_MAP
 
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
@@ -237,6 +237,54 @@ class Compiler:
             case _:
                 raise self._unsupported_expr_error(expr)
 
+    def compile_condition(
+        self, expr: ast.expr, reverse: bool, output_expr: MlogExpr | None = None
+    ) -> tuple[ConditionOpSuboperation, MlogExpr, MlogExpr]:
+        """
+        Compiles a condition for use in jumps.
+        If given expression is Compare, it is not fully compiled.
+        Instead, suboperation and operands are returned.
+        If `reverse` is `True`, the logical negation of the condition is returned.
+        """
+        if not isinstance(expr, ast.Compare) or len(expr.ops) > 1:
+            return (
+                ConditionOpSuboperation.EQUAL,
+                self.compile_expr(expr, output_expr),
+                MlogBoolLiteral(not reverse),
+            )
+
+        op = type(expr.ops[0])
+
+        if reverse:
+            reverse_op = NEGATED_CMP_OPS_MAP.get(op, None)
+            if reverse_op is None or reverse_op not in CMP_OP_MAP:
+                # TODO: add proper warning
+                print(
+                    f"Absent logical negation of {str(op)} in NEGATED_CMP_oPS_MAP, "
+                    f"or its logical negation {str(reverse_op)} was absent from CMP_OP_MAP."
+                )
+                print("Check operation_maps.py!")
+                return (
+                    ConditionOpSuboperation.NOT_EQUAL,
+                    self.compile_expr(expr, output_expr),
+                    MlogBoolLiteral(not reverse),
+                )
+
+            else:
+                op = reverse_op
+
+        Subops = CMP_OP_MAP.get(op, None)
+        if Subops is None:
+            raise self._unsupported_expr_error(expr)
+
+        condOpSubop = Subops[1]
+
+        return (
+            condOpSubop,
+            self.compile_expr(expr.left),
+            self.compile_expr(expr.comparators[0]),
+        )
+
     def compile_stmt(self, stmt: ast.stmt) -> None:
         match stmt:
             case ast.Expr(value=value):
@@ -278,16 +326,14 @@ class Compiler:
             case ast.If(test=test, body=body, orelse=orelse):
                 else_label, else_label_ref = self.emitter.new_label()
 
+                # reverse since this jump is for `else` branch
+                condOpSubop, left, right = self.compile_condition(test, True)
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        ConditionOpSuboperation.EQUAL,
+                        condOpSubop,
                         (),
-                        (
-                            else_label_ref,
-                            self.compile_expr(test),
-                            MlogBoolLiteral(False),
-                        ),
+                        (else_label_ref, left, right),
                     )
                 )
 
@@ -321,16 +367,15 @@ class Compiler:
                 loop_label, loop_label_ref = self.emitter.new_label()
                 break_label, break_label_ref = self.emitter.new_label()
 
+                # initial check to make it a proper while instead of do-while
+
+                condOpSubop, left, right = self.compile_condition(test, True)
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        ConditionOpSuboperation.EQUAL,
+                        condOpSubop,
                         (),
-                        (
-                            break_label_ref,
-                            self.compile_expr(test),
-                            MlogBoolLiteral(False),
-                        ),
+                        (break_label_ref, left, right),
                     )
                 )
 
@@ -340,16 +385,15 @@ class Compiler:
                     for stmt_ in body:
                         self.compile_stmt(stmt_)
 
+                # actual loop jump
+
+                condOpSubop, left, right = self.compile_condition(test, False)
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        ConditionOpSuboperation.EQUAL,
+                        condOpSubop,
                         (),
-                        (
-                            loop_label_ref,
-                            self.compile_expr(test),
-                            MlogBoolLiteral(True),
-                        ),
+                        (loop_label_ref, left, right),
                     )
                 )
 

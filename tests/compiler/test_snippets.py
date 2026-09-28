@@ -182,8 +182,7 @@ from py2mlog.mlog.codegen import generate_mlog
             """).strip(),
             "\n".join(
                 (
-                    "op lessThan __p2m_tmp0 x 5",
-                    "jump __p2m_label0 equal __p2m_tmp0 false",
+                    "jump __p2m_label0 greaterThanEq x 5",
                     "op add x x 1",
                     "__p2m_label0:",
                 )
@@ -236,7 +235,14 @@ from py2mlog.mlog.codegen import generate_mlog
             id="if-elif-else",
         ),
         pytest.param(
-            "if first_condition:\n    result = first\nelif second_condition:\n    result = second\nelif third_condition:\n    result = third",
+            dedent("""
+                if first_condition:
+                    result = first
+                elif second_condition:
+                    result = second
+                elif third_condition:
+                    result = third
+            """).strip(),
             "\n".join(
                 (
                     "jump __p2m_label0 equal first_condition false",
@@ -279,12 +285,10 @@ from py2mlog.mlog.codegen import generate_mlog
             """).strip(),
             "\n".join(
                 (
-                    "op lessThan __p2m_tmp0 count limit",
-                    "jump __p2m_label1 equal __p2m_tmp0 false",
+                    "jump __p2m_label1 greaterThanEq count limit",
                     "__p2m_label0:",
                     "op add count count 1",
-                    "op lessThan __p2m_tmp1 count limit",
-                    "jump __p2m_label0 equal __p2m_tmp1 true",
+                    "jump __p2m_label0 lessThan count limit",
                     "__p2m_label1:",
                 )
             ),

@@ -67,3 +67,12 @@ CMP_OP_MAP: dict[
         ConditionOpSuboperation.GREATER_THAN_OR_EQ,
     ),
 }
+
+NEGATED_CMP_OPS_MAP: dict[type[ast.cmpop], type[ast.cmpop]] = {
+    ast.Eq: ast.NotEq,
+    ast.NotEq: ast.Eq,
+    ast.Gt: ast.LtE,
+    ast.LtE: ast.Gt,
+    ast.Lt: ast.GtE,
+    ast.GtE: ast.Lt,
+}
