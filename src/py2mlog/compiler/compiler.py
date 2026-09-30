@@ -3,10 +3,11 @@ import ast
 from contextlib import contextmanager
 
 from .emitter import Emitter
+from .names import PREFIX_LABEL, VAR_ERR_MSG
 from .error import CompilerError, CompilerErrorType, SourceLocation
 from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP, NEGATED_CMP_OPS_MAP
 
-from py2mlog.mlog.instruction import Instruction
+from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
@@ -33,9 +34,19 @@ class Compiler:
         self.current_loop_break: LabelRef | None = None
         self.current_loop_continue: LabelRef | None = None
 
+        self.has_assert = False
+        self.assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
+        self.assert_error_label_ref = LabelRef(self.assert_error_label.name)
+
     def compile(self):
         for node in self._ast.body:
             self.compile_stmt(node)
+
+        if self.has_assert:
+            self.emitter.emit_instruction(
+                Instruction(InstructionType.END, None, (), ())
+            )
+            self._emit_assert_err()
 
     def compile_expr(self, expr: ast.expr, output_expr: MlogExpr | None = None):
         """
@@ -433,8 +444,52 @@ class Compiler:
                     )
                 )
 
+            case ast.Assert(test=test, msg=msg):
+                self.has_assert = True
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.SET,
+                        None,
+                        (),
+                        (
+                            VAR_ERR_MSG,
+                            (
+                                MlogStringLiteral("")
+                                if msg is None
+                                else self.compile_expr(msg)
+                            ),
+                        ),
+                    )
+                )
+
+                condOpSubop, left, right = self.compile_condition(test, True)
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        condOpSubop,
+                        (),
+                        (self.assert_error_label_ref, left, right),
+                    )
+                )
+
             case _:
                 raise self._unsupported_stmt_error(stmt)
+
+    def _emit_assert_err(self) -> None:
+        self.emitter.emit_label(self.assert_error_label)
+        self.emitter.emit_instruction(
+            Instruction(
+                InstructionType.PRINT,
+                None,
+                (),
+                (MlogStringLiteral("[red]AssertionError: {0}.[]"),),
+            )
+        )
+        self.emitter.emit_instruction(
+            Instruction(InstructionType.FORMAT, None, (), (VAR_ERR_MSG,))
+        )
+        self.emitter.emit_instruction(Instruction(InstructionType.STOP, None, (), ()))
 
     @contextmanager
     def _loop_context(self, break_ref: LabelRef, continue_ref: LabelRef):

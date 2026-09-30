@@ -370,6 +370,44 @@ from py2mlog.mlog.codegen import generate_mlog
             ),
             id="nested-while-break-continue",
         ),
+        pytest.param(
+            dedent("""
+                assert False, "abc"
+                x = 123
+            """).strip(),
+            "\n".join(
+                (
+                    'set __p2m_msg_err "abc"',
+                    "jump __p2m_label_err_assert equal false false",
+                    "set x 123",
+                    "end",
+                    "__p2m_label_err_assert:",
+                    'print "[red]AssertionError: {0}.[]"',
+                    "format __p2m_msg_err",
+                    "stop",
+                )
+            ),
+            id="assert-false-with-messsage",
+        ),
+        pytest.param(
+            dedent("""
+                assert x > y
+                x += y
+            """).strip(),
+            "\n".join(
+                (
+                    'set __p2m_msg_err ""',
+                    "jump __p2m_label_err_assert lessThanEq x y",
+                    "op add x x y",
+                    "end",
+                    "__p2m_label_err_assert:",
+                    'print "[red]AssertionError: {0}.[]"',
+                    "format __p2m_msg_err",
+                    "stop",
+                )
+            ),
+            id="assert-comparison-without-messsage",
+        ),
     ],
 )
 def test_snippet(src: str, expected: str):

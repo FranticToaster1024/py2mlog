@@ -1,6 +1,7 @@
 from py2mlog.mlog.instruction import MlogItem, Instruction, Label
 from py2mlog.mlog.mlog_expressions import MlogVar, LabelRef
 
+from .names import PREFIX_TMP, PREFIX_LABEL
 from .error import CompilerError, CompilerErrorType
 
 
@@ -12,12 +13,12 @@ class Emitter:
         self._label_counter = 0
 
     def new_tmp(self) -> MlogVar:
-        tmp = MlogVar(f"__p2m_tmp{self._tmp_counter}")
+        tmp = MlogVar(f"{PREFIX_TMP}{self._tmp_counter}")
         self._tmp_counter += 1
         return tmp
 
     def new_label(self) -> tuple[Label, LabelRef]:
-        label = Label(f"__p2m_label{self._label_counter}")
+        label = Label(f"{PREFIX_LABEL}{self._label_counter}")
         label_ref = LabelRef(label.name)
 
         self._label_counter += 1
