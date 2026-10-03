@@ -30,9 +30,11 @@ python = "3.10"
 dependencies = [
     "pytest",
     "black",
+    "pyright",
 ]
 
 [tool.hatch.envs.default.scripts]
 test = "pytest"
 format = "black ."
 format-check = "black . --check --diff"
+type-check = "pyright ."
