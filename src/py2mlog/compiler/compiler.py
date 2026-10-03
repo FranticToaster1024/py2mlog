@@ -1,8 +1,10 @@
 import ast
 
+from typing import cast
 from contextlib import contextmanager
 
 from .emitter import Emitter
+from .builtin_funcs import BUILTIN_FUNC_MAP
 from .names import PREFIX_LABEL, VAR_ERR_MSG
 from .error import CompilerError, CompilerErrorType, SourceLocation
 from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP, NEGATED_CMP_OPS_MAP
@@ -68,9 +70,6 @@ class Compiler:
         If `output_expr` is not `None`, it may be used as the result's location.
         """
 
-        def get_output_expr() -> MlogExpr:
-            return output_expr if output_expr is not None else self.emitter.new_tmp()
-
         match expr:
             case ast.Constant():
                 return self._compile_const(expr)
@@ -79,9 +78,9 @@ class Compiler:
                 return MlogVar(name)
 
             case ast.BinOp(op=op, left=left, right=right):
-                output_expr = get_output_expr()
+                output_expr = self._get_output_expr(output_expr)
 
-                opSubop = BIN_OP_MAP.get(type(op), None)
+                opSubop = BIN_OP_MAP.get(type(op))
 
                 if opSubop is None:
                     raise self._unsupported_expr_error(expr)
@@ -102,9 +101,9 @@ class Compiler:
                 return output_expr
 
             case ast.UnaryOp(op=op, operand=operand):
-                output_expr = get_output_expr()
+                output_expr = self._get_output_expr(output_expr)
 
-                factory = UNARY_OP_MAP.get(type(op), None)
+                factory = UNARY_OP_MAP.get(type(op))
 
                 if factory is None:
                     raise self._unsupported_expr_error(expr)
@@ -120,7 +119,7 @@ class Compiler:
                 return output_expr
 
             case ast.BoolOp(op=op, values=values):
-                output_expr = get_output_expr()
+                output_expr = self._get_output_expr(output_expr)
 
                 # python BoolOp returns operand value based on short-circuiting
                 if isinstance(op, ast.And):
@@ -163,14 +162,14 @@ class Compiler:
                 def get_subops(
                     i: int,
                 ) -> tuple[OperationSuboperation, ConditionOpSuboperation]:
-                    Subops = CMP_OP_MAP.get(type(ops[i]), None)
+                    Subops = CMP_OP_MAP.get(type(ops[i]))
 
                     if Subops is None:
                         raise self._unsupported_expr_error(expr)
 
                     return Subops
 
-                output_expr = get_output_expr()
+                output_expr = self._get_output_expr(output_expr)
 
                 opSubop = get_subops(0)[0]
 
@@ -211,6 +210,9 @@ class Compiler:
 
                 return output_expr
 
+            case ast.Call():
+                return self._compile_func_call(expr, self._get_output_expr(output_expr))
+
             case _:
                 raise self._unsupported_expr_error(expr)
 
@@ -231,13 +233,56 @@ class Compiler:
             case _:
                 raise self._unsupported_expr_error(const)
 
+    def _compile_func_call(
+        self, func_call: ast.Call, output_expr: MlogExpr
+    ) -> MlogExpr:
+        """Returns the function call's output expression."""
+
+        if not isinstance(func_call.func, ast.Name):
+            raise self._unsupported_expr_error(func_call)
+        func_name = func_call.func.id
+
+        func_kwargs = {kwarg.arg: kwarg.value for kwarg in func_call.keywords}
+        if None in func_kwargs:
+            raise self._unsupported_expr_error(func_kwargs[None])
+        func_kwargs = cast(dict[str, ast.expr], func_kwargs)
+
+        src_location = self._get_src_loc_from_node(func_call)
+
+        compile_builtin_func = BUILTIN_FUNC_MAP.get(func_name, ...)
+
+        if compile_builtin_func is ...:
+            raise self._unsupported_expr_error(
+                func_call, ": user-defined functions unsupported"
+            )
+        elif compile_builtin_func is None:
+            raise self._unsupported_expr_error(func_call, " unsupported builtin")
+        else:
+            output = compile_builtin_func(
+                self.emitter,
+                output_expr,
+                [self.compile_expr(arg) for arg in func_call.args],
+                {arg: self.compile_expr(val) for arg, val in func_kwargs.items()},
+                src_location,
+            )
+
+        if isinstance(output, LabelRef):
+            raise self._unsupported_expr_error(
+                func_call, ": non-inline function/builtin unsupported"
+            )
+
+        return output
+
+    def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:
+        return output_expr if output_expr is not None else self.emitter.new_tmp()
+
     def compile_target(self, expr: ast.expr) -> MlogExpr:
         """Resolves an expression in store context and returns its location."""
 
         if not isinstance(getattr(expr, "ctx", None), ast.Store):
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
-                SourceLocation.from_ast_node(expr, self._src_lines),
+                self._get_src_loc_from_node(expr),
                 err="Called compile_target() on an expression with store context",
             )
 
@@ -267,7 +312,7 @@ class Compiler:
         op = type(expr.ops[0])
 
         if reverse:
-            reverse_op = NEGATED_CMP_OPS_MAP.get(op, None)
+            reverse_op = NEGATED_CMP_OPS_MAP.get(op)
             if reverse_op is None or reverse_op not in CMP_OP_MAP:
                 # TODO: add proper warning
                 print(
@@ -284,7 +329,7 @@ class Compiler:
             else:
                 op = reverse_op
 
-        Subops = CMP_OP_MAP.get(op, None)
+        Subops = CMP_OP_MAP.get(op)
         if Subops is None:
             raise self._unsupported_expr_error(expr)
 
@@ -314,7 +359,7 @@ class Compiler:
                         )
                     )
             case ast.AugAssign(target=target, op=op, value=value):
-                opSubop = BIN_OP_MAP.get(type(op), None)
+                opSubop = BIN_OP_MAP.get(type(op))
 
                 if opSubop is None:
                     raise self._unsupported_stmt_error(
@@ -414,7 +459,7 @@ class Compiler:
                 if self.current_loop_break is None:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
-                        SourceLocation.from_ast_node(stmt, self._src_lines),
+                        self._get_src_loc_from_node(stmt),
                         err="'break' outside loop",
                     )
 
@@ -431,7 +476,7 @@ class Compiler:
                 if self.current_loop_continue is None:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
-                        SourceLocation.from_ast_node(stmt, self._src_lines),
+                        self._get_src_loc_from_node(stmt),
                         err="'continue' outside loop",
                     )
 
@@ -504,19 +549,22 @@ class Compiler:
         self.current_loop_break = prev_break
         self.current_loop_continue = prev_continue
 
-    def _unsupported_expr_error(self, expr: ast.expr) -> CompilerError:
+    def _unsupported_expr_error(self, expr: ast.expr, info: str = "") -> CompilerError:
         ctx = getattr(expr, "ctx", None)
         ctx_str = '(under context "{type(ctx).__name__}")' if ctx is not None else ""
 
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
-            SourceLocation.from_ast_node(expr, self._src_lines),
-            feature=f'Ast expression {ctx_str}"{type(expr).__name__}"',
+            self._get_src_loc_from_node(expr),
+            feature=f'Ast expression {ctx_str}"{type(expr).__name__}{info}"',
         )
 
     def _unsupported_stmt_error(self, stmt: ast.stmt, info: str = "") -> CompilerError:
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
-            SourceLocation.from_ast_node(stmt, self._src_lines),
+            self._get_src_loc_from_node(stmt),
             feature=f'Ast statement "{type(stmt).__name__}{info}"',
         )
+
+    def _get_src_loc_from_node(self, node: ast.expr | ast.stmt):
+        return SourceLocation.from_ast_node(node, self._src_lines)

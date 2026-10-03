@@ -408,6 +408,13 @@ from py2mlog.mlog.codegen import generate_mlog
             ),
             id="assert-comparison-without-messsage",
         ),
+        pytest.param(
+            dedent("""
+                x = abs(x)
+            """).strip(),
+            "\n".join(("op abs x x",)),
+            id="supported-builtin-functions",
+        ),
     ],
 )
 def test_snippet(src: str, expected: str):

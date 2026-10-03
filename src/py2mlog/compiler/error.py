@@ -8,14 +8,20 @@ from enum import Enum, auto
 class CompilerErrorType(Enum):
     UNSUPPORTED = auto()
     SYNTAX = auto()
+    BAD_BUILTIN_CALL = auto()
     INTERNAL = auto()
 
 
 _ERR_DESCRIPTIONS = {
     CompilerErrorType.UNSUPPORTED: "Unsupported feature: {feature}.",
     CompilerErrorType.SYNTAX: "A syntax error occurred: {err}.",
+    CompilerErrorType.BAD_BUILTIN_CALL: "Invalid builtin call.",
     CompilerErrorType.INTERNAL: "An internal error occurred: {err}.",
 }
+
+assert len(CompilerErrorType) == len(
+    _ERR_DESCRIPTIONS
+), "Missing CompilerErrorType description."
 
 
 @dataclass(frozen=True)
