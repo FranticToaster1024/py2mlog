@@ -17,10 +17,6 @@ pythonVersion = "3.10"
 extraPaths = ["./src"]
 
 
-[tool.black]
-target-version = ["py310"]
-
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/py2mlog"]
 
@@ -29,12 +25,9 @@ packages = ["src/py2mlog"]
 python = "3.10"
 dependencies = [
     "pytest",
-    "black",
     "pyright",
 ]
 
 [tool.hatch.envs.default.scripts]
 test = "pytest"
-format = "black ."
-format-check = "black . --check --diff"
 type-check = "pyright ."

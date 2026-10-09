@@ -3,8 +3,32 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  ci:
+  static-checks:
+    runs-on: ubuntu-latest
 
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.14
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.14"
+
+    - name: Install Hatch
+      run: pipx install hatch
+
+    - name: Check code formatting
+      run: hatch check fmt --check
+    
+    - name: Check lint rules
+      run: hatch check code
+    
+    - name: Check code typing
+      run: hatch run type-check
+
+  tests:
+    needs: static-checks
     runs-on: ubuntu-latest
 
     strategy:
@@ -23,12 +47,6 @@ jobs:
 
     - name: Install Hatch
       run: pipx install hatch
-
-    - name: Check code formatting
-      run: hatch run format-check
-    
-    - name: Check code typing
-      run: hatch run type-check
 
     - name: Test code
       run: hatch run test
