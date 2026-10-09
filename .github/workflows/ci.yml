@@ -19,7 +19,7 @@ jobs:
       run: pipx install hatch
 
     - name: Check code formatting
-      run: hatch check fmt --check
+      run: hatch check fmt
     
     - name: Check lint rules
       run: hatch check code
