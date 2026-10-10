@@ -7,6 +7,7 @@ from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
     CompilerError,
     CompilerErrorType,
+    HasPosition,
     SourceLocation,
 )
 from py2mlog.compiler.names import PREFIX_LABEL, VAR_ERR_MSG
@@ -269,7 +270,16 @@ class Compiler:
             raise self._unsupported_expr_error(func_call)
         func_name = func_call.func.id
 
-        func_kwargs = {kwarg.arg: kwarg.value for kwarg in func_call.keywords}
+        func_kwargs = {}
+        for kwarg in func_call.keywords:
+            if kwarg.arg in func_kwargs:
+                raise CompilerError(
+                    CompilerErrorType.SYNTAX,
+                    self._get_src_loc_from_node(kwarg),
+                    err="Duplicate keyword arguments",
+                )
+            func_kwargs[kwarg.arg] = kwarg.value
+
         if None in func_kwargs:
             raise self._unsupported_expr_error(func_kwargs[None])
         func_kwargs = cast("dict[str, ast.expr]", func_kwargs)
@@ -619,5 +629,5 @@ class Compiler:
             feature=f'Ast statement "{type(stmt).__name__}{info}"',
         )
 
-    def _get_src_loc_from_node(self, node: ast.expr | ast.stmt):
+    def _get_src_loc_from_node(self, node: HasPosition):
         return SourceLocation.from_ast_node(node, self._src_lines)

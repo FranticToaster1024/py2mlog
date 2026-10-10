@@ -413,9 +413,15 @@ from py2mlog.mlog.codegen import generate_mlog
         ),
         pytest.param(
             dedent("""
-                x = abs(x)
+                a = abs(a)
+                b = ord('a')
             """).strip(),
-            "\n".join(("op abs x x",)),
+            "\n".join(
+                (
+                    "op abs a a",
+                    'read b "a" 0',
+                )
+            ),
             id="supported-builtin-functions",
         ),
     ],

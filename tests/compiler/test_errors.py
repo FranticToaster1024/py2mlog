@@ -46,9 +46,11 @@ def test_error(src: str, error_type: CompilerErrorType):
             (
                 "abs()",
                 "abs(1, 2, 3)",
+                "ord()",
+                "ord(1, 2)",
             ),
-            CompilerErrorType.BAD_BUILTIN_CALL,
-            id="bad-builtin-call",
+            CompilerErrorType.BAD_CALL,
+            id="bad-builtin-calls",
         ),
     ],
 )

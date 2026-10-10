@@ -1,21 +1,27 @@
-import ast
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any
+from typing import Any, Protocol
+
+
+class HasPosition(Protocol):
+    lineno: int
+    col_offset: int
+    end_lineno: int | None
+    end_col_offset: int | None
 
 
 class CompilerErrorType(Enum):
     UNSUPPORTED = auto()
     SYNTAX = auto()
-    BAD_BUILTIN_CALL = auto()
+    BAD_CALL = auto()
     INTERNAL = auto()
 
 
 _ERR_DESCRIPTIONS = {
     CompilerErrorType.UNSUPPORTED: "Unsupported feature: {feature}.",
-    CompilerErrorType.SYNTAX: "A syntax error occurred: {err}.",
-    CompilerErrorType.BAD_BUILTIN_CALL: "Invalid builtin call.",
+    CompilerErrorType.SYNTAX: "Syntax error: {err}.",
+    CompilerErrorType.BAD_CALL: "Invalid function call: {err}.",
     CompilerErrorType.INTERNAL: "An internal error occurred: {err}.",
 }
 
@@ -34,7 +40,7 @@ class SourceLocation:
 
     @classmethod
     def from_ast_node(
-        cls, node: ast.expr | ast.stmt, src_lines: Sequence[str]
+        cls, node: HasPosition, src_lines: Sequence[str]
     ) -> "SourceLocation":
         return cls(
             node.lineno,
