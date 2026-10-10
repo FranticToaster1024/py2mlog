@@ -1,8 +1,7 @@
-from py2mlog.mlog.instruction import MlogItem, Instruction, Label
-from py2mlog.mlog.mlog_expressions import MlogVar, LabelRef
-
-from .names import PREFIX_TMP, PREFIX_LABEL
-from .error import CompilerError, CompilerErrorType
+from py2mlog.compiler.error import CompilerError, CompilerErrorType
+from py2mlog.compiler.names import PREFIX_LABEL, PREFIX_TMP
+from py2mlog.mlog.instruction import Instruction, Label, MlogItem
+from py2mlog.mlog.mlog_expressions import LabelRef, MlogVar
 
 
 class Emitter:
@@ -36,7 +35,7 @@ class Emitter:
                 err=f"Attempted to create invalid mlog instruction:\n{instr!r}",
             )
 
-    def _check_instruction_validity(self, instr: Instruction) -> bool:
+    def _check_instruction_validity(self, instr: Instruction) -> bool:  # noqa: ARG002
         # TODO: instruction validation
         return True
 
@@ -55,6 +54,7 @@ class Emitter:
         # TODO: align validity checking with mindustry/arc parseDouble validity
         try:
             float(label.name)
-            return False
         except ValueError:
             return True
+        else:
+            return False

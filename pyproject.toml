@@ -12,11 +12,6 @@ requires-python = ">=3.10"
 dependencies = []
 
 
-[tool.pyright]
-pythonVersion = "3.10"
-extraPaths = ["./src"]
-
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/py2mlog"]
 
@@ -31,3 +26,31 @@ dependencies = [
 [tool.hatch.envs.default.scripts]
 test = "pytest"
 type-check = "pyright ."
+
+
+[tool.hatch.envs.hatch-check-code]
+config-path = "ruff_defaults.toml"
+
+[tool.hatch.envs.hatch-check-fmt]
+config-path = "ruff_defaults.toml"
+
+
+[tool.ruff]
+target-version = "py310"
+extend = "ruff_defaults.toml"
+line-length = 80
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "SIM", "TCH", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["FLY002", "S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+extraPaths = ["./src"]

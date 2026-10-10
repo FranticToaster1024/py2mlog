@@ -1,26 +1,35 @@
 import ast
-
-from typing import cast
 from contextlib import contextmanager
+from typing import cast
 
-from .emitter import Emitter
-from .builtin_funcs import BUILTIN_FUNC_MAP
-from .names import PREFIX_LABEL, VAR_ERR_MSG
-from .error import CompilerError, CompilerErrorType, SourceLocation
-from .operation_maps import UNARY_OP_MAP, BIN_OP_MAP, CMP_OP_MAP, NEGATED_CMP_OPS_MAP
-
+from py2mlog.compiler.builtin_funcs import BUILTIN_FUNC_MAP
+from py2mlog.compiler.emitter import Emitter
+from py2mlog.compiler.error import (
+    CompilerError,
+    CompilerErrorType,
+    SourceLocation,
+)
+from py2mlog.compiler.names import PREFIX_LABEL, VAR_ERR_MSG
+from py2mlog.compiler.operation_maps import (
+    BIN_OP_MAP,
+    CMP_OP_MAP,
+    NEGATED_CMP_OPS_MAP,
+    UNARY_OP_MAP,
+)
 from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
-from py2mlog.mlog.suboperations import OperationSuboperation, ConditionOpSuboperation
 from py2mlog.mlog.mlog_expressions import (
-    MlogExpr,
     LabelRef,
     MlogBoolLiteral,
-    MlogBuiltin,
+    MlogExpr,
     MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
     MlogVar,
+)
+from py2mlog.mlog.suboperations import (
+    ConditionOpSuboperation,
+    OperationSuboperation,
 )
 
 
@@ -59,12 +68,16 @@ class Compiler:
 
         if output_expr is not None and result != output_expr:
             self.emitter.emit_instruction(
-                Instruction(InstructionType.SET, None, (), (output_expr, result))
+                Instruction(
+                    InstructionType.SET, None, (), (output_expr, result)
+                )
             )
 
         return result
 
-    def _compile_expr(self, expr: ast.expr, output_expr: MlogExpr | None) -> MlogExpr:
+    def _compile_expr(
+        self, expr: ast.expr, output_expr: MlogExpr | None
+    ) -> MlogExpr:
         """
         Compiles an expression and returns the result's location.
         If `output_expr` is not `None`, it may be used as the result's location.
@@ -80,15 +93,15 @@ class Compiler:
             case ast.BinOp(op=op, left=left, right=right):
                 output_expr = self._get_output_expr(output_expr)
 
-                opSubop = BIN_OP_MAP.get(type(op))
+                op_subop = BIN_OP_MAP.get(type(op))
 
-                if opSubop is None:
+                if op_subop is None:
                     raise self._unsupported_expr_error(expr)
 
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.OPERATION,
-                        opSubop,
+                        op_subop,
                         (),
                         (
                             output_expr,
@@ -125,14 +138,20 @@ class Compiler:
                 if isinstance(op, ast.And):
                     prev = self.compile_expr(values[0])
 
-                    for val in values[1:]:
-                        val = self.compile_expr(val)
+                    for raw_val in values[1:]:
+                        val = self.compile_expr(raw_val)
                         self.emitter.emit_instruction(
                             Instruction(
                                 InstructionType.SELECT,
                                 ConditionOpSuboperation.EQUAL,
                                 (),
-                                (output_expr, prev, MlogBoolLiteral(True), val, prev),
+                                (
+                                    output_expr,
+                                    prev,
+                                    MlogBoolLiteral(True),
+                                    val,
+                                    prev,
+                                ),
                             )
                         )
                         prev = output_expr
@@ -140,14 +159,20 @@ class Compiler:
                 elif isinstance(op, ast.Or):
                     prev = self.compile_expr(values[0])
 
-                    for val in values[1:]:
-                        val = self.compile_expr(val)
+                    for raw_val in values[1:]:
+                        val = self.compile_expr(raw_val)
                         self.emitter.emit_instruction(
                             Instruction(
                                 InstructionType.SELECT,
                                 ConditionOpSuboperation.EQUAL,
                                 (),
-                                (output_expr, val, MlogBoolLiteral(True), val, prev),
+                                (
+                                    output_expr,
+                                    val,
+                                    MlogBoolLiteral(True),
+                                    val,
+                                    prev,
+                                ),
                             )
                         )
                         prev = output_expr
@@ -162,23 +187,23 @@ class Compiler:
                 def get_subops(
                     i: int,
                 ) -> tuple[OperationSuboperation, ConditionOpSuboperation]:
-                    Subops = CMP_OP_MAP.get(type(ops[i]))
+                    subops = CMP_OP_MAP.get(type(ops[i]))
 
-                    if Subops is None:
+                    if subops is None:
                         raise self._unsupported_expr_error(expr)
 
-                    return Subops
+                    return subops
 
                 output_expr = self._get_output_expr(output_expr)
 
-                opSubop = get_subops(0)[0]
+                op_subop = get_subops(0)[0]
 
                 prev = self.compile_expr(comparators[0])
 
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.OPERATION,
-                        opSubop,
+                        op_subop,
                         (),
                         (
                             output_expr,
@@ -188,14 +213,14 @@ class Compiler:
                     )
                 )
 
-                for i, comparator in enumerate(comparators[1:], 1):
-                    condOpSubop = get_subops(i)[1]
+                for i, raw_comparator in enumerate(comparators[1:], 1):
+                    cond_op_subop = get_subops(i)[1]
 
-                    comparator = self.compile_expr(comparator)
+                    comparator = self.compile_expr(raw_comparator)
                     self.emitter.emit_instruction(
                         Instruction(
                             InstructionType.SELECT,
-                            condOpSubop,
+                            cond_op_subop,
                             (),
                             (
                                 output_expr,
@@ -211,7 +236,9 @@ class Compiler:
                 return output_expr
 
             case ast.Call():
-                return self._compile_func_call(expr, self._get_output_expr(output_expr))
+                return self._compile_func_call(
+                    expr, self._get_output_expr(output_expr)
+                )
 
             case _:
                 raise self._unsupported_expr_error(expr)
@@ -245,7 +272,7 @@ class Compiler:
         func_kwargs = {kwarg.arg: kwarg.value for kwarg in func_call.keywords}
         if None in func_kwargs:
             raise self._unsupported_expr_error(func_kwargs[None])
-        func_kwargs = cast(dict[str, ast.expr], func_kwargs)
+        func_kwargs = cast("dict[str, ast.expr]", func_kwargs)
 
         src_location = self._get_src_loc_from_node(func_call)
 
@@ -255,16 +282,17 @@ class Compiler:
             raise self._unsupported_expr_error(
                 func_call, ": user-defined functions unsupported"
             )
-        elif compile_builtin_func is None:
-            raise self._unsupported_expr_error(func_call, " unsupported builtin")
-        else:
-            output = compile_builtin_func(
-                self.emitter,
-                output_expr,
-                [self.compile_expr(arg) for arg in func_call.args],
-                {arg: self.compile_expr(val) for arg, val in func_kwargs.items()},
-                src_location,
+        if compile_builtin_func is None:
+            raise self._unsupported_expr_error(
+                func_call, " unsupported builtin"
             )
+        output = compile_builtin_func(
+            self.emitter,
+            output_expr,
+            [self.compile_expr(arg) for arg in func_call.args],
+            {arg: self.compile_expr(val) for arg, val in func_kwargs.items()},
+            src_location,
+        )
 
         if isinstance(output, LabelRef):
             raise self._unsupported_expr_error(
@@ -274,7 +302,9 @@ class Compiler:
         return output
 
     def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:
-        return output_expr if output_expr is not None else self.emitter.new_tmp()
+        return (
+            output_expr if output_expr is not None else self.emitter.new_tmp()
+        )
 
     def compile_target(self, expr: ast.expr) -> MlogExpr:
         """Resolves an expression in store context and returns its location."""
@@ -294,7 +324,11 @@ class Compiler:
                 raise self._unsupported_expr_error(expr)
 
     def compile_condition(
-        self, expr: ast.expr, reverse: bool, output_expr: MlogExpr | None = None
+        self,
+        expr: ast.expr,
+        *,
+        reverse: bool,
+        output_expr: MlogExpr | None = None,
     ) -> tuple[ConditionOpSuboperation, MlogExpr, MlogExpr]:
         """
         Compiles a condition for use in jumps.
@@ -315,28 +349,27 @@ class Compiler:
             reverse_op = NEGATED_CMP_OPS_MAP.get(op)
             if reverse_op is None or reverse_op not in CMP_OP_MAP:
                 # TODO: add proper warning
-                print(
-                    f"Absent logical negation of {str(op)} in NEGATED_CMP_oPS_MAP, "
-                    f"or its logical negation {str(reverse_op)} was absent from CMP_OP_MAP."
+                print(  # noqa: T201
+                    f"Absent logical negation of {op!s} in NEGATED_CMP_oPS_MAP, "
+                    f"or its logical negation {reverse_op!s} was absent from CMP_OP_MAP."
                 )
-                print("Check operation_maps.py!")
+                print("Check operation_maps.py!")  # noqa: T201
                 return (
                     ConditionOpSuboperation.NOT_EQUAL,
                     self.compile_expr(expr, output_expr),
                     MlogBoolLiteral(not reverse),
                 )
 
-            else:
-                op = reverse_op
+            op = reverse_op
 
-        Subops = CMP_OP_MAP.get(op)
-        if Subops is None:
+        subops = CMP_OP_MAP.get(op)
+        if subops is None:
             raise self._unsupported_expr_error(expr)
 
-        condOpSubop = Subops[1]
+        cond_op_subop = subops[1]
 
         return (
-            condOpSubop,
+            cond_op_subop,
             self.compile_expr(expr.left),
             self.compile_expr(expr.comparators[0]),
         )
@@ -347,7 +380,9 @@ class Compiler:
                 self.compile_expr(value)
 
             case ast.Assign(targets=targets, value=value):
-                value_expr = self.compile_expr(value, self.compile_target(targets[0]))
+                value_expr = self.compile_expr(
+                    value, self.compile_target(targets[0])
+                )
 
                 for target in targets[1:]:
                     self.emitter.emit_instruction(
@@ -359,17 +394,17 @@ class Compiler:
                         )
                     )
             case ast.AugAssign(target=target, op=op, value=value):
-                opSubop = BIN_OP_MAP.get(type(op))
+                op_subop = BIN_OP_MAP.get(type(op))
 
-                if opSubop is None:
+                if op_subop is None:
                     raise self._unsupported_stmt_error(
-                        stmt, f" with operation {opSubop}"
+                        stmt, f" with operation {op_subop}"
                     )
 
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.OPERATION,
-                        opSubop,
+                        op_subop,
                         (),
                         (
                             self.compile_target(target),
@@ -383,11 +418,13 @@ class Compiler:
                 else_label, else_label_ref = self.emitter.new_label()
 
                 # reverse since this jump is for `else` branch
-                condOpSubop, left, right = self.compile_condition(test, True)
+                cond_op_subop, left, right = self.compile_condition(
+                    test, reverse=True
+                )
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        condOpSubop,
+                        cond_op_subop,
                         (),
                         (else_label_ref, left, right),
                     )
@@ -397,7 +434,9 @@ class Compiler:
                     self.compile_stmt(stmt_)
 
                 if orelse:
-                    skip_else_label, skip_else_label_ref = self.emitter.new_label()
+                    skip_else_label, skip_else_label_ref = (
+                        self.emitter.new_label()
+                    )
 
                     self.emitter.emit_instruction(
                         Instruction(
@@ -425,11 +464,13 @@ class Compiler:
 
                 # initial check to make it a proper while instead of do-while
 
-                condOpSubop, left, right = self.compile_condition(test, True)
+                cond_op_subop, left, right = self.compile_condition(
+                    test, reverse=True
+                )
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        condOpSubop,
+                        cond_op_subop,
                         (),
                         (break_label_ref, left, right),
                     )
@@ -443,11 +484,13 @@ class Compiler:
 
                 # actual loop jump
 
-                condOpSubop, left, right = self.compile_condition(test, False)
+                cond_op_subop, left, right = self.compile_condition(
+                    test, reverse=False
+                )
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        condOpSubop,
+                        cond_op_subop,
                         (),
                         (loop_label_ref, left, right),
                     )
@@ -508,11 +551,13 @@ class Compiler:
                     )
                 )
 
-                condOpSubop, left, right = self.compile_condition(test, True)
+                cond_op_subop, left, right = self.compile_condition(
+                    test, reverse=True
+                )
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
-                        condOpSubop,
+                        cond_op_subop,
                         (),
                         (self.assert_error_label_ref, left, right),
                     )
@@ -534,7 +579,9 @@ class Compiler:
         self.emitter.emit_instruction(
             Instruction(InstructionType.FORMAT, None, (), (VAR_ERR_MSG,))
         )
-        self.emitter.emit_instruction(Instruction(InstructionType.STOP, None, (), ()))
+        self.emitter.emit_instruction(
+            Instruction(InstructionType.STOP, None, (), ())
+        )
 
     @contextmanager
     def _loop_context(self, break_ref: LabelRef, continue_ref: LabelRef):
@@ -549,9 +596,13 @@ class Compiler:
         self.current_loop_break = prev_break
         self.current_loop_continue = prev_continue
 
-    def _unsupported_expr_error(self, expr: ast.expr, info: str = "") -> CompilerError:
+    def _unsupported_expr_error(
+        self, expr: ast.expr, info: str = ""
+    ) -> CompilerError:
         ctx = getattr(expr, "ctx", None)
-        ctx_str = '(under context "{type(ctx).__name__}")' if ctx is not None else ""
+        ctx_str = (
+            '(under context "{type(ctx).__name__}")' if ctx is not None else ""
+        )
 
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
@@ -559,7 +610,9 @@ class Compiler:
             feature=f'Ast expression {ctx_str}"{type(expr).__name__}{info}"',
         )
 
-    def _unsupported_stmt_error(self, stmt: ast.stmt, info: str = "") -> CompilerError:
+    def _unsupported_stmt_error(
+        self, stmt: ast.stmt, info: str = ""
+    ) -> CompilerError:
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
             self._get_src_loc_from_node(stmt),

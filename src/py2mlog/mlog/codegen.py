@@ -1,18 +1,19 @@
 from collections.abc import Iterator
 
-from .instruction import Instruction, Label, MlogItem
-from .param_map import PARAM_MAP, ParamType
-from .mlog_expressions import (
+from py2mlog.compiler.error import CompilerError, CompilerErrorType
+from py2mlog.mlog.instruction import Instruction, Label, MlogItem
+from py2mlog.mlog.mlog_expressions import (
     LabelRef,
-    MlogVar,
+    MlogBoolLiteral,
     MlogBuiltin,
+    MlogColorLiteral,
+    MlogExpr,
+    MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
-    MlogBoolLiteral,
-    MlogColorLiteral,
-    MlogNullLiteral,
-    MlogExpr,
+    MlogVar,
 )
+from py2mlog.mlog.param_map import PARAM_MAP, ParamType
 
 
 def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
@@ -24,9 +25,14 @@ def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
     if not isinstance(instr_entry, dict):
         return instr_entry
 
-    assert instr.suboperation is not None, "Invalid param_map/invalid instruction"
+    if instr.suboperation is None:
+        raise CompilerError(
+            CompilerErrorType.INTERNAL,
+            None,
+            err="Invalid param_map/invalid instruction",
+        )
 
-    param_order = instr_entry.get(instr.suboperation, None)
+    param_order = instr_entry.get(instr.suboperation)
 
     if param_order is not None:
         return param_order
@@ -57,7 +63,11 @@ def _arg_to_str(arg: MlogExpr) -> str:
         case MlogVar(name):
             return name
         case _:
-            raise ValueError("Unknown arg type")
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err=f"Unknown arg type {type(arg).__name__} of {arg!r}",
+            )
 
 
 # list of all args including suboperation & selectable params
@@ -86,8 +96,10 @@ def _build_arg_list(
                     yield "_"
 
         except StopIteration:
-            raise ValueError(
-                f"Instruction {instr} did not match PARAM_MAP: missing {param_type}."
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err=f"Instruction {instr!r} did not match PARAM_MAP: missing {param_type}.",
             ) from None
 
 
@@ -97,17 +109,16 @@ def _generate_mlog_from_instruction(instr: Instruction) -> str:
     if param_order is not None:
         return " ".join(_build_arg_list(instr, param_order))
 
-    else:
-        arg_list = [
-            instr.type.value,
-            *(a.value for a in instr.selectable_args),
-            *map(_arg_to_str, instr.args),
-        ]
+    arg_list = [
+        instr.type.value,
+        *(a.value for a in instr.selectable_args),
+        *map(_arg_to_str, instr.args),
+    ]
 
-        if instr.suboperation is not None:
-            arg_list.insert(1, instr.suboperation.value)
+    if instr.suboperation is not None:
+        arg_list.insert(1, instr.suboperation.value)
 
-        return " ".join(arg_list)
+    return " ".join(arg_list)
 
 
 def generate_mlog(mlog_items: list[MlogItem]) -> str:

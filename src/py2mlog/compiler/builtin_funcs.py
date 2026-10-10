@@ -1,11 +1,14 @@
 from collections.abc import Callable
 
-from .emitter import Emitter
-from .error import CompilerError, CompilerErrorType, SourceLocation
-
+from py2mlog.compiler.emitter import Emitter
+from py2mlog.compiler.error import (
+    CompilerError,
+    CompilerErrorType,
+    SourceLocation,
+)
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
-from py2mlog.mlog.mlog_expressions import MlogExpr, LabelRef
+from py2mlog.mlog.mlog_expressions import LabelRef, MlogExpr
 from py2mlog.mlog.suboperations import OperationSuboperation
 
 
@@ -33,7 +36,13 @@ def builtin_abs(
 BUILTIN_FUNC_MAP: dict[
     str,
     Callable[
-        [Emitter, MlogExpr, list[MlogExpr], dict[str, MlogExpr], SourceLocation],
+        [
+            Emitter,
+            MlogExpr,
+            list[MlogExpr],
+            dict[str, MlogExpr],
+            SourceLocation,
+        ],
         MlogExpr | LabelRef,
     ]
     | None,

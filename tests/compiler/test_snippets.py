@@ -42,7 +42,10 @@ from py2mlog.mlog.codegen import generate_mlog
         pytest.param(
             "result = (left + right) * factor",
             "\n".join(
-                ("op add __p2m_tmp0 left right", "op mul result __p2m_tmp0 factor")
+                (
+                    "op add __p2m_tmp0 left right",
+                    "op mul result __p2m_tmp0 factor",
+                )
             ),
             id="nested-binary-operation",
         ),

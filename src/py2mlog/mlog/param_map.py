@@ -1,8 +1,17 @@
 from enum import Enum, auto
 from typing import TypeAlias
 
-from .instruction_types import InstructionType
-from .suboperations import *
+from py2mlog.mlog.instruction_types import InstructionType
+from py2mlog.mlog.suboperations import (
+    ConditionOpSuboperation,
+    EffectSuboperation,
+    FetchSuboperation,
+    FlushMessageSuboperation,
+    PlaySoundSuboperation,
+    SetRuleSuboperation,
+    Suboperation,
+    UnitLocateSuboperation,
+)
 
 
 class ParamType(Enum):
@@ -12,12 +21,12 @@ class ParamType(Enum):
     FILLER = auto()
 
 
-_arg_order: TypeAlias = tuple[ParamType, ...]
+_ArgOrder: TypeAlias = tuple[ParamType, ...]
 # default arg order:
 # [*suboperation], [*selectable], *var
 PARAM_MAP: dict[
     InstructionType,
-    _arg_order | dict[Suboperation | tuple[Suboperation, ...], _arg_order],
+    _ArgOrder | dict[Suboperation | tuple[Suboperation, ...], _ArgOrder],
 ] = {
     InstructionType.SELECT: {
         ConditionOpSuboperation.ALWAYS: (

@@ -1,8 +1,8 @@
 import ast
-
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
 from enum import Enum, auto
+from typing import Any
 
 
 class CompilerErrorType(Enum):
@@ -19,9 +19,9 @@ _ERR_DESCRIPTIONS = {
     CompilerErrorType.INTERNAL: "An internal error occurred: {err}.",
 }
 
-assert len(CompilerErrorType) == len(
-    _ERR_DESCRIPTIONS
-), "Missing CompilerErrorType description."
+assert len(CompilerErrorType) == len(_ERR_DESCRIPTIONS), (  # noqa:S101
+    "Missing CompilerErrorType description."
+)
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,6 @@ class SourceLocation:
 
 
 class CompilerError(Exception):
-
     def __init__(
         self,
         error: CompilerErrorType,
@@ -82,9 +81,7 @@ class CompilerError(Exception):
         if single_line:
             message += f"At line {self.location.line_no}"
         else:
-            message += (
-                f"At lines {self.location.line_no} to {self.location.end_line_no}"
-            )
+            message += f"At lines {self.location.line_no} to {self.location.end_line_no}"
 
         if self.location.line is not None:
             message += f":\n{self.location.line}"

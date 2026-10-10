@@ -1,11 +1,45 @@
 import pytest
 
-from py2mlog.mlog.instruction_types import InstructionType
-from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.codegen import generate_mlog
-from py2mlog.mlog.selectable_params import *
-from py2mlog.mlog.mlog_expressions import *
-from py2mlog.mlog.suboperations import *
+from py2mlog.mlog.instruction import Instruction, Label
+from py2mlog.mlog.instruction_types import InstructionType
+from py2mlog.mlog.mlog_expressions import (
+    LabelRef,
+    MlogBoolLiteral,
+    MlogBuiltin,
+    MlogColorLiteral,
+    MlogNullLiteral,
+    MlogNumberLiteral,
+    MlogStringLiteral,
+    MlogVar,
+)
+from py2mlog.mlog.selectable_params import (
+    LookupSelectableParam,
+    MakeMarkerSelectableParam,
+    QuerySelectableParam,
+    RadarSortSelectableParam,
+    RadarTargetSelectableParam,
+    TileLayerSelectableParam,
+    UnitLocateBuildingSelectableParam,
+)
+from py2mlog.mlog.suboperations import (
+    ApplyStatusSuboperation,
+    ConditionOpSuboperation,
+    ControlSuboperation,
+    CutsceneSuboperation,
+    DrawSuboperation,
+    EffectSuboperation,
+    FetchSuboperation,
+    FlushMessageSuboperation,
+    OperationSuboperation,
+    PlaySoundSuboperation,
+    QuerySuboperation,
+    SetBlockSuboperation,
+    SetMarkerSuboperation,
+    SetRuleSuboperation,
+    UnitControlSuboperation,
+    UnitLocateSuboperation,
+)
 
 
 @pytest.mark.parametrize(
@@ -17,13 +51,21 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.READ,
                     None,
                     (),
-                    (MlogVar("result1"), MlogVar("cell1"), MlogNumberLiteral(0)),
+                    (
+                        MlogVar("result1"),
+                        MlogVar("cell1"),
+                        MlogNumberLiteral(0),
+                    ),
                 ),
                 Instruction(
                     InstructionType.WRITE,
                     None,
                     (),
-                    (MlogVar("result2"), MlogVar("cell2"), MlogNumberLiteral(1)),
+                    (
+                        MlogVar("result2"),
+                        MlogVar("cell2"),
+                        MlogNumberLiteral(1),
+                    ),
                 ),
                 Instruction(
                     InstructionType.DRAW,
@@ -47,12 +89,20 @@ from py2mlog.mlog.suboperations import *
                     ),
                 ),
                 Instruction(
-                    InstructionType.PRINT, None, (), (MlogStringLiteral("frog"),)
+                    InstructionType.PRINT,
+                    None,
+                    (),
+                    (MlogStringLiteral("frog"),),
                 ),
                 Instruction(
-                    InstructionType.PRINT_CHAR, None, (), (MlogNumberLiteral(65),)
+                    InstructionType.PRINT_CHAR,
+                    None,
+                    (),
+                    (MlogNumberLiteral(65),),
                 ),
-                Instruction(InstructionType.FORMAT, None, (), (MlogVar("frog2"),)),
+                Instruction(
+                    InstructionType.FORMAT, None, (), (MlogVar("frog2"),)
+                ),
             ],
             "\n".join(
                 (
@@ -73,7 +123,10 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.DRAW_FLUSH, None, (), (MlogVar("display1"),)
                 ),
                 Instruction(
-                    InstructionType.PRINT_FLUSH, None, (), (MlogVar("message1"),)
+                    InstructionType.PRINT_FLUSH,
+                    None,
+                    (),
+                    (MlogVar("message1"),),
                 ),
                 Instruction(
                     InstructionType.GET_LINK,
@@ -96,13 +149,21 @@ from py2mlog.mlog.suboperations import *
                         RadarTargetSelectableParam.FLYING,
                         RadarSortSelectableParam.MAX_HEALTH,
                     ),
-                    (MlogVar("turret1"), MlogNumberLiteral(1), MlogVar("enemy")),
+                    (
+                        MlogVar("turret1"),
+                        MlogNumberLiteral(1),
+                        MlogVar("enemy"),
+                    ),
                 ),
                 Instruction(
                     InstructionType.SENSOR,
                     None,
                     (),
-                    (MlogVar("count"), MlogVar("block2"), MlogBuiltin("copper")),
+                    (
+                        MlogVar("count"),
+                        MlogVar("block2"),
+                        MlogBuiltin("copper"),
+                    ),
                 ),
             ],
             "\n".join(
@@ -226,7 +287,9 @@ from py2mlog.mlog.suboperations import *
         ),
         pytest.param(
             [
-                Instruction(InstructionType.WAIT, None, (), (MlogNumberLiteral(0),)),
+                Instruction(
+                    InstructionType.WAIT, None, (), (MlogNumberLiteral(0),)
+                ),
                 Instruction(InstructionType.WAIT, None, (), (MlogVar("time"),)),
                 Instruction(InstructionType.STOP, None, (), ()),
                 Instruction(InstructionType.END, None, (), ()),
@@ -234,7 +297,11 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.JUMP,
                     ConditionOpSuboperation.EQUAL,
                     (),
-                    (MlogNumberLiteral(67), MlogVar("x"), MlogBuiltin("copper")),
+                    (
+                        MlogNumberLiteral(67),
+                        MlogVar("x"),
+                        MlogBuiltin("copper"),
+                    ),
                 ),
                 Instruction(
                     InstructionType.JUMP,
@@ -267,7 +334,10 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.UNIT_BIND, None, (), (MlogVar("unitType"),)
                 ),
                 Instruction(
-                    InstructionType.UNIT_CONTROL, UnitControlSuboperation.IDLE, (), ()
+                    InstructionType.UNIT_CONTROL,
+                    UnitControlSuboperation.IDLE,
+                    (),
+                    (),
                 ),
                 Instruction(
                     InstructionType.UNIT_CONTROL,
@@ -279,7 +349,11 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.UNIT_CONTROL,
                     UnitControlSuboperation.ITEM_TAKE,
                     (),
-                    (MlogVar("nucleus1"), MlogVar("itemType"), MlogNumberLiteral(99)),
+                    (
+                        MlogVar("nucleus1"),
+                        MlogVar("itemType"),
+                        MlogNumberLiteral(99),
+                    ),
                 ),
                 Instruction(
                     InstructionType.UNIT_RADAR,
@@ -349,13 +423,21 @@ from py2mlog.mlog.suboperations import *
                     InstructionType.SET_BLOCK,
                     SetBlockSuboperation.ORE,
                     (),
-                    (MlogBuiltin("air"), MlogNumberLiteral(6), MlogNumberLiteral(7)),
+                    (
+                        MlogBuiltin("air"),
+                        MlogNumberLiteral(6),
+                        MlogNumberLiteral(7),
+                    ),
                 ),
                 Instruction(
                     InstructionType.GET_BLOCK,
                     None,
                     (TileLayerSelectableParam.FLOOR,),
-                    (MlogVar("result1"), MlogNumberLiteral(0), MlogNumberLiteral(0)),
+                    (
+                        MlogVar("result1"),
+                        MlogNumberLiteral(0),
+                        MlogNumberLiteral(0),
+                    ),
                 ),
                 Instruction(
                     InstructionType.SPAWN_UNIT,
@@ -556,7 +638,10 @@ from py2mlog.mlog.suboperations import *
                     ),
                 ),
                 Instruction(
-                    InstructionType.LOCALE_PRINT, None, (), (MlogStringLiteral("name"),)
+                    InstructionType.LOCALE_PRINT,
+                    None,
+                    (),
+                    (MlogStringLiteral("name"),),
                 ),
             ],
             "\n".join(

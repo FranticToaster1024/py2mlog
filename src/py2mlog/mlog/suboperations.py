@@ -7,7 +7,7 @@ In `control enabled block1 0`, `enabled` is the suboperation.
 
 from enum import Enum
 
-from .instruction_types import InstructionType
+from py2mlog.mlog.instruction_types import InstructionType
 
 
 class Suboperation(Enum):

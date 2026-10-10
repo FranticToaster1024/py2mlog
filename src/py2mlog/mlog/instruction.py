@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from typing import TypeAlias
 
-from .instruction_types import InstructionType
-from .mlog_expressions import MlogExpr
-from .suboperations import Suboperation
-from .selectable_params import SelectableParam
+from py2mlog.mlog.instruction_types import InstructionType
+from py2mlog.mlog.mlog_expressions import MlogExpr
+from py2mlog.mlog.selectable_params import SelectableParam
+from py2mlog.mlog.suboperations import Suboperation
 
 
 @dataclass(frozen=True)
