@@ -12,6 +12,10 @@ requires-python = ">=3.10"
 dependencies = []
 
 
+[project.scripts]
+py2mlog = "py2mlog.__main__:main"
+
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/py2mlog"]
 
