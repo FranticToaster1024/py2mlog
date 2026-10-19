@@ -14,9 +14,8 @@ from py2mlog.mlog.suboperations import (
 )
 
 UNARY_OP_MAP: dict[
-    type[ast.unaryop], Callable[[MlogExpr, MlogExpr], Instruction | None]
+    type[ast.unaryop], Callable[[MlogExpr, MlogExpr], Instruction]
 ] = {
-    ast.UAdd: lambda *_: None,
     ast.USub: lambda in_expr, out_expr: Instruction(
         InstructionType.OPERATION,
         OperationSuboperation.SUB,

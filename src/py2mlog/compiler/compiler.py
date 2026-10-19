@@ -115,18 +115,25 @@ class Compiler:
                 return output_expr
 
             case ast.UnaryOp(op=op, operand=operand):
+                compiled_operand = self.compile_expr(operand)
+
+                # special cases handled separately to keep the map clean
+                if isinstance(op, ast.UAdd):
+                    return self._resolve_output_expr(
+                        output_expr, compiled_operand
+                    )
+                if isinstance(compiled_operand, MlogNumberLiteral):
+                    return self._resolve_output_expr(
+                        output_expr, MlogNumberLiteral(-compiled_operand.value)
+                    )
+
                 output_expr = self._get_output_expr(output_expr)
 
                 factory = UNARY_OP_MAP.get(type(op))
-
                 if factory is None:
                     raise self._unsupported_expr_error(expr)
 
-                compiled_operand = self.compile_expr(operand)
                 instr = factory(compiled_operand, output_expr)
-
-                if instr is None:
-                    return compiled_operand
 
                 self.emitter.emit_instruction(instr)
 
@@ -241,6 +248,68 @@ class Compiler:
                     expr, self._get_output_expr(output_expr)
                 )
 
+            case ast.IfExp(test=test, body=body, orelse=orelse):
+                output_expr = self._get_output_expr(output_expr)
+
+                if Compiler._is_non_emitting(
+                    body
+                ) and Compiler._is_non_emitting(orelse):
+                    cond_op_subop, left, right = self.compile_condition(
+                        test, reverse=False
+                    )
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.SELECT,
+                            cond_op_subop,
+                            (),
+                            (
+                                output_expr,
+                                left,
+                                right,
+                                self.compile_expr(body, None),
+                                self.compile_expr(orelse, None),
+                            ),
+                        )
+                    )
+
+                    return output_expr
+
+                else_label, else_label_ref = self.emitter.new_label()
+
+                # reverse for else branch
+                cond_op_subop, left, right = self.compile_condition(
+                    test, reverse=True
+                )
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        cond_op_subop,
+                        (),
+                        (else_label_ref, left, right),
+                    )
+                )
+
+                self.compile_expr(body, output_expr)
+
+                skip_else_label, skip_else_label_ref = self.emitter.new_label()
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.JUMP,
+                        ConditionOpSuboperation.ALWAYS,
+                        (),
+                        (skip_else_label_ref,),
+                    )
+                )
+
+                self.emitter.emit_label(else_label)
+
+                self.compile_expr(orelse, output_expr)
+
+                self.emitter.emit_label(skip_else_label)
+
+                return output_expr
+
             case _:
                 raise self._unsupported_expr_error(expr)
 
@@ -311,9 +380,35 @@ class Compiler:
 
         return output
 
+    def _resolve_output_expr(
+        self, output_expr: MlogExpr | None, expr: MlogExpr
+    ) -> MlogExpr:
+        """
+        If `output_expr` is not `None`, it is set to `expr` and returned.
+        Otherwise, returns `expr` to be used as the output expression.
+        """
+        if output_expr is None:
+            return expr
+
+        self.emitter.emit_instruction(
+            Instruction(InstructionType.SET, None, (), (output_expr, expr))
+        )
+        return output_expr
+
     def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:
         return (
             output_expr if output_expr is not None else self.emitter.new_tmp()
+        )
+
+    @staticmethod
+    def _is_non_emitting(expr: ast.expr) -> bool:
+        if isinstance(expr, (ast.Name, ast.Constant)):
+            return True
+        return bool(
+            isinstance(expr, ast.UnaryOp)
+            and isinstance(expr.op, ast.USub)
+            and isinstance(expr.operand, ast.Constant)
+            and isinstance(expr.operand.value, (int, float))
         )
 
     def compile_target(self, expr: ast.expr) -> MlogExpr:
@@ -341,7 +436,7 @@ class Compiler:
         output_expr: MlogExpr | None = None,
     ) -> tuple[ConditionOpSuboperation, MlogExpr, MlogExpr]:
         """
-        Compiles a condition for use in jumps.
+        Compiles a condition for ConditionOpSuboperation.
         If given expression is Compare, it is not fully compiled.
         Instead, suboperation and operands are returned.
         If `reverse` is `True`, the logical negation of the condition is returned.

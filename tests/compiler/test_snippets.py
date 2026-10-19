@@ -16,6 +16,7 @@ from py2mlog.mlog.codegen import generate_mlog
                 (
                     "integer = 123",
                     "float_ = 12.3",
+                    "negative = -1.23",
                     'string = "str"',
                     "boolean = True",
                     "none = None",
@@ -26,6 +27,7 @@ from py2mlog.mlog.codegen import generate_mlog
                 (
                     "set integer 123",
                     "set float_ 12.3",
+                    "set negative -1.23",
                     'set string "str"',
                     "set boolean true",
                     "set none null",
@@ -423,6 +425,55 @@ from py2mlog.mlog.codegen import generate_mlog
                 )
             ),
             id="supported-builtin-functions",
+        ),
+        pytest.param(
+            "\n".join(
+                (
+                    "a = b if condition else d",
+                    'a = 1 if b == c else "str"',
+                    "a = None if b < c else -1.23",
+                )
+            ),
+            "\n".join(
+                (
+                    "select a equal condition true b d",
+                    'select a equal b c 1 "str"',
+                    "select a lessThan b c null -1.23",
+                )
+            ),
+            id="ifexp-to-select",
+        ),
+        pytest.param(
+            "a = abs(b) + c + d if e >= f else g * h - i * j",
+            "\n".join(
+                (
+                    "jump __p2m_label0 lessThan e f",
+                    "op abs __p2m_tmp1 b",
+                    "op add __p2m_tmp0 __p2m_tmp1 c",
+                    "op add a __p2m_tmp0 d",
+                    "jump __p2m_label1 always",
+                    "__p2m_label0:",
+                    "op mul __p2m_tmp2 g h",
+                    "op mul __p2m_tmp3 i j",
+                    "op sub a __p2m_tmp2 __p2m_tmp3",
+                    "__p2m_label1:",
+                )
+            ),
+            id="ifexp-to-branches",
+        ),
+        pytest.param(
+            "a = b if condition1 else (c if condition2 else d)",
+            "\n".join(
+                (
+                    "jump __p2m_label0 equal condition1 false",
+                    "set a b",
+                    "jump __p2m_label1 always",
+                    "__p2m_label0:",
+                    "select a equal condition2 true c d",
+                    "__p2m_label1:",
+                )
+            ),
+            id="nested-ifexp",
         ),
     ],
 )
