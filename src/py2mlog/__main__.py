@@ -1,10 +1,19 @@
 import argparse
 import ast
+import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from traceback import print_exception
 
 from py2mlog.compiler.compiler import Compiler
 from py2mlog.compiler.emitter import Emitter
+from py2mlog.compiler.error import CompilerError
 from py2mlog.mlog.codegen import generate_mlog
+
+try:
+    VERSION = version("py2mlog")
+except PackageNotFoundError:
+    VERSION = "unknown"
 
 
 def _compile_file(
@@ -29,17 +38,30 @@ def _compile_file(
         with open(target, encoding="utf-8") as f:
             src = f.read()
     except PermissionError:
-        parser.error(f"Could not read '{target.resolve()}'.")
+        parser.error(f"Could not read from '{target.resolve()}'.")
     except FileNotFoundError:
         parser.error(f"Could not find '{target.resolve()}'.")
     except OSError as e:
         parser.error(
-            f"An OS error occurred while reading '{target.resolve()}': {e}"
+            f"An OS error occurred while reading from '{target.resolve()}': {e}"
         )
 
     emitter = Emitter()
-    Compiler(src, ast.parse(src), emitter).compile()
-    mlog = generate_mlog(emitter.instructions)
+    try:
+        Compiler(src, ast.parse(src), emitter).compile()
+        mlog = generate_mlog(emitter.instructions)
+    except SyntaxError as e:
+        sys.stderr.write(
+            f"A syntax error occurred while compiling {target.name}:\n\n"
+        )
+        print_exception(e, limit=0)
+        sys.exit(1)
+    except CompilerError as e:
+        sys.stderr.write(
+            f"A compiler error occurred while compiling {target.name}:\n\n"
+        )
+        sys.stderr.write(f"{type(e).__name__}: {e}")
+        sys.exit(1)
 
     try:
         with open(output, "w", encoding="utf-8") as f:
@@ -54,24 +76,44 @@ def _compile_file(
         )
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="py2mlog",
         description="A python to mindustry logic (mlog) compiler.",
     )
 
-    parser.add_argument("target", type=Path, help="The target file to compile.")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s, version {VERSION}"
+    )
+
+    parser.add_argument(
+        "targets",
+        nargs="+",
+        type=Path,
+        help="The target file(s) to compile.",
+        metavar="target",
+    )
     parser.add_argument(
         "-o",
         "--output",
+        nargs="+",
         default=None,
         type=Path,
-        help="The output file (defaults to <target>.mlog).",
+        help="The output file(s) (defaults to <target>.mlog).",
+        dest="outputs",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    if args.output is None:
-        args.output = args.target.with_suffix(".mlog")
+    if args.outputs is None:
+        args.outputs = []
 
-    _compile_file(parser, args.target, args.output)
+    for i, target in enumerate(args.targets):
+        if i < len(args.outputs):
+            output = args.outputs[i]
+        else:
+            output = target.with_suffix(".mlog")
+
+        print(f"Compiling {target.name} to {output.name}...")
+
+        _compile_file(parser, target, output)
