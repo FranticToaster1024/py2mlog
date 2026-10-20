@@ -1,13 +1,14 @@
 from dataclasses import dataclass
+from typing import TypeAlias
+
+
+@dataclass(frozen=True)
+class LabelRef:
+    name: str
 
 
 class MlogExpr:
     pass
-
-
-@dataclass(frozen=True)
-class LabelRef(MlogExpr):
-    name: str
 
 
 @dataclass(frozen=True)
@@ -42,3 +43,6 @@ class MlogNullLiteral(MlogExpr):
 @dataclass(frozen=True)
 class MlogVar(MlogExpr):
     name: str
+
+
+MlogArg: TypeAlias = MlogExpr | LabelRef

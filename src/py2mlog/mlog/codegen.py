@@ -4,10 +4,10 @@ from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.mlog_expressions import (
     LabelRef,
+    MlogArg,
     MlogBoolLiteral,
     MlogBuiltin,
     MlogColorLiteral,
-    MlogExpr,
     MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
@@ -44,7 +44,7 @@ def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
     return None
 
 
-def _arg_to_str(arg: MlogExpr) -> str:
+def _arg_to_str(arg: MlogArg) -> str:
     match arg:
         case LabelRef(name):
             return name
