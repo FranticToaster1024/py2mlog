@@ -1,7 +1,7 @@
 import pytest
 
 from py2mlog.mlog.codegen import generate_mlog
-from py2mlog.mlog.instruction import Instruction, Label
+from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
     LabelRef,
@@ -678,5 +678,5 @@ from py2mlog.mlog.suboperations import (
         ),
     ],
 )
-def test_generate_mlog(script, expected):
+def test_generate_mlog(script: list[MlogItem], expected: str):
     assert generate_mlog(script) == expected

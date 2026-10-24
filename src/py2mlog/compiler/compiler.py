@@ -1,6 +1,7 @@
 import ast
+from collections import deque
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import cast
 
 from py2mlog.compiler.builtin_funcs import BUILTIN_FUNC_MAP
 from py2mlog.compiler.emitter import Emitter
@@ -10,18 +11,28 @@ from py2mlog.compiler.error import (
     HasPosition,
     SourceLocation,
 )
-from py2mlog.compiler.names import PREFIX_LABEL, VAR_ERR_MSG
+from py2mlog.compiler.func_utils import resolve_args
+from py2mlog.compiler.names import (
+    FORMAT_FUNC_ARG,
+    GLOBAL_SCOPE,
+    NAME_FUNC_RET_ADDR,
+    NAME_FUNC_RET_VAL,
+    PREFIX_FUNC_SCOPE,
+    PREFIX_LABEL,
+    VAR_ERR_MSG,
+)
 from py2mlog.compiler.operation_maps import (
     BIN_OP_MAP,
     CMP_OP_MAP,
     NEGATED_CMP_OPS_MAP,
     UNARY_OP_MAP,
 )
-from py2mlog.mlog.instruction import Instruction, Label
+from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
     LabelRef,
     MlogBoolLiteral,
+    MlogBuiltin,
     MlogExpr,
     MlogNullLiteral,
     MlogNumberLiteral,
@@ -43,22 +54,47 @@ class Compiler:
 
         self._src_lines = src.splitlines()
 
-        self.current_loop_break: LabelRef | None = None
-        self.current_loop_continue: LabelRef | None = None
+        self._current_loop_break: LabelRef | None = None
+        self._current_loop_continue: LabelRef | None = None
 
-        self.has_assert = False
-        self.assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
-        self.assert_error_label_ref = LabelRef(self.assert_error_label.name)
+        self._scope = deque([GLOBAL_SCOPE])
+        self._func_table: dict[
+            str,
+            tuple[
+                LabelRef, ast.arguments, dict[str, MlogVar], list[MlogItem]
+            ],  # TODO: make this a dataclass
+        ] = {}
+        self._arg_table: dict[str, MlogVar] = {}
+
+        self._has_assert = False
+        self._assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
+        self._assert_error_label_ref = LabelRef(self._assert_error_label.name)
 
     def compile(self):
         for node in self._ast.body:
             self.compile_stmt(node)
 
-        if self.has_assert:
-            self.emitter.emit_instruction(
-                Instruction(InstructionType.END, None, (), ())
-            )
+        self.emitter.emit_instruction(
+            Instruction(InstructionType.END, None, (), ())
+        )
+
+        if self._has_assert:
             self._emit_assert_err()
+
+        self._emit_funcs()
+
+        # kinda dumb but it works
+        while True:
+            last_instr = self.emitter.instructions[-1]
+
+            if (
+                isinstance(last_instr, Instruction)
+                and last_instr.type == InstructionType.END
+            ):
+                self.emitter.instructions.pop()
+
+            else:
+                break
 
     def compile_expr(self, expr: ast.expr, output_expr: MlogExpr | None = None):
         """
@@ -89,7 +125,9 @@ class Compiler:
                 return self._compile_const(expr)
 
             case ast.Name(id=name):
-                return MlogVar(name)
+                return self._arg_table.get(
+                    name, MlogVar(self._get_scope_str(name))
+                )
 
             case ast.BinOp(op=op, left=left, right=right):
                 output_expr = self._get_output_expr(output_expr)
@@ -119,13 +157,10 @@ class Compiler:
 
                 # special cases handled separately to keep the map clean
                 if isinstance(op, ast.UAdd):
-                    return self._resolve_output_expr(
-                        output_expr, compiled_operand
-                    )
+                    return compiled_operand
+
                 if isinstance(compiled_operand, MlogNumberLiteral):
-                    return self._resolve_output_expr(
-                        output_expr, MlogNumberLiteral(-compiled_operand.value)
-                    )
+                    return MlogNumberLiteral(-compiled_operand.value)
 
                 output_expr = self._get_output_expr(output_expr)
 
@@ -339,7 +374,7 @@ class Compiler:
             raise self._unsupported_expr_error(func_call)
         func_name = func_call.func.id
 
-        func_kwargs = {}
+        func_kwargs: dict[str, ast.expr] = {}
         for kwarg in func_call.keywords:
             if kwarg.arg in func_kwargs:
                 raise CompilerError(
@@ -347,25 +382,42 @@ class Compiler:
                     self._get_src_loc_from_node(kwarg),
                     err="Duplicate keyword arguments",
                 )
-            func_kwargs[kwarg.arg] = kwarg.value
 
-        if None in func_kwargs:
-            raise self._unsupported_expr_error(func_kwargs[None])
-        func_kwargs = cast("dict[str, ast.expr]", func_kwargs)
+            if kwarg.arg is None:
+                raise self._unsupported_expr_error(kwarg.value)
+
+            func_kwargs[kwarg.arg] = kwarg.value
 
         src_location = self._get_src_loc_from_node(func_call)
 
-        compile_builtin_func = BUILTIN_FUNC_MAP.get(func_name, ...)
+        # TODO: LEGB, passing function references
+        # TODO: check outer scopes
+        # TODO: delayed resolution
 
-        if compile_builtin_func is ...:
-            raise self._unsupported_expr_error(
-                func_call, ": user-defined functions unsupported"
+        scope_str = self._get_scope_str(func_name)
+        func = self._func_table.get(scope_str)
+
+        if func is not None:
+            return self._compile_non_inline_func_call(
+                func_call, func[0], func[1], func[2]
             )
-        if compile_builtin_func is None:
+
+        # TODO: non-inline builtins
+        # TODO: rename BUILTIN_FUNC_MAP to show inline-only
+
+        compile_inline_builtin = BUILTIN_FUNC_MAP.get(func_name, ...)
+
+        if compile_inline_builtin is None:
             raise self._unsupported_expr_error(
-                func_call, " unsupported builtin"
+                func_call, f": builtin {func_name}"
             )
-        output = compile_builtin_func(
+
+        if compile_inline_builtin is ...:
+            raise self._unsupported_expr_error(
+                func_call, f": unknown function {func_name}"
+            )
+
+        output = compile_inline_builtin(
             self.emitter,
             output_expr,
             [self.compile_expr(arg) for arg in func_call.args],
@@ -375,25 +427,59 @@ class Compiler:
 
         if isinstance(output, LabelRef):
             raise self._unsupported_expr_error(
-                func_call, ": non-inline function/builtin unsupported"
+                func_call, ": non-inline function/builtin"
             )
 
         return output
 
-    def _resolve_output_expr(
-        self, output_expr: MlogExpr | None, expr: MlogExpr
+    def _compile_non_inline_func_call(
+        self,
+        func_call: ast.Call,
+        label_ref: LabelRef,
+        params: ast.arguments,
+        arg_table: dict[str, MlogVar],
     ) -> MlogExpr:
-        """
-        If `output_expr` is not `None`, it is set to `expr` and returned.
-        Otherwise, returns `expr` to be used as the output expression.
-        """
-        if output_expr is None:
-            return expr
+        arg_list = resolve_args(
+            func_call.args,
+            func_call.keywords,
+            self._get_src_loc_from_node(func_call),
+            params,
+        )
+
+        for name, arg in arg_list.items():
+            scoped_name = arg_table.get(name)
+
+            if scoped_name is None:
+                raise CompilerError(
+                    CompilerErrorType.INTERNAL,
+                    self._get_src_loc_from_node(func_call),
+                    err="Arg from arg list not present in arg table",
+                )
+
+            self.compile_expr(arg, scoped_name)
 
         self.emitter.emit_instruction(
-            Instruction(InstructionType.SET, None, (), (output_expr, expr))
+            Instruction(
+                InstructionType.OPERATION,
+                OperationSuboperation.ADD,
+                (),
+                (
+                    MlogVar(self._get_scope_str(NAME_FUNC_RET_ADDR)),
+                    MlogBuiltin("counter"),
+                    MlogNumberLiteral(2),
+                ),
+            )
         )
-        return output_expr
+        self.emitter.emit_instruction(
+            Instruction(
+                InstructionType.JUMP,
+                ConditionOpSuboperation.ALWAYS,
+                (),
+                (label_ref,),
+            )
+        )
+
+        return MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL))
 
     def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:
         return (
@@ -455,7 +541,7 @@ class Compiler:
             if reverse_op is None or reverse_op not in CMP_OP_MAP:
                 # TODO: add proper warning
                 print(  # noqa: T201
-                    f"Absent logical negation of {op!s} in NEGATED_CMP_oPS_MAP, "
+                    f"Absent logical negation of {op!s} in NEGATED_CMP_OPS_MAP, "
                     f"or its logical negation {reverse_op!s} was absent from CMP_OP_MAP."
                 )
                 print("Check operation_maps.py!")  # noqa: T201
@@ -604,7 +690,7 @@ class Compiler:
                 self.emitter.emit_label(break_label)
 
             case ast.Break():
-                if self.current_loop_break is None:
+                if self._current_loop_break is None:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
                         self._get_src_loc_from_node(stmt),
@@ -616,12 +702,12 @@ class Compiler:
                         InstructionType.JUMP,
                         ConditionOpSuboperation.ALWAYS,
                         (),
-                        (self.current_loop_break,),
+                        (self._current_loop_break,),
                     )
                 )
 
             case ast.Continue():
-                if self.current_loop_continue is None:
+                if self._current_loop_continue is None:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
                         self._get_src_loc_from_node(stmt),
@@ -633,12 +719,12 @@ class Compiler:
                         InstructionType.JUMP,
                         ConditionOpSuboperation.ALWAYS,
                         (),
-                        (self.current_loop_continue,),
+                        (self._current_loop_continue,),
                     )
                 )
 
             case ast.Assert(test=test, msg=msg):
-                self.has_assert = True
+                self._has_assert = True
 
                 self.emitter.emit_instruction(
                     Instruction(
@@ -664,15 +750,68 @@ class Compiler:
                         InstructionType.JUMP,
                         cond_op_subop,
                         (),
-                        (self.assert_error_label_ref, left, right),
+                        (self._assert_error_label_ref, left, right),
+                    )
+                )
+
+            case ast.FunctionDef():
+                self._compile_func_def(stmt)
+
+            case ast.Return(value=value):
+                self.compile_expr(
+                    value if value is not None else ast.Constant(None),
+                    MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL)),
+                )
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.SET,
+                        None,
+                        (),
+                        (
+                            MlogBuiltin("counter"),
+                            MlogVar(self._get_scope_str(NAME_FUNC_RET_ADDR)),
+                        ),
                     )
                 )
 
             case _:
                 raise self._unsupported_stmt_error(stmt)
 
+    def _compile_func_def(self, func_def: ast.FunctionDef) -> None:
+        # TODO: decorators
+        if func_def.decorator_list:
+            raise self._unsupported_stmt_error(
+                func_def, ": function decorators"
+            )
+
+        with self._func_context(func_def) as scope_str:
+            # TODO: function inlining
+            # TODO: LEGB, global & nonlocal keywords
+            # TODO: use line numbers over labels so they can be passed around
+            call_label, call_label_ref = self.emitter.new_label()
+            self.emitter.emit_label(call_label)
+
+            for stmt in func_def.body:
+                self.compile_stmt(stmt)
+
+            self._func_table[scope_str] = (
+                call_label_ref,
+                func_def.args,
+                self._arg_table,
+                self.emitter.instructions,
+            )
+
+    def _emit_funcs(self):
+        for *_, instructions in self._func_table.values():
+            self.emitter.instructions.extend(instructions)
+
+        self.emitter.emit_instruction(
+            Instruction(InstructionType.END, None, (), ())
+        )
+
     def _emit_assert_err(self) -> None:
-        self.emitter.emit_label(self.assert_error_label)
+        self.emitter.emit_label(self._assert_error_label)
         self.emitter.emit_instruction(
             Instruction(
                 InstructionType.PRINT,
@@ -689,17 +828,72 @@ class Compiler:
         )
 
     @contextmanager
-    def _loop_context(self, break_ref: LabelRef, continue_ref: LabelRef):
-        prev_break = self.current_loop_break
-        prev_continue = self.current_loop_continue
+    def _loop_context(
+        self, break_ref: LabelRef, continue_ref: LabelRef
+    ) -> Generator[None, None, None]:
+        prev_break = self._current_loop_break
+        prev_continue = self._current_loop_continue
 
-        self.current_loop_break = break_ref
-        self.current_loop_continue = continue_ref
+        self._current_loop_break = break_ref
+        self._current_loop_continue = continue_ref
 
         yield
 
-        self.current_loop_break = prev_break
-        self.current_loop_continue = prev_continue
+        self._current_loop_break = prev_break
+        self._current_loop_continue = prev_continue
+
+    @contextmanager
+    def _func_context(
+        self, func_def: ast.FunctionDef
+    ) -> Generator[str, None, None]:
+        """
+        Manages the current scope, emitter, and arg table.
+        Yields the current full scope string.
+        """
+        outside_scope = self._get_scope_str(func_def.name)
+        self._scope.append(f"{PREFIX_FUNC_SCOPE}{func_def.name}")
+
+        func_args = func_def.args
+        if func_args.vararg is not None:
+            raise CompilerError(
+                CompilerErrorType.UNSUPPORTED,
+                self._get_src_loc_from_node(func_args.vararg),
+                feature="arbitrary arguments (*args)",
+            )
+
+        if func_args.kwarg is not None:
+            raise CompilerError(
+                CompilerErrorType.UNSUPPORTED,
+                self._get_src_loc_from_node(func_args.kwarg),
+                feature="arbitrary keyword arguments (**kwargs)",
+            )
+
+        full_arglist = (
+            func_args.posonlyargs
+            + func_args.args
+            + func_args.kwonlyargs
+            + ([func_args.vararg] if func_args.vararg is not None else [])
+            + ([func_args.kwarg] if func_args.kwarg is not None else [])
+        )
+        for arg in full_arglist:
+            arg_name = self._get_scope_str(FORMAT_FUNC_ARG.format(arg=arg.arg))
+            self._arg_table[arg.arg] = MlogVar(arg_name)
+
+        # i don't like swapping emitter but whatever
+        old_emitter = self.emitter
+        self.emitter = Emitter()
+
+        yield outside_scope
+
+        self._scope.pop()
+        self._arg_table = {}
+        self.emitter = old_emitter
+
+    def _get_scope_str(self, scope_name: str = "") -> str:
+        _, *local_ = self._scope
+        return ".".join(  # maybe use '::'?
+            [*(self._scope if self._scope[0] else local_), scope_name]
+        )
 
     def _unsupported_expr_error(
         self, expr: ast.expr, info: str = ""

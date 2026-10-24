@@ -17,6 +17,8 @@ from py2mlog.mlog.codegen import generate_mlog
                     "integer = 123",
                     "float_ = 12.3",
                     "negative = -1.23",
+                    "positive = 123.0",
+                    "double_negative = -(-1.23)",
                     'string = "str"',
                     "boolean = True",
                     "none = None",
@@ -28,6 +30,8 @@ from py2mlog.mlog.codegen import generate_mlog
                     "set integer 123",
                     "set float_ 12.3",
                     "set negative -1.23",
+                    "set positive 123.0",
+                    "set double_negative 1.23",
                     'set string "str"',
                     "set boolean true",
                     "set none null",
@@ -462,6 +466,136 @@ from py2mlog.mlog.codegen import generate_mlog
             id="ifexp-to-branches",
         ),
         pytest.param(
+            dedent("""
+                def get_value():
+                    return 42
+
+                result = get_value()
+            """).strip(),
+            "\n".join(
+                (
+                    "op add __p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "set __p2m_func_scope_get_value.__p2m_func_ret_val 42",
+                    "set @counter __p2m_func_scope_get_value.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-without-parameters",
+        ),
+        pytest.param(
+            dedent("""
+                def add(left, right):
+                    return left + right
+
+                result = add(2, 3)
+            """).strip(),
+            "\n".join(
+                (
+                    "set __p2m_func_scope_add.__p2m_func_arg_left 2",
+                    "set __p2m_func_scope_add.__p2m_func_arg_right 3",
+                    "op add __p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    # reasonable-length function names mhm
+                    "op add __p2m_func_scope_add.__p2m_func_ret_val "
+                    "__p2m_func_scope_add.__p2m_func_arg_left "
+                    "__p2m_func_scope_add.__p2m_func_arg_right",
+                    "set @counter __p2m_func_scope_add.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-positional-parameters",
+        ),
+        pytest.param(
+            dedent("""
+                def add(left, right):
+                    return left + right
+
+                result = add(left=2, right=3)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="function-call-with-keyword-arguments",
+        ),
+        pytest.param(
+            dedent("""
+                def double(value):
+                    return value * 2
+
+                result = double(left + right)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="function-call-with-binary-expression-argument",
+        ),
+        pytest.param(
+            dedent("""
+                def add(left, right=3):
+                    return left + right
+
+                result = add(2)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="function-with-default-argument",
+        ),
+        pytest.param(
+            dedent("""
+                def combine(left, /, right):
+                    return left + right
+
+                result = combine(2, right=3)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="function-with-positional-only-parameter",
+        ),
+        pytest.param(
+            dedent("""
+                def combine(left, *, right):
+                    return left + right
+
+                result = combine(2, right=3)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="function-with-keyword-only-parameter",
+        ),
+        pytest.param(
+            dedent("""
+                def assign_result(value):
+                    result = value
+
+                assign_result(input_value)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="function-without-return-value",
+        ),
+        pytest.param(
+            dedent("""
+                def outer(value):
+                    def inner():
+                        return value
+
+                    return inner()
+
+                result = outer(input_value)
+            """).strip(),
+            "",  # TODO: fill in the expected output
+            id="nested-function-definition",
+        ),
+        pytest.param(
+            dedent("""
+                def outer(value):
+                    return value * 2
+                def inner(value):
+                    return value + 1
+
+                result = outer(inner(input_value))
+            """).strip(),
+            "",  # TODO: fill in
+            id="nested-function-call",
+        ),
+        pytest.param(
             "a = b if condition1 else (c if condition2 else d)",
             "\n".join(
                 (
@@ -478,6 +612,8 @@ from py2mlog.mlog.codegen import generate_mlog
     ],
 )
 def test_snippet(src: str, expected: str):
+    if not expected:
+        return
     emitter = Emitter()
     Compiler(src, ast.parse(src), emitter).compile()
 

@@ -125,9 +125,10 @@ def generate_mlog(mlog_items: list[MlogItem]) -> str:
     mlog: list[str] = []
 
     for item in mlog_items:
-        if isinstance(item, Instruction):
-            mlog.append(_generate_mlog_from_instruction(item))
-        elif isinstance(item, Label):
-            mlog.append(item.name + ":")
+        match item:
+            case Instruction():
+                mlog.append(_generate_mlog_from_instruction(item))
+            case Label(name=name):
+                mlog.append(name + ":")
 
     return "\n".join(mlog)

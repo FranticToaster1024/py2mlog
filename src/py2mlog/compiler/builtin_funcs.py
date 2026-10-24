@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
 from itertools import chain
-from typing import cast
+from typing import Any, cast
 
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
@@ -54,8 +54,7 @@ def _builtin_wrapper(
     return wrapper
 
 
-# might wanna extract this for processing function defs later on as well
-# really shitty function that probably needs a cleanup later
+# TODO: REWRITE (stub parsing maybe?)
 def _resolve_args(
     call_args: _BuiltinCallArgs,
     *,
@@ -189,7 +188,7 @@ def _resolve_args(
     ]
 
     def _find_arg_segment(
-        index: int, segments: tuple[list, ...]
+        index: int, segments: tuple[list[Any], ...]
     ) -> tuple[int, int] | None:
         """Returns `None` if index >= total length of all segments.
         Otherwise, returns (index_of_segment, index_in_segment)"""
@@ -245,7 +244,7 @@ def _resolve_args(
             current_index += 1
             arg_list[current_index] = param_defaults[arg]
 
-    param_name_arg_list_index_map = {}
+    param_name_arg_list_index_map: dict[str, int] = {}
     for i, name in enumerate(
         chain(
             req_pos_only_params,

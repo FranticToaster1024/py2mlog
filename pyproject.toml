@@ -57,5 +57,5 @@ quote-style = "double"
 
 [tool.pyright]
 pythonVersion = "3.10"
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
 extraPaths = ["./src"]

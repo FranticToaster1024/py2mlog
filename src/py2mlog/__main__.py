@@ -11,9 +11,11 @@ from py2mlog.compiler.error import CompilerError
 from py2mlog.mlog.codegen import generate_mlog
 
 try:
-    VERSION = version("py2mlog")
+    _version = version("py2mlog")
 except PackageNotFoundError:
-    VERSION = "unknown"
+    _version = "unknown"
+
+VERSION = _version
 
 
 def _compile_file(
@@ -76,6 +78,11 @@ def _compile_file(
         )
 
 
+class Py2mlogCLIArgs(argparse.Namespace):
+    targets: list[Path]
+    outputs: list[Path] | None
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="py2mlog",
@@ -103,7 +110,7 @@ def main(argv: list[str] | None = None) -> None:
         dest="outputs",
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv, namespace=Py2mlogCLIArgs())
 
     if args.outputs is None:
         args.outputs = []
