@@ -62,6 +62,11 @@ def is_odd(n):
 
 sixty_seven_is_odd = is_odd(67)
 ```
+
+# AI assistance
+Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
+Any code from me in the rest of the repository was manually handwritten.
+
 # Contributing
 All contributions are more than welcome!
 To install in editable mode:
