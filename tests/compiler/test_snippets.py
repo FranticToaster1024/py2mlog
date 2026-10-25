@@ -474,9 +474,9 @@ from py2mlog.mlog.codegen import generate_mlog
             """).strip(),
             "\n".join(
                 (
-                    "op add __p2m_func_ret_addr @counter 2",
+                    "op add __p2m_func_scope_get_value.__p2m_func_ret_addr @counter 2",
                     "jump __p2m_label0 always",
-                    "set result __p2m_func_ret_val",
+                    "set result __p2m_func_scope_get_value.__p2m_func_ret_val",
                     "end",
                     "__p2m_label0:",
                     "set __p2m_func_scope_get_value.__p2m_func_ret_val 42",
@@ -496,9 +496,9 @@ from py2mlog.mlog.codegen import generate_mlog
                 (
                     "set __p2m_func_scope_add.__p2m_func_arg_left 2",
                     "set __p2m_func_scope_add.__p2m_func_arg_right 3",
-                    "op add __p2m_func_ret_addr @counter 2",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_addr @counter 2",
                     "jump __p2m_label0 always",
-                    "set result __p2m_func_ret_val",
+                    "set result __p2m_func_scope_add.__p2m_func_ret_val",
                     "end",
                     "__p2m_label0:",
                     # reasonable-length function names mhm
@@ -517,7 +517,21 @@ from py2mlog.mlog.codegen import generate_mlog
 
                 result = add(left=2, right=3)
             """).strip(),
-            "",  # TODO: fill in the expected output
+            "\n".join(
+                (
+                    "set __p2m_func_scope_add.__p2m_func_arg_left 2",
+                    "set __p2m_func_scope_add.__p2m_func_arg_right 3",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_add.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_val "
+                    "__p2m_func_scope_add.__p2m_func_arg_left "
+                    "__p2m_func_scope_add.__p2m_func_arg_right",
+                    "set @counter __p2m_func_scope_add.__p2m_func_ret_addr",
+                )
+            ),
             id="function-call-with-keyword-arguments",
         ),
         pytest.param(
@@ -527,7 +541,19 @@ from py2mlog.mlog.codegen import generate_mlog
 
                 result = double(left + right)
             """).strip(),
-            "",  # TODO: fill in the expected output
+            "\n".join(
+                (
+                    "op add __p2m_func_scope_double.__p2m_func_arg_value left right",
+                    "op add __p2m_func_scope_double.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_double.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "op mul __p2m_func_scope_double.__p2m_func_ret_val "
+                    "__p2m_func_scope_double.__p2m_func_arg_value 2",
+                    "set @counter __p2m_func_scope_double.__p2m_func_ret_addr",
+                )
+            ),
             id="function-call-with-binary-expression-argument",
         ),
         pytest.param(
@@ -537,50 +563,238 @@ from py2mlog.mlog.codegen import generate_mlog
 
                 result = add(2)
             """).strip(),
-            "",  # TODO: fill in the expected output
+            "\n".join(
+                (
+                    "set __p2m_func_scope_add.__p2m_func_arg_left 2",
+                    "set __p2m_func_scope_add.__p2m_func_arg_right 3",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_add.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_val "
+                    "__p2m_func_scope_add.__p2m_func_arg_left "
+                    "__p2m_func_scope_add.__p2m_func_arg_right",
+                    "set @counter __p2m_func_scope_add.__p2m_func_ret_addr",
+                )
+            ),
             id="function-with-default-argument",
         ),
         pytest.param(
             dedent("""
-                def combine(left, /, right):
+                def add(left, /, right):
                     return left + right
 
-                result = combine(2, right=3)
+                result = add(2, right=3)
             """).strip(),
-            "",  # TODO: fill in the expected output
+            "\n".join(
+                (
+                    "set __p2m_func_scope_add.__p2m_func_arg_left 2",
+                    "set __p2m_func_scope_add.__p2m_func_arg_right 3",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_add.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_val "
+                    "__p2m_func_scope_add.__p2m_func_arg_left "
+                    "__p2m_func_scope_add.__p2m_func_arg_right",
+                    "set @counter __p2m_func_scope_add.__p2m_func_ret_addr",
+                )
+            ),
             id="function-with-positional-only-parameter",
         ),
         pytest.param(
             dedent("""
-                def combine(left, *, right):
+                def add(left, *, right):
                     return left + right
 
-                result = combine(2, right=3)
+                result = add(2, right=3)
             """).strip(),
-            "",  # TODO: fill in the expected output
+            "\n".join(
+                (
+                    "set __p2m_func_scope_add.__p2m_func_arg_left 2",
+                    "set __p2m_func_scope_add.__p2m_func_arg_right 3",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_add.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "op add __p2m_func_scope_add.__p2m_func_ret_val "
+                    "__p2m_func_scope_add.__p2m_func_arg_left "
+                    "__p2m_func_scope_add.__p2m_func_arg_right",
+                    "set @counter __p2m_func_scope_add.__p2m_func_ret_addr",
+                )
+            ),
             id="function-with-keyword-only-parameter",
         ),
         pytest.param(
             dedent("""
-                def assign_result(value):
-                    result = value
+                a = 1
 
-                assign_result(input_value)
-            """).strip(),
-            "",  # TODO: fill in the expected output
-            id="function-without-return-value",
+                def assign():
+                    a = 2
+
+                assign()
+            """),
+            "\n".join(
+                (
+                    "set a 1",
+                    "op add __p2m_func_scope_assign.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "end",
+                    "__p2m_label0:",
+                    "set __p2m_func_scope_assign.a 2",
+                    "set __p2m_func_scope_assign.__p2m_func_ret_val null",
+                    "set @counter __p2m_func_scope_assign.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-scoped-assign",
         ),
         pytest.param(
             dedent("""
-                def outer(value):
+                def choose(condition):
+                    if condition:
+                        return 1
+                    return 2
+
+                result = choose(condition)
+            """).strip(),
+            "\n".join(
+                (
+                    "set __p2m_func_scope_choose.__p2m_func_arg_condition condition",
+                    "op add __p2m_func_scope_choose.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_choose.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "jump __p2m_label1 equal __p2m_func_scope_choose.__p2m_func_arg_condition false",
+                    "set __p2m_func_scope_choose.__p2m_func_ret_val 1",
+                    "set @counter __p2m_func_scope_choose.__p2m_func_ret_addr",
+                    "__p2m_label1:",
+                    "set __p2m_func_scope_choose.__p2m_func_ret_val 2",
+                    "set @counter __p2m_func_scope_choose.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-branched-return",
+        ),
+        # added this in case the special case for ast.Name
+        # when compiling ifexp unscoped the identifiers
+        pytest.param(
+            dedent("""
+                def choose(condition):
+                    a = 1
+                    return a if condition else 2
+
+                result = choose(condition)
+                    """).strip(),
+            "\n".join(
+                (
+                    "set __p2m_func_scope_choose.__p2m_func_arg_condition condition",
+                    "op add __p2m_func_scope_choose.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_choose.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "set __p2m_func_scope_choose.a 1",
+                    "select __p2m_func_scope_choose.__p2m_func_ret_val "
+                    "equal __p2m_func_scope_choose.__p2m_func_arg_condition true "
+                    "__p2m_func_scope_choose.a 2",
+                    "set @counter __p2m_func_scope_choose.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-ifexp-return",
+        ),
+        pytest.param(
+            dedent("""
+                def return_nothing():
+                    return
+
+                result = return_nothing()
+            """).strip(),
+            "\n".join(
+                (
+                    "op add __p2m_func_scope_return_nothing.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_return_nothing.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "set __p2m_func_scope_return_nothing.__p2m_func_ret_val null",
+                    "set @counter __p2m_func_scope_return_nothing.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-empty-return",
+        ),
+        pytest.param(
+            dedent("""
+                def return_early():
+                    return
+                    result = 123
+                    return result
+
+                result = return_early()
+            """).strip(),
+            "\n".join(
+                (
+                    "op add __p2m_func_scope_return_early.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_return_early.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "set __p2m_func_scope_return_early.__p2m_func_ret_val null",
+                    "set @counter __p2m_func_scope_return_early.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-early-return",
+        ),
+        pytest.param(
+            dedent("""
+                def implicit_return():
+                    pass
+
+                result = implicit_return()
+            """).strip(),
+            "\n".join(
+                (
+                    "op add __p2m_func_scope_implicit_return.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_implicit_return.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "set __p2m_func_scope_implicit_return.__p2m_func_ret_val null",
+                    "set @counter __p2m_func_scope_implicit_return.__p2m_func_ret_addr",
+                )
+            ),
+            id="function-with-implicit-none-return",
+        ),
+        # closures not yet supported
+        pytest.param(
+            dedent("""
+                def outer():
                     def inner():
-                        return value
+                        return 123
 
                     return inner()
 
-                result = outer(input_value)
+                result = outer()
             """).strip(),
-            "",  # TODO: fill in the expected output
+            "\n".join(
+                (
+                    "op add __p2m_func_scope_outer.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_outer.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label1:",
+                    "set __p2m_func_scope_outer.__p2m_func_scope_inner.__p2m_func_ret_val 123",
+                    "set @counter __p2m_func_scope_outer.__p2m_func_scope_inner.__p2m_func_ret_addr",
+                    "__p2m_label0:",
+                    "op add __p2m_func_scope_outer.__p2m_func_scope_inner.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label1 always",
+                    "set __p2m_func_scope_outer.__p2m_func_ret_val "
+                    "__p2m_func_scope_outer.__p2m_func_scope_inner.__p2m_func_ret_val",
+                    "set @counter __p2m_func_scope_outer.__p2m_func_ret_addr",
+                )
+            ),
             id="nested-function-definition",
         ),
         pytest.param(
@@ -592,7 +806,27 @@ from py2mlog.mlog.codegen import generate_mlog
 
                 result = outer(inner(input_value))
             """).strip(),
-            "",  # TODO: fill in
+            "\n".join(
+                (
+                    "set __p2m_func_scope_inner.__p2m_func_arg_value input_value",
+                    "op add __p2m_func_scope_inner.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label1 always",
+                    "set __p2m_func_scope_outer.__p2m_func_arg_value "
+                    "__p2m_func_scope_inner.__p2m_func_ret_val",
+                    "op add __p2m_func_scope_outer.__p2m_func_ret_addr @counter 2",
+                    "jump __p2m_label0 always",
+                    "set result __p2m_func_scope_outer.__p2m_func_ret_val",
+                    "end",
+                    "__p2m_label0:",
+                    "op mul __p2m_func_scope_outer.__p2m_func_ret_val "
+                    "__p2m_func_scope_outer.__p2m_func_arg_value 2",
+                    "set @counter __p2m_func_scope_outer.__p2m_func_ret_addr",
+                    "__p2m_label1:",
+                    "op add __p2m_func_scope_inner.__p2m_func_ret_val "
+                    "__p2m_func_scope_inner.__p2m_func_arg_value 1",
+                    "set @counter __p2m_func_scope_inner.__p2m_func_ret_addr",
+                )
+            ),
             id="nested-function-call",
         ),
         pytest.param(

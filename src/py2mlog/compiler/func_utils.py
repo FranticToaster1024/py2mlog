@@ -1,4 +1,5 @@
 import ast
+from dataclasses import dataclass
 from itertools import chain
 from typing import cast
 
@@ -7,6 +8,18 @@ from py2mlog.compiler.error import (
     CompilerErrorType,
     SourceLocation,
 )
+from py2mlog.mlog.instruction import MlogItem
+from py2mlog.mlog.mlog_expressions import LabelRef, MlogVar
+
+
+@dataclass(frozen=True)
+class CompiledFunc:
+    location: LabelRef
+    params: ast.arguments
+    body: list[MlogItem]
+    scoped_ret_addr: MlogVar
+    scoped_ret_val: MlogVar
+    scoped_arg_prefix: str
 
 
 # there are probably a bunch of bugs that will surface later ¯\_(ツ)_/¯

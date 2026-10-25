@@ -11,12 +11,12 @@ from py2mlog.compiler.error import (
     HasPosition,
     SourceLocation,
 )
-from py2mlog.compiler.func_utils import resolve_args
+from py2mlog.compiler.func_utils import CompiledFunc, resolve_args
 from py2mlog.compiler.names import (
-    FORMAT_FUNC_ARG,
     GLOBAL_SCOPE,
     NAME_FUNC_RET_ADDR,
     NAME_FUNC_RET_VAL,
+    PREFIX_FUNC_ARG,
     PREFIX_FUNC_SCOPE,
     PREFIX_LABEL,
     VAR_ERR_MSG,
@@ -27,7 +27,7 @@ from py2mlog.compiler.operation_maps import (
     NEGATED_CMP_OPS_MAP,
     UNARY_OP_MAP,
 )
-from py2mlog.mlog.instruction import Instruction, Label, MlogItem
+from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
     LabelRef,
@@ -58,12 +58,7 @@ class Compiler:
         self._current_loop_continue: LabelRef | None = None
 
         self._scope = deque([GLOBAL_SCOPE])
-        self._func_table: dict[
-            str,
-            tuple[
-                LabelRef, ast.arguments, dict[str, MlogVar], list[MlogItem]
-            ],  # TODO: make this a dataclass
-        ] = {}
+        self._func_table: dict[str, CompiledFunc] = {}
         self._arg_table: dict[str, MlogVar] = {}
 
         self._has_assert = False
@@ -395,12 +390,10 @@ class Compiler:
         # TODO: delayed resolution
 
         scope_str = self._get_scope_str(func_name)
-        func = self._func_table.get(scope_str)
+        compiled_func = self._func_table.get(scope_str)
 
-        if func is not None:
-            return self._compile_non_inline_func_call(
-                func_call, func[0], func[1], func[2]
-            )
+        if compiled_func is not None:
+            return self._compile_non_inline_func_call(func_call, compiled_func)
 
         # TODO: non-inline builtins
         # TODO: rename BUILTIN_FUNC_MAP to show inline-only
@@ -433,30 +426,19 @@ class Compiler:
         return output
 
     def _compile_non_inline_func_call(
-        self,
-        func_call: ast.Call,
-        label_ref: LabelRef,
-        params: ast.arguments,
-        arg_table: dict[str, MlogVar],
+        self, func_call: ast.Call, compiled_func: CompiledFunc
     ) -> MlogExpr:
         arg_list = resolve_args(
             func_call.args,
             func_call.keywords,
             self._get_src_loc_from_node(func_call),
-            params,
+            compiled_func.params,
         )
 
         for name, arg in arg_list.items():
-            scoped_name = arg_table.get(name)
-
-            if scoped_name is None:
-                raise CompilerError(
-                    CompilerErrorType.INTERNAL,
-                    self._get_src_loc_from_node(func_call),
-                    err="Arg from arg list not present in arg table",
-                )
-
-            self.compile_expr(arg, scoped_name)
+            self.compile_expr(
+                arg, MlogVar(compiled_func.scoped_arg_prefix + name)
+            )
 
         self.emitter.emit_instruction(
             Instruction(
@@ -464,7 +446,7 @@ class Compiler:
                 OperationSuboperation.ADD,
                 (),
                 (
-                    MlogVar(self._get_scope_str(NAME_FUNC_RET_ADDR)),
+                    compiled_func.scoped_ret_addr,
                     MlogBuiltin("counter"),
                     MlogNumberLiteral(2),
                 ),
@@ -475,11 +457,11 @@ class Compiler:
                 InstructionType.JUMP,
                 ConditionOpSuboperation.ALWAYS,
                 (),
-                (label_ref,),
+                (compiled_func.location,),
             )
         )
 
-        return MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL))
+        return compiled_func.scoped_ret_val
 
     def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:
         return (
@@ -508,8 +490,11 @@ class Compiler:
             )
 
         match expr:
-            case ast.Name(id=name):
-                return MlogVar(name)
+            case ast.Name():
+                # shouldn't do this because compile_expr is for non-store ctx
+                # but also it compiles the same for ast.Name anyway
+                # and i don't want to repeat scoping code twice
+                return self.compile_expr(expr)
 
             case _:
                 raise self._unsupported_expr_error(expr)
@@ -758,22 +743,10 @@ class Compiler:
                 self._compile_func_def(stmt)
 
             case ast.Return(value=value):
-                self.compile_expr(
-                    value if value is not None else ast.Constant(None),
-                    MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL)),
-                )
+                self._compile_return(value)
 
-                self.emitter.emit_instruction(
-                    Instruction(
-                        InstructionType.SET,
-                        None,
-                        (),
-                        (
-                            MlogBuiltin("counter"),
-                            MlogVar(self._get_scope_str(NAME_FUNC_RET_ADDR)),
-                        ),
-                    )
-                )
+            case ast.Pass():
+                pass  # haha funny
 
             case _:
                 raise self._unsupported_stmt_error(stmt)
@@ -794,17 +767,42 @@ class Compiler:
 
             for stmt in func_def.body:
                 self.compile_stmt(stmt)
+                if isinstance(stmt, ast.Return):
+                    break
 
-            self._func_table[scope_str] = (
+            else:
+                self._compile_return(None)
+
+            self._func_table[scope_str] = CompiledFunc(
                 call_label_ref,
                 func_def.args,
-                self._arg_table,
                 self.emitter.instructions,
+                MlogVar(self._get_scope_str(NAME_FUNC_RET_ADDR)),
+                MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL)),
+                self._get_scope_str(PREFIX_FUNC_ARG),
             )
 
+    def _compile_return(self, value: ast.expr | None) -> None:
+        self.compile_expr(
+            value if value is not None else ast.Constant(None),
+            MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL)),
+        )
+
+        self.emitter.emit_instruction(
+            Instruction(
+                InstructionType.SET,
+                None,
+                (),
+                (
+                    MlogBuiltin("counter"),
+                    MlogVar(self._get_scope_str(NAME_FUNC_RET_ADDR)),
+                ),
+            )
+        )
+
     def _emit_funcs(self):
-        for *_, instructions in self._func_table.values():
-            self.emitter.instructions.extend(instructions)
+        for func in self._func_table.values():
+            self.emitter.instructions.extend(func.body)
 
         self.emitter.emit_instruction(
             Instruction(InstructionType.END, None, (), ())
@@ -876,18 +874,18 @@ class Compiler:
             + ([func_args.kwarg] if func_args.kwarg is not None else [])
         )
         for arg in full_arglist:
-            arg_name = self._get_scope_str(FORMAT_FUNC_ARG.format(arg=arg.arg))
+            arg_name = self._get_scope_str(PREFIX_FUNC_ARG + arg.arg)
             self._arg_table[arg.arg] = MlogVar(arg_name)
 
         # i don't like swapping emitter but whatever
-        old_emitter = self.emitter
-        self.emitter = Emitter()
+        old_instructions = self.emitter.instructions
+        self.emitter.instructions = []
 
         yield outside_scope
 
         self._scope.pop()
         self._arg_table = {}
-        self.emitter = old_emitter
+        self.emitter.instructions = old_instructions
 
     def _get_scope_str(self, scope_name: str = "") -> str:
         _, *local_ = self._scope
