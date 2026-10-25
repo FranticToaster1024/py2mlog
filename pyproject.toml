@@ -16,19 +16,23 @@ dependencies = []
 py2mlog = "py2mlog.__main__:main"
 
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pyright",
+    "ruff",
+]
+
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/py2mlog"]
 
 
 [tool.hatch.envs.default]
 python = "3.10"
-dependencies = [
-    "pytest",
-    "pyright",
-]
+features = ["dev"]
 
 [tool.hatch.envs.default.scripts]
-test = "pytest"
 type-check = "pyright ."
 
 
@@ -37,6 +41,13 @@ config-path = "ruff_defaults.toml"
 
 [tool.hatch.envs.hatch-check-fmt]
 config-path = "ruff_defaults.toml"
+
+[tool.hatch.envs.hatch-static-analysis]
+config-path = "ruff_defaults.toml"
+
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.10", "3.12", "3.14"]
 
 
 [tool.ruff]
