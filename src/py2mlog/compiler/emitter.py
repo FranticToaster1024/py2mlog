@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.compiler.names import PREFIX_LABEL, PREFIX_TMP
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
@@ -23,6 +25,14 @@ class Emitter:
         self._label_counter += 1
 
         return (label, label_ref)
+
+    def emit_items(self, items: Iterable[MlogItem]) -> None:
+        for item in items:
+            match item:
+                case Instruction():
+                    self.emit_instruction(item)
+                case Label():
+                    self.emit_label(item)
 
     def emit_instruction(self, instr: Instruction) -> None:
         """Raises an error if given instruction is invalid. (WIP)"""

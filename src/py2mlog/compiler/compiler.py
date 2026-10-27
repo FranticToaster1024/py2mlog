@@ -802,7 +802,7 @@ class Compiler:
 
     def _emit_funcs(self):
         for func in self._func_table.values():
-            self.emitter.instructions.extend(func.body)
+            self.emitter.emit_items(func.body)
 
         self.emitter.emit_instruction(
             Instruction(InstructionType.END, None, (), ())

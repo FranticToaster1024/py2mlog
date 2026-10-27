@@ -52,7 +52,7 @@ while True:
     x += 1
 ```
 `assert` statements for some reason:
-```
+```py
 assert False, "Oopsie!"
 ```
 Non-recursive custom function definitions.
@@ -70,6 +70,9 @@ sixty_seven_is_odd = is_odd(67)
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
 Any code from me in the rest of the repository was manually handwritten.
+
+## Credits
+[pyndustric](https://github.com/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
 
 ## Contributing
 All contributions are more than welcome!
