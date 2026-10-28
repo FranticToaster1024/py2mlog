@@ -16,9 +16,6 @@ from py2mlog.mlog.codegen import generate_mlog
                 (
                     "integer = 123",
                     "float_ = 12.3",
-                    "negative = -1.23",
-                    "positive = 123.0",
-                    "double_negative = -(-1.23)",
                     'string = "str"',
                     "boolean = True",
                     "none = None",
@@ -29,9 +26,6 @@ from py2mlog.mlog.codegen import generate_mlog
                 (
                     "set integer 123",
                     "set float_ 12.3",
-                    "set negative -1.23",
-                    "set positive 123.0",
-                    "set double_negative 1.23",
                     'set string "str"',
                     "set boolean true",
                     "set none null",
@@ -97,19 +91,31 @@ from py2mlog.mlog.codegen import generate_mlog
                 (">>", "shr"),
             )
         ],
-        *[
-            pytest.param(
-                f"result = {operator}value",
-                expected,
-                id=f"unary-{name}",
-            )
-            for operator, expected, name in (
-                ("+", "set result value", "plus"),
-                ("-", "op sub result 0 value", "minus"),
-                ("not ", "op notEqual result value true", "not"),
-                ("~", "op not result value", "invert"),
-            )
-        ],
+        pytest.param(
+            "\n".join(
+                (
+                    "uadd_var = +var",
+                    "uadd_num = +1.23",
+                    "usub_var = -var",
+                    "usub_num = -1.23",
+                    "double_usub_num = -(-1.23)",
+                    "invert_var = ~var",
+                    "invert_int = ~123",
+                )
+            ),
+            "\n".join(
+                (
+                    "set uadd_var var",
+                    "set uadd_num 1.23",
+                    "op sub usub_var 0 var",
+                    "set usub_num -1.23",
+                    "set double_usub_num 1.23",
+                    "op not invert_var var",
+                    "set invert_int -124",
+                )
+            ),
+            id="unary-ops",
+        ),
         *[
             pytest.param(
                 f"result = left {operator} right",

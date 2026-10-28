@@ -160,8 +160,17 @@ class Compiler:
                 if isinstance(op, ast.UAdd):
                     return compiled_operand
 
-                if isinstance(compiled_operand, MlogNumberLiteral):
+                if isinstance(op, ast.USub) and isinstance(
+                    compiled_operand, MlogNumberLiteral
+                ):
                     return MlogNumberLiteral(-compiled_operand.value)
+
+                if (
+                    isinstance(op, ast.Invert)
+                    and isinstance(compiled_operand, MlogNumberLiteral)
+                    and isinstance(compiled_operand.value, int)
+                ):
+                    return MlogNumberLiteral(~compiled_operand.value)
 
                 output_expr = self._get_output_expr(output_expr)
 
