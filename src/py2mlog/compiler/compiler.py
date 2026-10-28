@@ -2,6 +2,7 @@ import ast
 from collections import deque
 from collections.abc import Generator
 from contextlib import contextmanager
+from inspect import signature
 
 from py2mlog.compiler.builtin_funcs import BUILTIN_FUNC_MAP
 from py2mlog.compiler.emitter import Emitter
@@ -11,7 +12,12 @@ from py2mlog.compiler.error import (
     HasPosition,
     SourceLocation,
 )
-from py2mlog.compiler.func_utils import CompiledFunc, resolve_args
+from py2mlog.compiler.func_utils import (
+    CompiledFunc,
+    FillerAstExpr,
+    resolve_args,
+    resolve_args_from_signature,
+)
 from py2mlog.compiler.names import (
     GLOBAL_SCOPE,
     NAME_FUNC_RET_ADDR,
@@ -410,20 +416,22 @@ class Compiler:
                 func_call, f": unknown function {func_name}"
             )
 
-        output = compile_inline_builtin(
-            self.emitter,
-            output_expr,
-            [self.compile_expr(arg) for arg in func_call.args],
-            {arg: self.compile_expr(val) for arg, val in func_kwargs.items()},
+        arg_map = resolve_args_from_signature(
+            # filler to account for first arg being output_expr
+            [FillerAstExpr(), *func_call.args],
+            func_kwargs,
             src_location,
+            signature(compile_inline_builtin),
         )
+        arg_list = list(arg_map.values())[1:]  # skip the filler
+        # misleading error message ¯\_(ツ)_/¯
+        compiled_arg_list = [self.compile_expr(e) for e in arg_list]
 
-        if isinstance(output, LabelRef):
-            raise self._unsupported_expr_error(
-                func_call, ": non-inline function/builtin"
-            )
+        output = compile_inline_builtin(output_expr, *compiled_arg_list)
 
-        return output
+        self.emitter.emit_items(output)
+
+        return output_expr
 
     def _compile_non_inline_func_call(
         self, func_call: ast.Call, compiled_func: CompiledFunc
@@ -827,7 +835,7 @@ class Compiler:
 
     @contextmanager
     def _loop_context(
-        self, break_ref: LabelRef, continue_ref: LabelRef
+        self, break_ref: LabelRef | None, continue_ref: LabelRef | None
     ) -> Generator[None, None, None]:
         prev_break = self._current_loop_break
         prev_continue = self._current_loop_continue
@@ -866,14 +874,14 @@ class Compiler:
                 feature="arbitrary keyword arguments (**kwargs)",
             )
 
-        full_arglist = (
+        all_args = (
             func_args.posonlyargs
             + func_args.args
             + func_args.kwonlyargs
             + ([func_args.vararg] if func_args.vararg is not None else [])
             + ([func_args.kwarg] if func_args.kwarg is not None else [])
         )
-        for arg in full_arglist:
+        for arg in all_args:
             arg_name = self._get_scope_str(PREFIX_FUNC_ARG + arg.arg)
             self._arg_table[arg.arg] = MlogVar(arg_name)
 
@@ -881,7 +889,8 @@ class Compiler:
         old_instructions = self.emitter.instructions
         self.emitter.instructions = []
 
-        yield outside_scope
+        with self._loop_context(None, None):
+            yield outside_scope
 
         self._scope.pop()
         self._arg_table = {}

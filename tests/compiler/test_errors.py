@@ -1,4 +1,5 @@
 import ast
+from textwrap import dedent
 
 import pytest
 
@@ -18,14 +19,7 @@ def _test_error(src: str, error_type: CompilerErrorType):
 
 @pytest.mark.parametrize(
     ("src", "error_type"),
-    [
-        pytest.param(
-            "break", CompilerErrorType.SYNTAX, id="break-outside-loop"
-        ),
-        pytest.param(
-            "continue", CompilerErrorType.SYNTAX, id="continue-outside-loop"
-        ),
-    ],
+    [],
 )
 def test_error(src: str, error_type: CompilerErrorType):
     _test_error(src, error_type)
@@ -51,6 +45,27 @@ def test_error(src: str, error_type: CompilerErrorType):
             ),
             CompilerErrorType.BAD_CALL,
             id="bad-builtin-calls",
+        ),
+        pytest.param(
+            ("break", "continue"),
+            CompilerErrorType.SYNTAX,
+            id="break-and-continue-outside-loop",
+        ),
+        pytest.param(
+            (
+                dedent("""
+                    while True:
+                        def x():
+                            break
+                """).strip(),
+                dedent("""
+                    while True:
+                        def x():
+                            continue
+                """),
+            ),
+            CompilerErrorType.SYNTAX,
+            id="break-and-continue-in-func-def-in-loop",
         ),
     ],
 )
