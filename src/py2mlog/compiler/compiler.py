@@ -85,7 +85,7 @@ class Compiler:
         self._emit_funcs()
 
         # kinda dumb but it works
-        while True:
+        while self.emitter.instructions:
             last_instr = self.emitter.instructions[-1]
 
             if (

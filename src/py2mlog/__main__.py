@@ -3,6 +3,7 @@ import ast
 import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from time import perf_counter
 from traceback import print_exception
 
 from py2mlog.compiler.compiler import Compiler
@@ -115,7 +116,10 @@ def main(argv: list[str] | None = None) -> None:
     if args.outputs is None:
         args.outputs = []
 
+    time_st_all = perf_counter()
     for i, target in enumerate(args.targets):
+        time_st_iter = perf_counter()
+
         if i < len(args.outputs):
             output = args.outputs[i]
         else:
@@ -124,3 +128,7 @@ def main(argv: list[str] | None = None) -> None:
         print(f"Compiling {target.name} to {output.name}...")
 
         _compile_file(parser, target, output)
+
+        print(f"Done in {perf_counter() - time_st_iter:.2f}s.\n")
+
+    print(f"All done in {perf_counter() - time_st_all:.2f}s!")

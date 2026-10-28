@@ -11,6 +11,7 @@ from py2mlog.mlog.codegen import generate_mlog
 @pytest.mark.parametrize(
     ("src", "expected"),
     [
+        pytest.param("pass", "", id="pass"),
         pytest.param(
             "\n".join(
                 (
