@@ -1,4 +1,5 @@
 import ast
+import logging
 from collections import deque
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -49,6 +50,8 @@ from py2mlog.mlog.suboperations import (
     ConditionOpSuboperation,
     OperationSuboperation,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Compiler:
@@ -541,12 +544,13 @@ class Compiler:
         if reverse:
             reverse_op = NEGATED_CMP_OPS_MAP.get(op)
             if reverse_op is None or reverse_op not in CMP_OP_MAP:
-                # TODO: add proper warning
-                print(  # noqa: T201
-                    f"Absent logical negation of {op!s} in NEGATED_CMP_OPS_MAP, "
-                    f"or its logical negation {reverse_op!s} was absent from CMP_OP_MAP."
+                logger.warning(
+                    "Absent logical negation of %s in NEGATED_CMP_OPS_MAP, "
+                    "or its logical negation %s was absent from CMP_OP_MAP.",
+                    str(op),
+                    str(reverse_op),
                 )
-                print("Check operation_maps.py!")  # noqa: T201
+                logger.warning("Check operation_maps.py!")
                 return (
                     ConditionOpSuboperation.NOT_EQUAL,
                     self.compile_expr(expr, output_expr),

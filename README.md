@@ -12,15 +12,35 @@ py2mlog path/to/your/file.py
 ```
 The output file will be `path/to/your/file.mlog` by default.
 
+You can also compile all .py files in a folder:
+```sh
+py2mlog path/to/src/
+```
+
 You can compile multiple files at once by passing them as space-separated arguments, like so:
 ```sh
 py2mlog path/to/your/file.py path/to/your/other/file.py path/to/third/file.py
 ```
-Additionally, you can override output file(s) by listing them as space-separated arguments after `-o` or `--output`. These output files correspond to the input files in order, and if there are fewer output files than input files, input files without an output file specified will use the default, like so:
+
+Same with folders:
 ```sh
-py2mlog path/to/file.py path/to/other/file.py -o first.mlog
+py2mlog path/to/dir/ path/to/other/dir/ path/to/third/dir/
 ```
-In the above example, `path/to/file.py` will compile to `first.mlog` and `path/to/other/file.py` will compile to `path/to/other/file.mlog`.
+
+You can even mix files and folders:
+```sh
+py2mlog path/to/your/file.py path/to/your/other/file.py path/to/dir/
+```
+
+Additionally, you can override output files and folders by listing them as space-separated arguments after `-o` or `--output`. These output paths correspond to the input paths in order, and if there are fewer output paths than input paths, input paths without an output path specified will use the default. For example:
+```sh
+py2mlog path/to/dir/ path/to/file.py path/to/other/file.py -o path/to/mlog/dir/ file.mlog 
+```
+
+In the above example:
+- `path/to/dir/` will compile to `path/to/mlog/dir/`,
+- `path/to/file.py` will compile to `file.mlog`,
+- and `path/to/other/file.py` will compile to `path/to/other/file.mlog`.
 
 ## Supported features
 Assignment and operators:

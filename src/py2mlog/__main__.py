@@ -1,10 +1,16 @@
 import argparse
 import ast
+import logging
 import sys
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
+from functools import wraps
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+from textwrap import indent
 from time import perf_counter
 from traceback import print_exception
+from typing import TypeAlias
 
 from py2mlog.compiler.compiler import Compiler
 from py2mlog.compiler.emitter import Emitter
@@ -15,31 +21,106 @@ try:
     _version = version("py2mlog")
 except PackageNotFoundError:
     _version = "unknown"
-
 VERSION = _version
 
 
+logger = logging.getLogger(__name__)
+
+
+indent_level = 0
+
+
+class IndentFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        return indent(super().format(record), indent_level * 4 * " ")
+
+
+@contextmanager
+def indent_log() -> Generator[None, None, None]:
+    global indent_level  # noqa:PLW0603
+    indent_level += 1
+    yield
+    indent_level -= 1
+
+
+COMPILE_PATH_CALLABLE: TypeAlias = Callable[
+    [argparse.ArgumentParser, Path, Path], None
+]
+
+
+def log_compile(
+    func: COMPILE_PATH_CALLABLE,
+) -> COMPILE_PATH_CALLABLE:
+
+    @wraps(func)
+    def wrapper(
+        parser: argparse.ArgumentParser, target: Path, output: Path
+    ) -> None:
+        time_st = perf_counter()
+        logger.info("Compiling '%s' to '%s'...", target.name, output.name)
+
+        result = func(parser, target, output)
+
+        logger.info("Done in %ss.", round(perf_counter() - time_st, 2))
+
+        return result
+
+    return wrapper
+
+
+def _compile_path(
+    parser: argparse.ArgumentParser, target: Path, output: Path
+) -> None:
+    if target.is_file():
+        _compile_file(parser, target, output)
+
+    elif target.is_dir():
+        _compile_dir(parser, target, output)
+
+
+@log_compile
+def _compile_dir(
+    parser: argparse.ArgumentParser, target: Path, output: Path
+) -> None:
+    if not output.exists():
+        output.mkdir(parents=True)
+
+    if not output.is_dir():
+        parser.error(
+            f"Target '{target.resolve()}' is a directory "
+            f"but output '{output.resolve()}' is not a directory."
+        )
+
+    for path in target.rglob("*"):
+        if path.is_file() and path.suffix == ".py":
+            with indent_log():
+                _compile_file(
+                    parser,
+                    path,
+                    (output / path.relative_to(target)).with_suffix(".mlog"),
+                )
+
+
+@log_compile
 def _compile_file(
     parser: argparse.ArgumentParser, target: Path, output: Path
 ) -> None:
-    if target.is_dir():
-        parser.error(f"Target '{target.resolve()}' is a directory.")
+    if not target.is_file():
+        parser.error(f"Target '{target.resolve()}' is not a file.")
     if target.suffix != ".py":
         parser.error(
             f"Target '{target.resolve()}' does not have a .py extension."
         )
 
-    if output.is_dir():
-        parser.error(f"Output '{output.resolve()}' is a directory.")
+    if output.exists() and not output.is_file():
+        parser.error(f"Output '{output.resolve()}' is not a file.")
     if output.suffix != ".mlog":
         parser.error(
             f"Output '{output.resolve()}' does not have a .mlog extension."
         )
 
-    src = ""
     try:
-        with open(target, encoding="utf-8") as f:
-            src = f.read()
+        src = target.read_text(encoding="utf-8")
     except PermissionError:
         parser.error(f"Could not read from '{target.resolve()}'.")
     except FileNotFoundError:
@@ -53,12 +134,14 @@ def _compile_file(
     try:
         Compiler(src, ast.parse(src), emitter).compile()
         mlog = generate_mlog(emitter.instructions)
+
     except SyntaxError as e:
         sys.stderr.write(
             f"A syntax error occurred while compiling {target.name}:\n\n"
         )
         print_exception(e, limit=0)
         sys.exit(1)
+
     except CompilerError as e:
         sys.stderr.write(
             f"A compiler error occurred while compiling {target.name}:\n\n"
@@ -67,8 +150,8 @@ def _compile_file(
         sys.exit(1)
 
     try:
-        with open(output, "w", encoding="utf-8") as f:
-            f.write(mlog)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(mlog, encoding="utf-8")
     except PermissionError:
         parser.error(f"Could not write to '{output.resolve()}'.")
     except FileNotFoundError:
@@ -98,7 +181,7 @@ def main(argv: list[str] | None = None) -> None:
         "targets",
         nargs="+",
         type=Path,
-        help="The target file(s) to compile.",
+        help="The target file/folder(s) to compile.",
         metavar="target",
     )
     parser.add_argument(
@@ -107,28 +190,26 @@ def main(argv: list[str] | None = None) -> None:
         nargs="+",
         default=None,
         type=Path,
-        help="The output file(s) (defaults to <target>.mlog).",
+        help="The output file/folder(s) (defaults to path/to/python/src/<target>.mlog).",
         dest="outputs",
     )
 
     args = parser.parse_args(argv, namespace=Py2mlogCLIArgs())
 
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(IndentFormatter("%(levelname)s: %(message)s"))
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
+
     if args.outputs is None:
         args.outputs = []
 
-    time_st_all = perf_counter()
+    time_st = perf_counter()
     for i, target in enumerate(args.targets):
-        time_st_iter = perf_counter()
-
         if i < len(args.outputs):
             output = args.outputs[i]
         else:
-            output = target.with_suffix(".mlog")
+            output = target.with_suffix(".mlog") if target.is_file() else target
 
-        print(f"Compiling {target.name} to {output.name}...")
+        _compile_path(parser, target, output)
 
-        _compile_file(parser, target, output)
-
-        print(f"Done in {perf_counter() - time_st_iter:.2f}s.\n")
-
-    print(f"All done in {perf_counter() - time_st_all:.2f}s!")
+    logger.info("All done in %ss!", round(perf_counter() - time_st, 2))
