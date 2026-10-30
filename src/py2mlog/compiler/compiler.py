@@ -19,6 +19,7 @@ from py2mlog.compiler.func_utils import (
     resolve_args,
     resolve_args_from_signature,
 )
+from py2mlog.compiler.mlog_builtins import ENV_ATTR_MAP
 from py2mlog.compiler.names import (
     GLOBAL_SCOPE,
     NAME_FUNC_RET_ADDR,
@@ -357,6 +358,28 @@ class Compiler:
                 self.emitter.emit_label(skip_else_label)
 
                 return output_expr
+
+            case ast.Attribute(value=value, attr=attr):
+                if isinstance(value, ast.Name):
+                    match value.id:
+                        case "Env":
+                            builtin = ENV_ATTR_MAP.get(attr)
+                            if builtin is None:
+                                # TODO: use ErrorType.unknown or smth
+                                raise CompilerError(
+                                    CompilerErrorType.UNSUPPORTED,
+                                    self._get_src_loc_from_node(expr),
+                                    feature=f"Unknown Env attribute '{attr}'",
+                                )
+
+                            return builtin
+
+                        case _:
+                            pass
+
+                raise self._unsupported_expr_error(
+                    expr, " on non-special values"
+                )
 
             case _:
                 raise self._unsupported_expr_error(expr)

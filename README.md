@@ -87,6 +87,7 @@ sixty_seven_is_odd = is_odd(67)
 
 ## Things to note
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
+Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types
 
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.

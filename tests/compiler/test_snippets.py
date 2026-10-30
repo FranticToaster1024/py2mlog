@@ -850,6 +850,19 @@ from py2mlog.mlog.codegen import generate_mlog
             ),
             id="nested-ifexp",
         ),
+        pytest.param(
+            dedent("""
+                a = Env.copper
+                b = Env.water
+            """).strip(),
+            "\n".join(
+                (
+                    "set a @copper",
+                    "set b @water",
+                )
+            ),
+            id="env-attr-resources",
+        ),
     ],
 )
 def test_snippet(src: str, expected: str):
