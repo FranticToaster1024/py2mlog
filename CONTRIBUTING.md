@@ -62,7 +62,7 @@ class Instruction:
 
 - `suboperation` is an enum member of any enum that subclasses the `Suboperation` class. The `Suboperation` class is a subclass of the `Enum` class. `Suboperation` and its subclasses can be found in [`suboperation.py`](src/py2mlog/mlog/suboperations.py). Examples include `DrawSuboperation.CLEAR` and `ControlSuboperation.SHOOT`.
 
-    For the purposes of this project, suboperations are fields of an instruction that *change the shape or number of fields* (and have a limited list of possible values, but so far only all fields that fulfil the first condition also fulfil the second.).
+    For the purposes of this project, suboperations are fields of an instruction that *change the shape or number of fields* (and have a limited list of possible values, but so far all fields that fulfil the first condition also fulfil the second.).
 
     For example:
 
@@ -87,7 +87,7 @@ Some utilities are used to make the compiler's job easier:
 - [`error.py`](src/py2mlog/compiler/error.py) holds the code that handles the formatting of the error message and sometimes draws little arrows to tell you what went wrong:
     ```
     like this! >_<
-        ^^^^
+         ^^^^
     ```
 
 - [`emitter.py`](src/py2mlog/compiler/emitter.py) holds the emitter class which stores instructions and manages the generation of new temporary variables/labels.
