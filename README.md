@@ -50,6 +50,7 @@ y = x**2
 y -= 6.7
 z = x < y > (4.2 if x < 123 else 6.7)
 ```
+
 `If`, `elif` and `else`:
 ```py
 if foo < 67:
@@ -59,6 +60,7 @@ elif foo < 100:
 else:
     x *= 2
 ```
+
 `while` loops, `break` and `continue`:
 ```py
 while True:
@@ -71,10 +73,18 @@ while True:
 
     x += 1
 ```
+
 `assert` statements for some reason:
 ```py
 assert False, "Oopsie!"
 ```
+
+Very basic python builtins (`print` not supported yet), more coming soon<sup>TM</sup>.
+```py
+x = abs(-5)
+y = ord("!")
+```
+
 Non-recursive custom function definitions.
 > **Note**: these functions **do not** use a call stack.
 ```py
@@ -85,9 +95,27 @@ def is_odd(n):
 sixty_seven_is_odd = is_odd(67)
 ```
 
+Access to very basic mlog builtins via `Env.*`, just like pyndustric.
+```py
+c = Env.copper
+w = Env.water
+```
+
 ## Things to note
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
 Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types
+
+## Future goals/To-do list
+- for ... range
+- loop/else
+- Compatibility with pyndustric-based code
+- Recursive functions (stack frames)
+- Inline functions
+- Optimization
+- Inline mlog
+- Config file?
+- CLI upgrade?
+- Passing functions (representing functions as numbers instead of labels)
 
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
