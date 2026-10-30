@@ -387,6 +387,10 @@ class Compiler:
             raise self._unsupported_expr_error(func_call)
         func_name = func_call.func.id
 
+        # can probably be bypassed easily
+        if f"{PREFIX_FUNC_SCOPE}{func_name}" in self._scope:
+            raise self._unsupported_expr_error(func_call, " with recursion")
+
         func_kwargs: dict[str, ast.expr] = {}
         for kwarg in func_call.keywords:
             if kwarg.arg in func_kwargs:
@@ -926,7 +930,7 @@ class Compiler:
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
             self._get_src_loc_from_node(expr),
-            feature=f'Ast expression {ctx_str}"{type(expr).__name__}{info}"',
+            feature=f'Ast expression {ctx_str}"{type(expr).__name__}"{info}',
         )
 
     def _unsupported_stmt_error(
@@ -935,7 +939,7 @@ class Compiler:
         return CompilerError(
             CompilerErrorType.UNSUPPORTED,
             self._get_src_loc_from_node(stmt),
-            feature=f'Ast statement "{type(stmt).__name__}{info}"',
+            feature=f'Ast statement "{type(stmt).__name__}"{info}',
         )
 
     def _get_src_loc_from_node(self, node: HasPosition):
