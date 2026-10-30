@@ -20,7 +20,7 @@ py2mlog = "py2mlog.__main__:main"
 dev = [
     "pytest",
     "pyright",
-    "ruff",
+    "ruff==0.17.3",
 ]
 
 
@@ -38,12 +38,15 @@ type-check = "pyright ."
 
 [tool.hatch.envs.hatch-check-code]
 config-path = "ruff_defaults.toml"
+dependencies = ["ruff==0.17.3"]
 
 [tool.hatch.envs.hatch-check-fmt]
 config-path = "ruff_defaults.toml"
+dependencies = ["ruff==0.17.3"]
 
 [tool.hatch.envs.hatch-static-analysis]
 config-path = "ruff_defaults.toml"
+dependencies = ["ruff==0.17.3"]
 
 
 [[tool.hatch.envs.hatch-test.matrix]]

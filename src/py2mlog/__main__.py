@@ -51,7 +51,6 @@ COMPILE_PATH_CALLABLE: TypeAlias = Callable[
 def log_compile(
     func: COMPILE_PATH_CALLABLE,
 ) -> COMPILE_PATH_CALLABLE:
-
     @wraps(func)
     def wrapper(
         parser: argparse.ArgumentParser, target: Path, output: Path

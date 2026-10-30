@@ -81,6 +81,7 @@ Non-recursive custom function definitions.
 def is_odd(n):
     return n % 2 == 1
 
+
 sixty_seven_is_odd = is_odd(67)
 ```
 
