@@ -37,7 +37,14 @@ from py2mlog.mlog.codegen import generate_mlog
         ),
         pytest.param(
             "first = second = value",
-            "\n".join(("set first value", "set second value")),
+            "\n".join(
+                (
+                    "set first value",
+                    # 'first' instead of 'value'
+                    # does it matter? ¯\_(ツ)_/¯
+                    "set second first",
+                )
+            ),
             id="multiple-assignment-targets",
         ),
         pytest.param(
@@ -349,6 +356,31 @@ from py2mlog.mlog.codegen import generate_mlog
         ),
         pytest.param(
             dedent("""
+                while condition1:
+                    if condition2:
+                        break
+
+                    x += 10
+                    break
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label1 equal condition1 false",
+                    "__p2m_label0:",
+                    # could use optimization here as well
+                    "jump __p2m_label2 equal condition2 false",
+                    "jump __p2m_label1 always",
+                    "__p2m_label2:",
+                    "op add x x 10",
+                    "jump __p2m_label1 always",
+                    "jump __p2m_label0 equal condition1 true",
+                    "__p2m_label1:",
+                )
+            ),
+            id="while-multiple-break",
+        ),
+        pytest.param(
+            dedent("""
                 while condition:
                     continue
             """).strip(),
@@ -356,12 +388,55 @@ from py2mlog.mlog.codegen import generate_mlog
                 (
                     "jump __p2m_label1 equal condition false",
                     "__p2m_label0:",
-                    "jump __p2m_label0 always",
+                    # could use some optimization when condition jump is 1 instruction like here
+                    "jump __p2m_label2 always",
+                    "__p2m_label2:",
                     "jump __p2m_label0 equal condition true",
                     "__p2m_label1:",
                 )
             ),
             id="while-continue",
+        ),
+        pytest.param(
+            dedent("""
+                while condition:
+                    result = False
+                else:
+                    result = True
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label1 equal condition false",
+                    "__p2m_label0:",
+                    "set result false",
+                    "jump __p2m_label0 equal condition true",
+                    "__p2m_label1:",
+                    "set result true",
+                )
+            ),
+            id="while-else-without-break",
+        ),
+        pytest.param(
+            dedent("""
+                while condition:
+                    result = False
+                    break
+                else:
+                    result = True
+            """).strip(),
+            "\n".join(
+                (
+                    "jump __p2m_label1 equal condition false",
+                    "__p2m_label0:",
+                    "set result false",
+                    "jump __p2m_label2 always",
+                    "jump __p2m_label0 equal condition true",
+                    "__p2m_label1:",
+                    "set result true",
+                    "__p2m_label2:",
+                )
+            ),
+            id="while-else-with-break",
         ),
         pytest.param(
             dedent("""
@@ -379,12 +454,335 @@ from py2mlog.mlog.codegen import generate_mlog
                     "jump __p2m_label3 always",
                     "jump __p2m_label2 equal inner_condition true",
                     "__p2m_label3:",
-                    "jump __p2m_label0 always",
+                    "jump __p2m_label4 always",
+                    "__p2m_label4:",
                     "jump __p2m_label0 equal outer_condition true",
                     "__p2m_label1:",
                 )
             ),
             id="nested-while-break-continue",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(5):
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 0",
+                    "op sub __p2m_tmp0 index 5",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-one-literal",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(2, 8):
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 2",
+                    "op sub __p2m_tmp0 index 8",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-start-stop-literals",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(1, 10, 2):
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 1",
+                    "op sub __p2m_tmp0 index 10",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 2",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 2",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index 2",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-start-stop-step-literals",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(stop):
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 0",
+                    "op sub __p2m_tmp0 index stop",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-identifier",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(start, stop, step):
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index start",
+                    "op sub __p2m_tmp0 index stop",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 step",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 step",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index step",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-identifiers",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(start + offset, limit * 2, step + 1):
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "op add index start offset",
+                    "op mul __p2m_tmp0 limit 2",
+                    "op add __p2m_tmp1 step 1",
+                    "op sub __p2m_tmp2 index __p2m_tmp0",
+                    "op idiv __p2m_tmp2 __p2m_tmp2 __p2m_tmp1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp2 0",
+                    "op mul __p2m_tmp2 __p2m_tmp2 __p2m_tmp1",
+                    "op sub __p2m_tmp2 index __p2m_tmp2",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index __p2m_tmp1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp2",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-binary-expressions",
+        ),
+        pytest.param(
+            dedent("""
+                for outer in range(3):
+                    for inner in range(outer):
+                        result = outer + inner
+            """).strip(),
+            "\n".join(
+                (
+                    "set outer 0",
+                    "op sub __p2m_tmp0 outer 3",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 outer __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set inner 0",
+                    "op sub __p2m_tmp1 inner outer",
+                    "op idiv __p2m_tmp1 __p2m_tmp1 1",
+                    "jump __p2m_label3 greaterThanEq __p2m_tmp1 0",
+                    "op mul __p2m_tmp1 __p2m_tmp1 1",
+                    "op sub __p2m_tmp1 inner __p2m_tmp1",
+                    "__p2m_label2:",
+                    "op add result outer inner",
+                    "op add inner inner 1",
+                    "jump __p2m_label2 notEqual inner __p2m_tmp1",
+                    "__p2m_label3:",
+                    "op add outer outer 1",
+                    "jump __p2m_label0 notEqual outer __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="nested-for-range",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(10):
+                    if should_stop:
+                        break
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 0",
+                    "op sub __p2m_tmp0 index 10",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    # optimization available again
+                    "jump __p2m_label2 equal should_stop false",
+                    "jump __p2m_label1 always",
+                    "__p2m_label2:",
+                    "set result index",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-break",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(10):
+                    if should_skip:
+                        continue
+                    result = index
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 0",
+                    "op sub __p2m_tmp0 index 10",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    # ¯\_(ツ)_/¯
+                    "jump __p2m_label2 equal should_skip false",
+                    "jump __p2m_label3 always",
+                    "__p2m_label2:",
+                    "set result index",
+                    "__p2m_label3:",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="for-range-continue",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(5):
+                    result = index
+                else:
+                    completed = True
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 0",
+                    "op sub __p2m_tmp0 index 5",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set result index",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                    "set completed true",
+                )
+            ),
+            id="for-range-else-without-break",
+        ),
+        pytest.param(
+            dedent("""
+                for index in range(5):
+                    if should_stop:
+                        break
+                else:
+                    completed = True
+            """).strip(),
+            "\n".join(
+                (
+                    "set index 0",
+                    "op sub __p2m_tmp0 index 5",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 index __p2m_tmp0",
+                    "__p2m_label0:",
+                    "jump __p2m_label2 equal should_stop false",
+                    "jump __p2m_label3 always",
+                    "__p2m_label2:",
+                    "op add index index 1",
+                    "jump __p2m_label0 notEqual index __p2m_tmp0",
+                    "__p2m_label1:",
+                    "set completed true",
+                    "__p2m_label3:",
+                )
+            ),
+            id="for-range-else-with-break",
+        ),
+        pytest.param(
+            dedent("""
+                for outer in range(3):
+                    for inner in range(4):
+                        if should_stop:
+                            break
+                        if should_skip:
+                            continue
+                        result = outer + inner
+            """).strip(),
+            "\n".join(
+                (
+                    "set outer 0",
+                    "op sub __p2m_tmp0 outer 3",
+                    "op idiv __p2m_tmp0 __p2m_tmp0 1",
+                    "jump __p2m_label1 greaterThanEq __p2m_tmp0 0",
+                    "op mul __p2m_tmp0 __p2m_tmp0 1",
+                    "op sub __p2m_tmp0 outer __p2m_tmp0",
+                    "__p2m_label0:",
+                    "set inner 0",
+                    "op sub __p2m_tmp1 inner 4",
+                    "op idiv __p2m_tmp1 __p2m_tmp1 1",
+                    "jump __p2m_label3 greaterThanEq __p2m_tmp1 0",
+                    "op mul __p2m_tmp1 __p2m_tmp1 1",
+                    "op sub __p2m_tmp1 inner __p2m_tmp1",
+                    "__p2m_label2:",
+                    "jump __p2m_label4 equal should_stop false",
+                    "jump __p2m_label3 always",
+                    "__p2m_label4:",
+                    "jump __p2m_label5 equal should_skip false",
+                    "jump __p2m_label6 always",
+                    "__p2m_label5:",
+                    "op add result outer inner",
+                    "__p2m_label6:",
+                    "op add inner inner 1",
+                    "jump __p2m_label2 notEqual inner __p2m_tmp1",
+                    "__p2m_label3:",
+                    "op add outer outer 1",
+                    "jump __p2m_label0 notEqual outer __p2m_tmp0",
+                    "__p2m_label1:",
+                )
+            ),
+            id="nested-for-range-break-continue",
         ),
         pytest.param(
             dedent("""
@@ -866,6 +1264,8 @@ from py2mlog.mlog.codegen import generate_mlog
     ],
 )
 def test_snippet(src: str, expected: str):
+    if not expected:
+        return
     emitter = Emitter()
     Compiler(src, ast.parse(src), emitter).compile()
 

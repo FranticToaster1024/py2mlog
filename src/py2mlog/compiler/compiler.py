@@ -64,8 +64,12 @@ class Compiler:
 
         self._src_lines = src.splitlines()
 
-        self._current_loop_break: LabelRef | None = None
-        self._current_loop_continue: LabelRef | None = None
+        self._in_loop: bool = False
+        # (sometimes) generated on-demand by break/continue statements
+        self._current_loop_break: Label | None = None
+        self._current_loop_break_ref: LabelRef | None = None
+        self._current_loop_continue: Label | None = None
+        self._current_loop_continue_ref: LabelRef | None = None
 
         self._scope = deque([GLOBAL_SCOPE])
         self._func_table: dict[str, CompiledFunc] = {}
@@ -114,6 +118,8 @@ class Compiler:
                     InstructionType.SET, None, (), (output_expr, result)
                 )
             )
+
+            return output_expr
 
         return result
 
@@ -681,10 +687,11 @@ class Compiler:
                 if skip_else_label is not None:
                     self.emitter.emit_label(skip_else_label)
 
-            # TODO: implement while/else
             case ast.While(test=test, body=body, orelse=orelse):
                 loop_label, loop_label_ref = self.emitter.new_label()
-                break_label, break_label_ref = self.emitter.new_label()
+                else_label, else_label_ref = self.emitter.new_label()
+                break_label = None if orelse else else_label
+                break_label_ref = None if orelse else else_label_ref
 
                 # initial check to make it a proper while instead of do-while
 
@@ -696,15 +703,20 @@ class Compiler:
                         InstructionType.JUMP,
                         cond_op_subop,
                         (),
-                        (break_label_ref, left, right),
+                        (else_label_ref, left, right),
                     )
                 )
-
                 self.emitter.emit_label(loop_label)
 
-                with self._loop_context(break_label_ref, loop_label_ref) as _:
+                with self._loop_context(break_label, break_label_ref):
                     for stmt_ in body:
                         self.compile_stmt(stmt_)
+
+                    # this solution is really confusing imo but oh well
+                    this_loop_break = self._current_loop_break
+
+                    if self._current_loop_continue:
+                        self.emitter.emit_label(self._current_loop_continue)
 
                 # actual loop jump
 
@@ -720,39 +732,75 @@ class Compiler:
                     )
                 )
 
-                self.emitter.emit_label(break_label)
+                self.emitter.emit_label(else_label)
+
+                for stmt_ in orelse:
+                    self.compile_stmt(stmt_)
+
+                # to prevent duplicate emission because of my shitty code
+                if orelse and this_loop_break is not None:
+                    self.emitter.emit_label(this_loop_break)
 
             case ast.Break():
-                if self._current_loop_break is None:
+                if not self._in_loop:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
                         self._get_src_loc_from_node(stmt),
                         err="'break' outside loop",
                     )
 
+                if self._current_loop_break_ref is None:
+                    self._current_loop_break, self._current_loop_break_ref = (
+                        self.emitter.new_label()
+                    )
+
+                elif (
+                    self._current_loop_break is None
+                    or self._current_loop_break.name
+                    != self._current_loop_break_ref.name
+                ):
+                    raise CompilerError(
+                        CompilerErrorType.INTERNAL, None, err=r"¯\_(ツ)_/¯"
+                    )
+
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
                         ConditionOpSuboperation.ALWAYS,
                         (),
-                        (self._current_loop_break,),
+                        (self._current_loop_break_ref,),
                     )
                 )
 
             case ast.Continue():
-                if self._current_loop_continue is None:
+                if not self._in_loop:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
                         self._get_src_loc_from_node(stmt),
                         err="'continue' outside loop",
                     )
 
+                if self._current_loop_continue_ref is None:
+                    (
+                        self._current_loop_continue,
+                        self._current_loop_continue_ref,
+                    ) = self.emitter.new_label()
+
+                elif (
+                    self._current_loop_continue is None
+                    or self._current_loop_continue.name
+                    != self._current_loop_continue_ref.name
+                ):
+                    raise CompilerError(
+                        CompilerErrorType.INTERNAL, None, err=r"¯\_(ツ)_/¯"
+                    )
+
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.JUMP,
                         ConditionOpSuboperation.ALWAYS,
                         (),
-                        (self._current_loop_continue,),
+                        (self._current_loop_continue_ref,),
                     )
                 )
 
@@ -795,6 +843,166 @@ class Compiler:
 
             case ast.Pass():
                 pass  # haha funny
+
+            case ast.For(target=target, iter=iter_, body=body, orelse=orelse):
+                if not isinstance(target, ast.Name):
+                    raise self._unsupported_stmt_error(
+                        stmt, " complex loop target"
+                    )
+
+                compiled_target = self.compile_target(target)
+                if (
+                    isinstance(iter_, ast.Call)
+                    and isinstance(iter_.func, ast.Name)
+                    and iter_.func.id == "range"
+                ):
+                    if len(iter_.args) == 1:
+                        self.emitter.emit_instruction(
+                            Instruction(
+                                InstructionType.SET,
+                                None,
+                                (),
+                                (compiled_target, MlogNumberLiteral(0)),
+                            )
+                        )
+                        start = compiled_target  # i think this is fine?
+                        stop = self.compile_expr(iter_.args[0])
+                        step = MlogNumberLiteral(1)
+                    elif len(iter_.args) <= 3:  # noqa:PLR2004
+                        start = self.compile_expr(
+                            iter_.args[0], compiled_target
+                        )
+                        stop = self.compile_expr(iter_.args[1])
+                        step = (
+                            MlogNumberLiteral(1)
+                            if len(iter_.args) == 2  # noqa:PLR2004
+                            else self.compile_expr(iter_.args[2])
+                        )
+                    else:
+                        raise CompilerError(
+                            CompilerErrorType.BAD_CALL,
+                            self._get_src_loc_from_node(target),
+                            err="Too many arguments for range()",
+                        )
+
+                    loop_label, loop_label_ref = self.emitter.new_label()
+                    else_label, else_label_ref = self.emitter.new_label()
+                    break_label = None if orelse else else_label
+                    break_label_ref = None if orelse else else_label_ref
+
+                    # loop entry
+                    # op sub tmp start stop
+                    # op idiv tmp2 tmp step
+                    # jump skip greaterThanEq tmp2 0
+                    # op mul tmp3 tmp2 step
+                    # op sub end start tmp3
+
+                    # reuse tmp because i can
+                    # notice how in the above commented code,
+                    # tmp is only used to find tmp2
+                    # tmp2 is not used after finding tmp3
+                    # tmp3 is only used to find end
+                    start_minus_stop = negative_len = (
+                        negative_offset_from_start
+                    ) = target_end_val = self.emitter.new_tmp()
+
+                    self.emitter.emit_items(
+                        (
+                            # subtract start from stop to save an instruction, explained below
+                            Instruction(
+                                InstructionType.OPERATION,
+                                OperationSuboperation.SUB,
+                                (),
+                                (start_minus_stop, start, stop),
+                            ),
+                            # negative len to save an instruction
+                            # because with positive len
+                            # i'd need to do ceil and div (2 instructions)
+                            # which is combined into idiv with negative len
+                            Instruction(
+                                InstructionType.OPERATION,
+                                OperationSuboperation.INTEGER_DIV,
+                                (),
+                                (negative_len, start_minus_stop, step),
+                            ),
+                            # `-len >= 0` equivalent to `len <= 0`
+                            Instruction(
+                                InstructionType.JUMP,
+                                ConditionOpSuboperation.GREATER_THAN_OR_EQ,
+                                (),
+                                (
+                                    else_label_ref,
+                                    negative_len,
+                                    MlogNumberLiteral(0),
+                                ),
+                            ),
+                            Instruction(
+                                InstructionType.OPERATION,
+                                OperationSuboperation.MUL,
+                                (),
+                                (
+                                    negative_offset_from_start,
+                                    negative_len,
+                                    step,
+                                ),
+                            ),
+                            # subtract because well the offset is negative
+                            Instruction(
+                                InstructionType.OPERATION,
+                                OperationSuboperation.SUB,
+                                (),
+                                (
+                                    target_end_val,
+                                    start,
+                                    negative_offset_from_start,
+                                ),
+                            ),
+                            loop_label,
+                        )
+                    )
+
+                    with self._loop_context(break_label, break_label_ref):
+                        for stmt_ in body:
+                            self.compile_stmt(stmt_)
+
+                        this_loop_break = self._current_loop_break
+
+                        # rmb continue label must be before increment
+                        if self._current_loop_continue:
+                            self.emitter.emit_label(self._current_loop_continue)
+
+                    self.emitter.emit_items(
+                        (
+                            Instruction(
+                                InstructionType.OPERATION,
+                                OperationSuboperation.ADD,
+                                (),
+                                (compiled_target, compiled_target, step),
+                            ),
+                            Instruction(
+                                InstructionType.JUMP,
+                                ConditionOpSuboperation.NOT_EQUAL,
+                                (),
+                                (
+                                    loop_label_ref,
+                                    compiled_target,
+                                    target_end_val,
+                                ),
+                            ),
+                            else_label,
+                        )
+                    )
+
+                    for stmt_ in orelse:
+                        self.compile_stmt(stmt_)
+
+                    if orelse and this_loop_break is not None:
+                        self.emitter.emit_label(this_loop_break)
+
+                else:
+                    raise self._unsupported_stmt_error(
+                        stmt, " with non-range() iterable"
+                    )
 
             case _:
                 raise self._unsupported_stmt_error(stmt)
@@ -873,20 +1081,35 @@ class Compiler:
             Instruction(InstructionType.STOP, None, (), ())
         )
 
+    # this whole loop context thing is so stupid
+    # i wonder which fool thought it was a good idea
     @contextmanager
     def _loop_context(
-        self, break_ref: LabelRef | None, continue_ref: LabelRef | None
+        self,
+        break_label: Label | None,
+        break_label_ref: LabelRef | None,
+        *,
+        in_loop: bool = True,
     ) -> Generator[None, None, None]:
+        prev_in_loop = self._in_loop
         prev_break = self._current_loop_break
+        prev_break_ref = self._current_loop_break_ref
         prev_continue = self._current_loop_continue
+        prev_continue_ref = self._current_loop_continue_ref
 
-        self._current_loop_break = break_ref
-        self._current_loop_continue = continue_ref
+        self._in_loop = in_loop
+        self._current_loop_break = break_label
+        self._current_loop_break_ref = break_label_ref
+        self._current_loop_continue = None
+        self._current_loop_continue_ref = None
 
         yield
 
+        self._in_loop = prev_in_loop
         self._current_loop_break = prev_break
+        self._current_loop_break_ref = prev_break_ref
         self._current_loop_continue = prev_continue
+        self._current_loop_continue_ref = prev_continue_ref
 
     @contextmanager
     def _func_context(
@@ -929,7 +1152,9 @@ class Compiler:
         old_instructions = self.emitter.instructions
         self.emitter.instructions = []
 
-        with self._loop_context(None, None):
+        # only reason in_loop as arg exists,
+        # and hijacking the loop context is probably a bad idea
+        with self._loop_context(None, None, in_loop=False):
             yield outside_scope
 
         self._scope.pop()
