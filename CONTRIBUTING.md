@@ -1,8 +1,15 @@
 # Contributing to py2mlog
-Thank you for considering contribution! This file documents some information you may find useful.
+Thank you for considering contributing to py2mlog! This file documents some information you may find useful.
+
+However, it is important to first understand that this is but a toy project. I cannot guarantee active maintanence or updates, and I likely won't be dedicated enough to maintain this project long-term.
+
+<!--
+# why??
+this compiler sucks, go contribute to somethng better like [pyndustric](https://codeberg.org/Lonami/pyndustric) or [minpiler](https://github.com/neumond/minpiler) instead
+-->
 
 # Issues
-You can create a new issue [here](https://github.com/FranticToaster1024/py2mlog/issues/new). You can use these to raise bug reports, feature requests/suggestions, discuss code changes, request clarifications, or really anything related to this repo.
+You can create a new issue [here](https://github.com/FranticToaster1024/py2mlog/issues/new). You can use these to raise bug reports, feature requests/suggestions, discuss code changes, request clarifications, or really anything related to this project.
 
 # Code contributions
 ## Installing

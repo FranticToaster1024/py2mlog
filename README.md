@@ -61,7 +61,7 @@ else:
     x *= 2
 ```
 
-`while` loops, `break` and `continue`:
+`while` loops, `break`, `continue` and loop/else:
 ```py
 while True:
     if y > 0:
@@ -72,6 +72,16 @@ while True:
         break
 
     x += 1
+else:
+    completed = True
+```
+
+`for ... range()`:
+```py
+result = 0
+for i in range(5):
+    for j in range(i, 10 * 2, 3):
+        result += j
 ```
 
 `assert` statements for some reason:
@@ -101,13 +111,14 @@ c = Env.copper
 w = Env.water
 ```
 
+
+`
+
 ## Things to note
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
 Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types
 
 ## Future goals/To-do list
-- for ... range
-- loop/else
 - Compatibility with pyndustric-based code
 - Recursive functions (stack frames)
 - Inline functions
@@ -122,7 +133,9 @@ Some testcases in `tests/` were generated using AI tools and reviewed/rewritten 
 Any code from me in the rest of the repository was manually handwritten.
 
 ## Credits
-[pyndustric](https://github.com/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
+[pyndustric](https://codeberg.org/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
+[minpiler](https://github.com/neumond/minpiler) is also really cool!
+Also, thank you to all contributors, users, and members of the mindustry community for your guidance and support!
 
 ## Contributing
 All contributions are more than welcome!
