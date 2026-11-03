@@ -1264,8 +1264,6 @@ from py2mlog.mlog.codegen import generate_mlog
     ],
 )
 def test_snippet(src: str, expected: str):
-    if not expected:
-        return
     emitter = Emitter()
     Compiler(src, ast.parse(src), emitter).compile()
 
