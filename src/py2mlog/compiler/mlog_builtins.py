@@ -41,7 +41,7 @@ def _select_col(data: str, col_name: str) -> list[str]:
     return col
 
 
-MLOG_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
+CONTENT_MAP: Mapping[str, MlogBuiltin] = {
     _kebab_to_camel(s): MlogBuiltin(s)
     for file_name in (
         "mimex-items.txt",
@@ -53,4 +53,47 @@ MLOG_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
     )
 }
 
-ENV_ATTR_MAP: Mapping[str, MlogExpr] = MLOG_BUILTIN_MAP
+SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
+    _kebab_to_camel(s): MlogBuiltin(s)
+    for s in (
+        # Processor
+        "this",
+        "thisx",
+        "thisy",
+        "links",
+        "ipt",
+        # General
+        "pi",
+        "e",
+        "degToRad",
+        "radToDeg",
+        # Map
+        "time",
+        "tick",
+        "second",
+        "minute",
+        "waveNumber",
+        "waveTime",
+        "mapw",
+        "maph"
+        # Network/clientside (wproc only)
+        "server",
+        "client",
+        "clientLocale",
+        "clientUnit",
+        "clientName",
+        "clientTeam",
+        "clientMobile",
+        "clientMusicPlaying",
+        "clientCurrentMusic",
+        # Lookup
+        "blockCount",
+        "unitCount",
+        "itemCount",
+        "liquidCount",
+        # Misc
+        "counter",
+    )
+}
+
+ENV_ATTR_MAP: Mapping[str, MlogExpr] = CONTENT_MAP | SPECIAL_BUILTIN_MAP

@@ -1143,15 +1143,19 @@ from py2mlog.mlog.codegen import generate_mlog
         pytest.param(
             """
             a = Env.copper
-            b = Env.water
-            c = Env.redStone
-            d = Env.navalFactory
+            a = Env.water
+            a = Env.redStone
+            a = Env.navalFactory
+            a = Env.counter
+            a = Env.time
             """,
             (
                 "set a @copper",
-                "set b @water",
-                "set c @red-stone",
-                "set d @naval-factory",
+                "set a @water",
+                "set a @red-stone",
+                "set a @naval-factory",
+                "set a @counter",
+                "set a @time",
             ),
             id="env-attr-resources",
         ),
