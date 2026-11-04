@@ -133,8 +133,11 @@ Some testcases in `tests/` were generated using AI tools and reviewed/rewritten 
 Any code from me in the rest of the repository was manually handwritten.
 
 ## Credits
+[mimex-data](https://github.com/cardillan/mimex-data) was the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably fucked up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
+
 [pyndustric](https://codeberg.org/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
 [minpiler](https://github.com/neumond/minpiler) is also really cool!
+
 Also, thank you to all contributors, users, and members of the mindustry community for your guidance and support!
 
 ## Contributing

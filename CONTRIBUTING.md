@@ -1,7 +1,7 @@
 # Contributing to py2mlog
 Thank you for considering contributing to py2mlog! This file documents some information you may find useful.
 
-However, it is important to first understand that this is but a toy project. I cannot guarantee active maintanence or updates, and I likely won't be dedicated enough to maintain this project long-term.
+However, it is important to first understand that this is but a toy project. I cannot guarantee active maintanence or updates, and I likely won't be dedicated enough to maintain this project long-term. If you find this project interesting enough to contribute to, it may be worth considering making your own fork to replace it instead.
 
 <!--
 # why??
@@ -16,7 +16,7 @@ You can create a new issue [here](https://github.com/FranticToaster1024/py2mlog/
 To install in editable mode:
 
 ```sh
-git clone https://github.com/FranticToaster1024/py2mlog.git
+git clone --recurse-submodules https://github.com/FranticToaster1024/py2mlog.git
 cd py2mlog
 ```
 

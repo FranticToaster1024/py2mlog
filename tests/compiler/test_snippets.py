@@ -1144,10 +1144,14 @@ from py2mlog.mlog.codegen import generate_mlog
             """
             a = Env.copper
             b = Env.water
+            c = Env.redStone
+            d = Env.navalFactory
             """,
             (
                 "set a @copper",
                 "set b @water",
+                "set c @red-stone",
+                "set d @naval-factory",
             ),
             id="env-attr-resources",
         ),
