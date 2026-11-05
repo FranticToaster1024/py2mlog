@@ -1159,6 +1159,24 @@ from py2mlog.mlog.codegen import generate_mlog
             ),
             id="env-attr-resources",
         ),
+        pytest.param(
+            """
+            a = Links[0]
+            b = Links[1 + 2 * 3]
+            c = Links[i]
+            d = Links[abs(-1)]
+            """,
+            (
+                "getlink a 0",
+                "op mul __p2m_tmp1 2 3",
+                "op add __p2m_tmp0 1 __p2m_tmp1",
+                "getlink b __p2m_tmp0",
+                "getlink c i",
+                "op abs __p2m_tmp2 -1",
+                "getlink d __p2m_tmp2",
+            ),
+            id="links-subscript-access",
+        ),
     ],
 )
 def test_snippet(src: str, expected: tuple[str]):

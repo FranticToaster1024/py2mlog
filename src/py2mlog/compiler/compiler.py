@@ -387,6 +387,33 @@ class Compiler:
                     expr, " on non-special values"
                 )
 
+            case ast.Subscript(value=value, slice=slice):
+                if not isinstance(value, ast.Name):
+                    raise self._unsupported_expr_error(
+                        expr, " non-identifier subscript target"
+                    )
+
+                output_expr = self._get_output_expr(output_expr)
+
+                match value.id:
+                    case "Links":
+                        index = self.compile_expr(slice)
+                        self.emitter.emit_instruction(
+                            Instruction(
+                                InstructionType.GET_LINK,
+                                None,
+                                (),
+                                (output_expr, index),
+                            )
+                        )
+
+                    case _:
+                        raise self._unsupported_expr_error(
+                            expr, " non-special subscript target"
+                        )
+
+                return output_expr
+
             case _:
                 raise self._unsupported_expr_error(expr)
 
