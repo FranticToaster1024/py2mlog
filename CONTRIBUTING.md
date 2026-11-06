@@ -1,9 +1,7 @@
 # Contributing to py2mlog
 Thank you for considering contributing to py2mlog! This file documents some information you may find useful.
 
-However, it is important to first understand that this is but a toy project. I cannot guarantee active maintanence or updates, and I likely won't be dedicated enough to maintain this project long-term. If you find this project interesting enough to contribute to, it may be worth considering making your own fork to replace it instead.
-
-Also this compiler sucks anyway, consider contributing to somethng better like [pyndustric](https://codeberg.org/Lonami/pyndustric) or [minpiler](https://github.com/neumond/minpiler) instead.
+However, it is important to first understand that this is just a toy project. I cannot guarantee active maintanence or updates, and I likely won't maintain this project long-term. If you find this project interesting enough to contribute to, it may be worth considering making your own fork to replace it instead.
 
 # Issues
 You can create a new issue [here](https://github.com/FranticToaster1024/py2mlog/issues/new). You can use these to raise bug reports, feature requests/suggestions, discuss code changes, request clarifications, or really anything related to this project.
@@ -114,3 +112,5 @@ instead of
 op add some_tmp_var a b
 set x some_tmp_var
 ```
+
+... I don't understand half the code in there either.

@@ -1129,6 +1129,35 @@ from py2mlog.mlog.codegen import generate_mlog
             id="nested-function-call",
         ),
         pytest.param(
+            """
+            @inline
+            def inline_func():
+                return 42
+
+            x = inline_func()
+            """,
+            ("set x 42",),
+            id="inline-func",
+        ),
+        pytest.param(
+            """
+            @inline
+            def inline_func(x, /, *, y):
+                return abs(x) + y - 1
+
+            x = 10
+            z = inline_func(x, y=21 * 2)
+            """,
+            (
+                "set x 10",
+                "op mul __p2m_tmp0 21 2",
+                "op abs __p2m_tmp1 x",
+                "op add __p2m_tmp2 __p2m_tmp1 __p2m_tmp0",
+                "op sub z __p2m_tmp2 1",
+            ),
+            id="inline-func-with-args",
+        ),
+        pytest.param(
             "a = b if condition1 else (c if condition2 else d)",
             (
                 "jump __p2m_label0 equal condition1 false",

@@ -27,6 +27,11 @@ class CompiledFunc:
     scoped_arg_prefix: str
 
 
+@dataclass(frozen=True)
+class InlineFuncDef:
+    func_def: ast.FunctionDef
+
+
 # more confusing mixing of 'arg' and 'param'
 def resolve_args(
     call_args: list[ast.expr],

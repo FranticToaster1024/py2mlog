@@ -16,6 +16,7 @@ from py2mlog.compiler.error import (
 from py2mlog.compiler.func_utils import (
     CompiledFunc,
     FillerAstExpr,
+    InlineFuncDef,
     resolve_args,
     resolve_args_from_signature,
 )
@@ -72,8 +73,11 @@ class Compiler:
         self._current_loop_continue_ref: LabelRef | None = None
 
         self._scope = deque([GLOBAL_SCOPE])
+        # misleading name ¯\_(ツ)_/¯
         self._func_table: dict[str, CompiledFunc] = {}
-        self._arg_table: dict[str, MlogVar] = {}
+        self._arg_table: dict[str, MlogExpr] = {}
+        self._inline_func_ret_target: MlogExpr | None = None
+        self._inline_func_table: dict[str, InlineFuncDef] = {}
 
         self._has_assert = False
         self._assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
@@ -105,11 +109,26 @@ class Compiler:
             else:
                 break
 
-    def compile_expr(self, expr: ast.expr, output_expr: MlogExpr | None = None):
+    def compile_expr(
+        self,
+        expr: ast.expr,
+        output_expr: MlogExpr | None = None,
+        *,
+        suppress_ctx_check: bool = False,
+    ) -> MlogExpr:
         """
         Compiles an expression and returns the result's location.
         If `output_expr` is provided, the result is stored there.
         """
+        if not suppress_ctx_check and isinstance(
+            getattr(expr, "ctx", None), ast.Store
+        ):
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                self._get_src_loc_from_node(expr),
+                err=" attempted to call `_compile_expr` with `ast.Store()` context",
+            )
+
         result = self._compile_expr(expr, output_expr)
 
         if output_expr is not None and result != output_expr:
@@ -130,7 +149,6 @@ class Compiler:
         Compiles an expression and returns the result's location.
         If `output_expr` is not `None`, it may be used as the result's location.
         """
-
         match expr:
             case ast.Constant():
                 return self._compile_const(expr)
@@ -465,13 +483,19 @@ class Compiler:
 
         # TODO: LEGB, passing function references
         # TODO: check outer scopes
-        # TODO: delayed resolution
+        # TODO: delayed resolution (??? i forgor what i meant when i wrote this)
 
         scope_str = self._get_scope_str(func_name)
-        compiled_func = self._func_table.get(scope_str)
 
+        compiled_func = self._func_table.get(scope_str)
         if compiled_func is not None:
             return self._compile_non_inline_func_call(func_call, compiled_func)
+
+        inline_func_def = self._inline_func_table.get(scope_str)
+        if inline_func_def is not None:
+            return self._compile_inline_func_call(
+                func_call, inline_func_def, output_expr
+            )
 
         # TODO: non-inline builtins
         # TODO: rename BUILTIN_FUNC_MAP to show inline-only
@@ -502,6 +526,20 @@ class Compiler:
         output = compile_inline_builtin(output_expr, *compiled_arg_list)
 
         self.emitter.emit_items(output)
+
+        return output_expr
+
+    def _compile_inline_func_call(
+        self,
+        func_call: ast.Call,
+        inline_func_def: InlineFuncDef,
+        output_expr: MlogExpr,
+    ) -> MlogExpr:
+        func_def = inline_func_def.func_def
+
+        with self._inline_func_context(func_call, func_def, output_expr):
+            for stmt in func_def.body:
+                self.compile_stmt(stmt)
 
         return output_expr
 
@@ -570,11 +608,23 @@ class Compiler:
             )
 
         match expr:
-            case ast.Name():
-                # shouldn't do this because compile_expr is for non-store ctx
-                # but also it compiles the same for ast.Name anyway
-                # and i don't want to repeat scoping code twice
-                return self.compile_expr(expr)
+            case ast.Name(id=name):
+                # indirect way of checking if we are compiling an inline func
+                if self._inline_func_ret_target is not None:
+                    # I really didn't want to do this but i tried ok
+                    raise CompilerError(
+                        CompilerErrorType.UNSUPPORTED,
+                        self._get_src_loc_from_node(expr),
+                        feature="Parameter with store context in inline function",
+                    )
+                #    # fragile and repetitive
+                #    self._arg_table[name] = MlogVar(
+                #        self._get_scope_str(PREFIX_FUNC_ARG) + name
+                #    )
+
+                return self._arg_table.get(
+                    name, MlogVar(self._get_scope_str(name))
+                )
 
             case _:
                 raise self._unsupported_expr_error(expr)
@@ -665,7 +715,7 @@ class Compiler:
                         (),
                         (
                             self.compile_target(target),
-                            self.compile_expr(target),
+                            self.compile_expr(target, suppress_ctx_check=True),
                             self.compile_expr(value),
                         ),
                     )
@@ -1035,13 +1085,34 @@ class Compiler:
                 raise self._unsupported_stmt_error(stmt)
 
     def _compile_func_def(self, func_def: ast.FunctionDef) -> None:
-        # TODO: decorators
-        if func_def.decorator_list:
-            raise self._unsupported_stmt_error(
-                func_def, ": function decorators"
-            )
+        # TODO: non-special decorators
+        inline = False
+        for decor in func_def.decorator_list:
+            if not isinstance(decor, ast.Name):
+                raise self._unsupported_stmt_error(
+                    func_def, " complex decorator"
+                )
 
-        with self._func_context(func_def) as scope_str:
+            if decor.id == "inline":
+                if inline:
+                    raise CompilerError(
+                        CompilerErrorType.SYNTAX,
+                        self._get_src_loc_from_node(func_def),
+                        err=" duplicate '@inline' decorator",
+                    )
+                inline = True
+            else:
+                raise self._unsupported_stmt_error(
+                    func_def, ": non-speical function decorators"
+                )
+
+        scope_str = self._get_scope_str(func_def.name)
+        if inline:
+            self._inline_func_table[scope_str] = InlineFuncDef(func_def)
+            self._func_table.pop(scope_str, None)
+            return
+
+        with self._func_context(func_def):
             # TODO: function inlining
             # TODO: LEGB, global & nonlocal keywords
             # TODO: use line numbers over labels so they can be passed around
@@ -1064,11 +1135,18 @@ class Compiler:
                 MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL)),
                 self._get_scope_str(PREFIX_FUNC_ARG),
             )
+            self._inline_func_table.pop(scope_str, None)
 
     def _compile_return(self, value: ast.expr | None) -> None:
+        if value is None:
+            value = ast.Constant(None)
+
+        if self._inline_func_ret_target is not None:
+            self.compile_expr(value, self._inline_func_ret_target)
+            return
+
         self.compile_expr(
-            value if value is not None else ast.Constant(None),
-            MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL)),
+            value, MlogVar(self._get_scope_str(NAME_FUNC_RET_VAL))
         )
 
         self.emitter.emit_instruction(
@@ -1140,13 +1218,17 @@ class Compiler:
 
     @contextmanager
     def _func_context(
-        self, func_def: ast.FunctionDef
-    ) -> Generator[str, None, None]:
+        self,
+        func_def: ast.FunctionDef,
+        *,
+        inline: bool = False,
+    ) -> Generator[None, None, None]:
         """
         Manages the current scope, emitter, and arg table.
         Yields the current full scope string.
         """
-        outside_scope = self._get_scope_str(func_def.name)
+        clear_emitter = not inline
+
         self._scope.append(f"{PREFIX_FUNC_SCOPE}{func_def.name}")
 
         func_args = func_def.args
@@ -1164,29 +1246,56 @@ class Compiler:
                 feature="arbitrary keyword arguments (**kwargs)",
             )
 
-        all_args = (
-            func_args.posonlyargs
-            + func_args.args
-            + func_args.kwonlyargs
-            + ([func_args.vararg] if func_args.vararg is not None else [])
-            + ([func_args.kwarg] if func_args.kwarg is not None else [])
-        )
-        for arg in all_args:
-            arg_name = self._get_scope_str(PREFIX_FUNC_ARG + arg.arg)
-            self._arg_table[arg.arg] = MlogVar(arg_name)
+        if not inline:
+            all_args = (
+                func_args.posonlyargs
+                + func_args.args
+                + func_args.kwonlyargs
+                + ([func_args.vararg] if func_args.vararg is not None else [])
+                + ([func_args.kwarg] if func_args.kwarg is not None else [])
+            )
 
-        # i don't like swapping emitter but whatever
+            for arg in all_args:
+                self._arg_table[arg.arg] = MlogVar(
+                    self._get_scope_str(PREFIX_FUNC_ARG + arg.arg)
+                )
+
+        # i don't like this but whatever
         old_instructions = self.emitter.instructions
-        self.emitter.instructions = []
+        if clear_emitter:
+            self.emitter.instructions = []
 
         # only reason in_loop as arg exists,
         # and hijacking the loop context is probably a bad idea
         with self._loop_context(None, None, in_loop=False):
-            yield outside_scope
+            yield
 
         self._scope.pop()
         self._arg_table = {}
-        self.emitter.instructions = old_instructions
+        if clear_emitter:
+            self.emitter.instructions = old_instructions
+
+    @contextmanager
+    def _inline_func_context(
+        self,
+        func_call: ast.Call,
+        func_def: ast.FunctionDef,
+        output_expr: MlogExpr,
+    ):
+        arg_list = resolve_args(
+            func_call.args,
+            func_call.keywords,
+            self._get_src_loc_from_node(func_call),
+            func_def.args,
+        )
+
+        with self._func_context(func_def, inline=True):
+            for name, arg in arg_list.items():
+                self._arg_table[name] = self.compile_expr(arg)
+
+            self._inline_func_ret_target = output_expr
+
+            yield
 
     def _get_scope_str(self, scope_name: str = "") -> str:
         _, *local_ = self._scope
