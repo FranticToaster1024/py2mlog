@@ -1,10 +1,12 @@
 # py2mlog
-A python to mindustry logic (mlog) compiler.
+A python to mindustry logic (mlog) compiler. https://xkcd.com/927/
+
 ## Install
 To install py2mlog, run:
 ```sh
 pip install "git+https://github.com/FranticToaster1024/py2mlog.git"
 ```
+
 ## Usage
 Basic usage:
 ```sh
@@ -143,13 +145,12 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 
 ## Future goals/To-do list
 - Compatibility with pyndustric-based code
-- Recursive functions (stack frames)
-- Inline functions
 - Optimization
 - Inline mlog
 - Config file?
 - CLI upgrade?
 - Passing functions (representing functions as numbers instead of labels)
+- Recursive functions (stack frames)
 
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
