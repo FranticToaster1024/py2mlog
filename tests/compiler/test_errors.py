@@ -53,22 +53,46 @@ def test_error(src: str, error_type: CompilerErrorType):
         ),
         pytest.param(
             (
-                dedent("""
-                    while True:
-                        def x():
-                            break
-                """).strip(),
-                dedent("""
-                    while True:
-                        def x():
-                            continue
-                """),
+                """
+                while True:
+                    def x():
+                        break
+                """,
+                """
+                while True:
+                    def x():
+                        continue
+                """,
             ),
             CompilerErrorType.SYNTAX,
             id="break-and-continue-in-func-def-in-loop",
         ),
+        pytest.param(
+            (
+                """
+                while True:
+                    @inline
+                    def x():
+                        break
+
+                    x()  # inline func defers compilation to call site
+                """,
+                """
+                while True:
+                    @inline
+                    def x():
+                        continue
+
+                    x()  # inline func defers compilation to call site
+                """,
+            ),
+            CompilerErrorType.SYNTAX,
+            id="break-and-continue-in-inline-func-def-in-loop",
+        ),
     ],
 )
-def test_error_list(src: tuple[str], error_type: CompilerErrorType):
+def test_error_list(src: tuple[str, ...], error_type: CompilerErrorType):
+    src = tuple(dedent(s).strip() for s in src)
+
     for testcase in src:
         _test_error(testcase, error_type)

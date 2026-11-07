@@ -1151,11 +1151,61 @@ from py2mlog.mlog.codegen import generate_mlog
             (
                 "set x 10",
                 "op mul __p2m_tmp0 21 2",
-                "op abs __p2m_tmp1 x",
-                "op add __p2m_tmp2 __p2m_tmp1 __p2m_tmp0",
-                "op sub z __p2m_tmp2 1",
+                "op abs __p2m_tmp2 x",
+                "op add __p2m_tmp1 __p2m_tmp2 __p2m_tmp0",
+                "op sub z __p2m_tmp1 1",
             ),
             id="inline-func-with-args",
+        ),
+        pytest.param(
+            """
+            @inline
+            def outer(value):
+                @inline
+                def inner():
+                    return value + 1
+
+                return inner()
+
+            result = outer(input_value)
+            """,
+            ("op add result input_value 1",),
+            id="inline-func-with-nested-inline-func",
+        ),
+        pytest.param(
+            """
+            def outer(value):
+                @inline
+                def inner():
+                    return value + 1
+
+                return inner()
+
+            result = outer(input_value)
+            """,
+            (
+                "set __p2m_func_scope_outer.__p2m_func_arg_value input_value",
+                "op add __p2m_func_scope_outer.__p2m_func_ret_addr @counter 2",
+                "jump __p2m_label0 always",
+                "set result __p2m_func_scope_outer.__p2m_func_ret_val",
+                "end",
+                "__p2m_label0:",
+                "op add __p2m_func_scope_outer.__p2m_func_ret_val __p2m_func_scope_outer.__p2m_func_arg_value 1",
+                "set @counter __p2m_func_scope_outer.__p2m_func_ret_addr",
+            ),
+            id="non-inline-func-with-nested-inline-func",
+        ),
+        pytest.param(
+            """
+            @inline
+            def inline_func(x):
+                return x * 2
+
+            a = inline_func(2)
+            b = inline_func(4)
+            """,
+            ("op mul a 2 2", "op mul b 4 2"),
+            id="multiple-inline-func-calls",
         ),
         pytest.param(
             "a = b if condition1 else (c if condition2 else d)",

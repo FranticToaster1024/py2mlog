@@ -105,6 +105,16 @@ def is_odd(n):
 sixty_seven_is_odd = is_odd(67)
 ```
 
+Non-recursive custom inline function definitions using the `@inline` decorator:
+```py
+@inline
+def func(x):
+    return x * 2 + 1
+
+y = func(42)
+```
+<!--these work quite beautifully but i have no idea why it works atp-->
+
 **Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
 
 Access to very basic mlog builtins via `Env.*`, just like pyndustric.

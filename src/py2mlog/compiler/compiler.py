@@ -78,6 +78,7 @@ class Compiler:
         self._arg_table: dict[str, MlogExpr] = {}
         self._inline_func_ret_target: MlogExpr | None = None
         self._inline_func_table: dict[str, InlineFuncDef] = {}
+        self._filling_inline_arg_table: bool = False
 
         self._has_assert = False
         self._assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
@@ -155,7 +156,10 @@ class Compiler:
 
             case ast.Name(id=name):
                 return self._arg_table.get(
-                    name, MlogVar(self._get_scope_str(name))
+                    name,
+                    MlogVar(name)
+                    if self._filling_inline_arg_table
+                    else MlogVar(self._get_scope_str(name)),
                 )
 
             case ast.BinOp(op=op, left=left, right=right):
@@ -1289,13 +1293,19 @@ class Compiler:
             func_def.args,
         )
 
+        old_inline_func_ret_target = self._inline_func_ret_target
         with self._func_context(func_def, inline=True):
+            self._filling_inline_arg_table = True
+
             for name, arg in arg_list.items():
                 self._arg_table[name] = self.compile_expr(arg)
 
+            self._filling_inline_arg_table = False
             self._inline_func_ret_target = output_expr
 
             yield
+
+        self._inline_func_ret_target = old_inline_func_ret_target
 
     def _get_scope_str(self, scope_name: str = "") -> str:
         _, *local_ = self._scope
