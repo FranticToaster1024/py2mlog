@@ -113,6 +113,7 @@ Non-recursive custom inline function definitions using the `@inline` decorator:
 def func(x):
     return x * 2 + 1
 
+
 y = func(42)
 ```
 <!--these work quite beautifully but i have no idea why it works atp-->
