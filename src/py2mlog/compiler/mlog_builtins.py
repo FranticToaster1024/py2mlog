@@ -2,6 +2,7 @@ import logging
 from collections.abc import Mapping
 from importlib import resources
 
+from py2mlog.compiler.config import ALIAS
 from py2mlog.mlog.mlog_expressions import MlogBuiltin, MlogExpr
 
 logger = logging.getLogger(__name__)
@@ -99,4 +100,12 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
 ENV_ATTR_MAP: Mapping[str, MlogExpr] = CONTENT_MAP | SPECIAL_BUILTIN_MAP
 
 
-MLOG_BUILTIN_NAMESPACES = {"Env", "Links"}
+ALIAS_NAMESPACES = {
+    "Link": ALIAS.LINK,
+}
+
+MLOG_BUILTIN_NAMESPACES = {
+    "Env",
+    "Links",
+    "Color",
+} | {k for k, v in ALIAS_NAMESPACES.items() if v}

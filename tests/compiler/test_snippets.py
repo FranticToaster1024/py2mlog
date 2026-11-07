@@ -21,6 +21,10 @@ from py2mlog.mlog.codegen import generate_mlog
                     "boolean = True",
                     "none = None",
                     "copy = value",
+                    'col_lit_from_str = "%ffffff"',
+                    'col_lit_from_builtin = Color("%ffffff")',
+                    'col_lit_from_builtin = Color("ffffff")',
+                    "col_lit_from_builtin = Color(0xffffff)",
                 )
             ),
             (
@@ -30,8 +34,12 @@ from py2mlog.mlog.codegen import generate_mlog
                 "set boolean true",
                 "set none null",
                 "set copy value",
+                "set col_lit_from_str %ffffff",
+                "set col_lit_from_builtin %ffffff",
+                "set col_lit_from_builtin %ffffff",
+                "set col_lit_from_builtin %ffffff",
             ),
-            id="basic-assignment",
+            id="basic-assignment-and-types",
         ),
         pytest.param(
             "first = second = value",
@@ -1244,6 +1252,8 @@ from py2mlog.mlog.codegen import generate_mlog
             b = Links[1 + 2 * 3]
             c = Links[i]
             d = Links[abs(-1)]
+
+            e = Link[0]
             """,
             (
                 "getlink a 0",
@@ -1253,6 +1263,7 @@ from py2mlog.mlog.codegen import generate_mlog
                 "getlink c i",
                 "op abs __p2m_tmp2 -1",
                 "getlink d __p2m_tmp2",
+                "getlink e 0",
             ),
             id="links-subscript-access",
         ),

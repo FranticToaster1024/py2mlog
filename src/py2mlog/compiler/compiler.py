@@ -5,7 +5,12 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from inspect import signature
 
-from py2mlog.compiler.builtin_funcs import BUILTIN_FUNC_MAP
+from py2mlog.compiler import config
+from py2mlog.compiler.builtin_funcs import (
+    INLINE_BUILTIN_FUNC_MAP,
+    SPECIAL_BUILTIN_FUNC_MAP,
+    ast_const_to_mlog_col_literal,
+)
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
     CompilerError,
@@ -127,7 +132,7 @@ class Compiler:
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
                 self._get_src_loc_from_node(expr),
-                err=" attempted to call `_compile_expr` with `ast.Store()` context",
+                err=" attempted to call '_compile_expr' with 'ast.Store()' context",
             )
 
         result = self._compile_expr(expr, output_expr)
@@ -418,7 +423,10 @@ class Compiler:
                 output_expr = self._get_output_expr(output_expr)
 
                 match value.id:
-                    case "Links":
+                    # slightly silly snippet
+                    case "Link" | "Links" as name if (
+                        name == "Links" or config.ALIAS.LINK
+                    ):
                         index = self.compile_expr(slice)
                         self.emitter.emit_instruction(
                             Instruction(
@@ -451,6 +459,13 @@ class Compiler:
                 return MlogNumberLiteral(val)
 
             case str(val):
+                # idt i can drop the '%' check
+                # even though it is a little repetitive
+                if config.STRING_LITERAL_AS_COLOR and val and val[0] == "%":
+                    return ast_const_to_mlog_col_literal(
+                        self._get_src_loc_from_node(const), const
+                    )
+
                 return MlogStringLiteral(val)
 
             case _:
@@ -501,16 +516,33 @@ class Compiler:
                 func_call, inline_func_def, output_expr
             )
 
+        compile_special_builtin = SPECIAL_BUILTIN_FUNC_MAP.get(func_name, ...)
+        if compile_special_builtin is not ...:
+            # "DRY"
+            arg_map = resolve_args_from_signature(
+                # this is kinda cursed huh
+                # filler1 is output_expr, filler2 is src_loc
+                [FillerAstExpr(), FillerAstExpr(), *func_call.args],
+                func_kwargs,
+                src_location,
+                signature(compile_special_builtin),
+            )
+
+            instrs, output = compile_special_builtin(
+                output_expr,
+                src_location,
+                *tuple(arg_map.values())[2:],  # skip both fillers
+            )
+            self.emitter.emit_items(instrs)
+            return output
+
         # TODO: non-inline builtins
-        # TODO: rename BUILTIN_FUNC_MAP to show inline-only
 
-        compile_inline_builtin = BUILTIN_FUNC_MAP.get(func_name, ...)
-
+        compile_inline_builtin = INLINE_BUILTIN_FUNC_MAP.get(func_name, ...)
         if compile_inline_builtin is None:
             raise self._unsupported_expr_error(
                 func_call, f": builtin {func_name}"
             )
-
         if compile_inline_builtin is ...:
             raise self._unsupported_expr_error(
                 func_call, f": unknown function {func_name}"
@@ -523,7 +555,7 @@ class Compiler:
             src_location,
             signature(compile_inline_builtin),
         )
-        arg_list = list(arg_map.values())[1:]  # skip the filler
+        arg_list = tuple(arg_map.values())[1:]  # skip the filler
         # misleading error message ¯\_(ツ)_/¯
         compiled_arg_list = [self.compile_expr(e) for e in arg_list]
 

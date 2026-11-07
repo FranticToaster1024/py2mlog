@@ -133,8 +133,9 @@ c = Env.copper
 w = Env.water
 ```
 
-Links, just like pyndustric (i think):
+Links (`Links` makes more sense imo but `Link` is supported for compatibility with pyndustric):
 ```py
+l = Link[0]
 l = Links[0]
 ```
 
@@ -145,6 +146,7 @@ l = Links[0]
 Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types
 
 ## Future goals/To-do list
+- **Better errors**
 - Compatibility with pyndustric-based code
 - Optimization
 - Inline mlog

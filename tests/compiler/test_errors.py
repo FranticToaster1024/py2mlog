@@ -42,6 +42,8 @@ def test_error(src: str, error_type: CompilerErrorType):
                 "abs(1, 2, 3)",
                 "ord()",
                 "ord(1, 2)",
+                "Color(True)",
+                "Color(16777215.0)",
             ),
             CompilerErrorType.BAD_CALL,
             id="bad-builtin-calls",

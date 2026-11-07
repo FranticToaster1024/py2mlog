@@ -12,6 +12,11 @@ class MlogExpr:
 
 
 @dataclass(frozen=True)
+class MlogFillerExpr(MlogExpr):
+    """Use sparingly."""
+
+
+@dataclass(frozen=True)
 class MlogBuiltin(MlogExpr):
     name: str
 
