@@ -1,8 +1,12 @@
 for (const textarea of document.querySelectorAll("textarea")) {
     textarea.addEventListener("keydown", e => {
-        if (e.key !== "Tab") return;
-        e.preventDefault();
-        textarea.setRangeText("    ", textarea.selectionStart, textarea.selectionEnd, "end");
+        if (e.key === "Tab") {
+            e.preventDefault();
+            textarea.setRangeText("    ", textarea.selectionStart, textarea.selectionEnd, "end");
+        } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            compile();
+        }
     });
 }
 
@@ -23,21 +27,29 @@ document.getElementById("editor").style.display = "flex";
 document.getElementById("loading").style.display = "none";
 
 const compile_button = document.getElementById("compile");
-compile_button.addEventListener("click", () => {
+compile_button.addEventListener("click", compile);
+
+
+function compile() {
     const src = document.getElementById("input").value;
 
     const emitter = emitter_module.Emitter();
-    const compiler = compiler_module.Compiler(src, ast_module.parse(src), emitter);
 
-    let out;
+    const outputElement = document.getElementById("output");
+
+    let color = "";
+    let output;
     try {
+        const compiler = compiler_module.Compiler(src, ast_module.parse(src), emitter);
         compiler.compile();
-        out = codegen_module.generate_mlog(emitter.instructions);
+        output = codegen_module.generate_mlog(emitter.instructions);
     } catch (error) {
         if (error instanceof pyodide.ffi.PythonError) {
-            out = error.message;
+            output = error.message;
+            color = "#e57373";
         } else throw error;
     }
 
-    document.getElementById("output").value = out;
-});
+    outputElement.value = output;
+    outputElement.style.color = color;
+}

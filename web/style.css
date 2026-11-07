@@ -6,6 +6,7 @@
     --light-color-2: #50dcc6;
 
     --text-color: #d6ebe7;
+    --text-color-emphasis: #f7fcfb;
 
     --anchor-color: #c0d0e9;
     --anchor-color-hover: #c5b0e9;
@@ -22,10 +23,14 @@ body {
 
 h1 {
     text-align: center;
+    margin: 0px 0px 0px 10px;
 }
 h4 {
     text-align: center;
-    margin: 0;
+    margin: 0px;
+}
+b { /* lol */
+    color: var(--text-color-emphasis);
 }
 
 #loading {
@@ -56,7 +61,7 @@ textarea {
     color: #fff;
 
     border-radius: var(--border-radius);
-    height: 75vh;
+    min-height: 70vh;
     margin: 10px 25px;
 
     font-family: monospace;
@@ -81,4 +86,5 @@ button {
     background-color: var(--light-color);
     border: 1px solid var(--light-color-2);
     border-radius: var(--border-radius);
+    padding: 7px;
 }
