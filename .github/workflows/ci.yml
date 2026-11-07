@@ -57,7 +57,7 @@ jobs:
       run: hatch test --python ${{ matrix.python-version }}
 
 
-  update-web-whl:
+  update-whl-and-deploy:
     needs: tests
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -81,7 +81,8 @@ jobs:
       run: hatch build -t wheel
 
     - name: Copy wheel into web folder
-      run: cp dist/*.whl web/py2mlog.whl
+      # lie about the version so bumping version doesn't break stuff
+      run: cp dist/*.whl web/py2mlog-0.0.0-py3-none-any.whl
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v5

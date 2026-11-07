@@ -11,7 +11,7 @@ const pyodide = await loadPyodide();
 
 await pyodide.loadPackage("micropip");
 const micropip = pyodide.pyimport("micropip");
-await micropip.install("./py2mlog.whl");
+await micropip.install("./py2mlog-0.0.0-py3-none-any.whl.whl");
 
 const ast_module = pyodide.pyimport("ast");
 const compiler_module = pyodide.pyimport("py2mlog.compiler.compiler");
