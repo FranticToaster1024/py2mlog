@@ -13,14 +13,18 @@
     <div id="editor">
         <div>
             <h4>Input (python)</h4>
-            <textarea id="input"></textarea>
+            <textarea placeholder="Python goes here..." id="input"></textarea>
             <div class="buttons">
                 <button id="compile">Compile</button>
+                <button aria-pressed="true" id="live">Live</button>
             </div>
         </div>
         <div>
             <h4>Output (mlog)</h4>
-            <textarea readonly id="output"></textarea>
+            <textarea readonly placeholder="Output goes here..." id="output"></textarea>
+            <div class="buttons">
+                <button id="copy">Copy</button>
+            </div>
         </div>
     </div>
     <div id="loading">Loading...</div>

@@ -5,6 +5,11 @@
     --light-color: #5eead5;
     --light-color-2: #50dcc6;
 
+    --enabled-border: #6fcf8b;
+    --enabled-bg: #1f6b3a;
+    --disabled-border: #f44366;
+    --disabled-bg: var(--bg-color);
+
     --text-color: #d6ebe7;
     --text-color-emphasis: #f7fcfb;
 
@@ -84,7 +89,25 @@ textarea:focus {
 
 button {
     background-color: var(--light-color);
-    border: 1px solid var(--light-color-2);
+    border: 2px solid var(--light-color-2);
+
     border-radius: var(--border-radius);
     padding: 7px;
+    margin: 0px 10px;
+
+    font-size: 1rem;
+
+    cursor: pointer;
+}
+
+#live{
+    color: var(--text-color);
+}
+#live[aria-pressed="true"] {
+    background-color: var(--enabled-bg);
+    border: 3px solid var(--enabled-border);
+}
+#live[aria-pressed="false"] {
+    background-color: var(--disabled-bg);
+    border: 3px solid var(--disabled-border);
 }
