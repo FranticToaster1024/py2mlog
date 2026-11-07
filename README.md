@@ -155,10 +155,13 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
-Any code from me in the rest of the repository was manually handwritten.
+Additionally, AI assistance was used for configuration files (such as .github/workflows/ci.yml, pyproject.toml).
+Any code from me in the rest of the repository (i.e. inside src/ and web/) was manually handwritten.
 
 ## Credits
-[mimex-data](https://github.com/cardillan/mimex-data) was the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably fucked up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
+[mimex-data](https://github.com/cardillan/mimex-data) is the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably fucked up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
+
+[pyodide](https://github.com/pyodide/pyodide) is used to run the py2mlog python package in a browser.
 
 [pyndustric](https://codeberg.org/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
 [minpiler](https://github.com/neumond/minpiler) is also really cool!
