@@ -2,7 +2,6 @@ import ast
 import inspect
 from collections.abc import Callable
 from string import hexdigits
-from textwrap import indent
 from typing import TypeAlias, get_type_hints
 
 from py2mlog.compiler.error import (
@@ -119,12 +118,17 @@ def _special_Color(  # noqa: N802
             CompilerErrorType.SYNTAX, src_loc, err="Invalid color literal"
         )
 
-    if isinstance(x.value, int):
+    # i keep forgetting bool is subclass of int
+    if type(x.value) is int:
         if 0x000 <= x.value <= 0xFFFF:  # noqa: PLR2004
             # TODO: support shorthand hex color literals, possibly with a config
             pass
         elif 0x000000 <= x.value <= 0xFFFFFFFF:  # noqa: PLR2004
             return ((), MlogColorLiteral(f"{x.value:x}"))
+
+        raise CompilerError(
+            CompilerErrorType.SYNTAX, src_loc, err="Invalid color literal"
+        )
 
     raise CompilerError(
         CompilerErrorType.BAD_CALL,
@@ -189,9 +193,4 @@ def ast_const_to_mlog_col_literal(
     src_loc: SourceLocation, x: ast.Constant
 ) -> MlogColorLiteral:
     """Internal use only."""
-    try:
-        return _special_Color(MlogFillerExpr(), src_loc, x)[1]
-    except CompilerError as e:
-        raise CompilerError(
-            CompilerErrorType.INTERNAL, None, err=f"\n{indent(str(e), '    ')}"
-        ) from None
+    return _special_Color(MlogFillerExpr(), src_loc, x)[1]

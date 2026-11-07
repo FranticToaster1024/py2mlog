@@ -407,6 +407,8 @@ class Compiler:
 
                             return builtin
 
+                        # TODO: predefined colors from mimex
+
                         case _:
                             pass
 

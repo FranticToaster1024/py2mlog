@@ -42,11 +42,23 @@ def test_error(src: str, error_type: CompilerErrorType):
                 "abs(1, 2, 3)",
                 "ord()",
                 "ord(1, 2)",
+                # does Color() belong here? might need separate testcase
                 "Color(True)",
                 "Color(16777215.0)",
+                "Color(1 + 2)",
             ),
             CompilerErrorType.BAD_CALL,
             id="bad-builtin-calls",
+        ),
+        pytest.param(
+            (
+                '"%abcde"',
+                "Color(0xabcdefabc)",
+                'Color("%abcde")',
+                'Color("abcde")',
+            ),
+            CompilerErrorType.SYNTAX,
+            id="bad-color-literals",
         ),
         pytest.param(
             ("break", "continue"),

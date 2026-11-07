@@ -1,6 +1,9 @@
 # py2mlog
 A python to mindustry logic (mlog) compiler. https://xkcd.com/927/
 
+## Website
+Don't want to deal with all the annoying cli stuff? Try py2mlog out in your browser, at https://frantictoaster1024.github.io/py2mlog/.
+
 ## Install
 To install py2mlog, run:
 ```sh
@@ -137,6 +140,12 @@ Links (`Links` makes more sense imo but `Link` is supported for compatibility wi
 ```py
 l = Link[0]
 l = Links[0]
+```
+
+Color literals (through either the `Color()` builtin or a string literal in the form "%ffffff" for compatibility with pyndustric):
+```py
+red = "%ff0000"
+blue = Color("%00ff00")
 ```
 
 

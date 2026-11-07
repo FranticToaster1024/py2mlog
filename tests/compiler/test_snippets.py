@@ -24,7 +24,9 @@ from py2mlog.mlog.codegen import generate_mlog
                     'col_lit_from_str = "%ffffff"',
                     'col_lit_from_builtin = Color("%ffffff")',
                     'col_lit_from_builtin = Color("ffffff")',
+                    'col_lit_from_builtin = Color("ffffffff")',
                     "col_lit_from_builtin = Color(0xffffff)",
+                    "col_lit_from_builtin = Color(0xffffffff)",
                 )
             ),
             (
@@ -37,7 +39,9 @@ from py2mlog.mlog.codegen import generate_mlog
                 "set col_lit_from_str %ffffff",
                 "set col_lit_from_builtin %ffffff",
                 "set col_lit_from_builtin %ffffff",
+                "set col_lit_from_builtin %ffffffff",
                 "set col_lit_from_builtin %ffffff",
+                "set col_lit_from_builtin %ffffffff",
             ),
             id="basic-assignment-and-types",
         ),

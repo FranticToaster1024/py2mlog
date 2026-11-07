@@ -1,8 +1,6 @@
 # Contributing to py2mlog
 Thank you for considering contributing to py2mlog! This file documents some information you may find useful.
 
-However, it is important to first understand that this is just a toy project. I cannot guarantee active maintanence or updates. If you find this project interesting enough to contribute to, it may be worth considering making your own fork to replace it instead.
-
 # Issues
 You can create a new issue [here](https://github.com/FranticToaster1024/py2mlog/issues/new). You can use these to raise bug reports, feature requests/suggestions, discuss code changes, request clarifications, or really anything related to this project.
 
