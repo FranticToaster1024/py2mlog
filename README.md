@@ -117,14 +117,25 @@ y = func(42)
 
 **Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
 
+
+Imports from `py2mlog`, which don't actually do anything except please your type checker.
+```py
+from py2mlog import Env, Links
+```
+I still need to add a `.pyi` type stub though for the type checker to stop complaining.
+
 Access to very basic mlog builtins via `Env.*`, just like pyndustric.
 ```py
 c = Env.copper
 w = Env.water
 ```
 
+Links, just like pyndustric (i think):
+```py
+l = Links[0]
+```
 
-`
+
 
 ## Things to note
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.

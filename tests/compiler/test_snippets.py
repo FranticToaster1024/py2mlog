@@ -1256,6 +1256,13 @@ from py2mlog.mlog.codegen import generate_mlog
             ),
             id="links-subscript-access",
         ),
+        pytest.param(
+            """
+            from py2mlog import Env, Links
+            """,
+            (),
+            id="py2mlog-namespace-imports",
+        ),
     ],
 )
 def test_snippet(src: str, expected: tuple[str]):

@@ -20,7 +20,7 @@ from py2mlog.compiler.func_utils import (
     resolve_args,
     resolve_args_from_signature,
 )
-from py2mlog.compiler.mlog_builtins import ENV_ATTR_MAP
+from py2mlog.compiler.mlog_builtins import ENV_ATTR_MAP, MLOG_BUILTIN_NAMESPACES
 from py2mlog.compiler.names import (
     GLOBAL_SCOPE,
     NAME_FUNC_RET_ADDR,
@@ -1083,6 +1083,29 @@ class Compiler:
                 else:
                     raise self._unsupported_stmt_error(
                         stmt, " with non-range() iterable"
+                    )
+
+            case ast.ImportFrom(module=module, names=names, level=level):
+                if names and names[0].name == "*":
+                    raise self._unsupported_stmt_error(
+                        stmt, " with wildcard imports (from ... import *)"
+                    )
+
+                if module != "py2mlog" or level != 0:
+                    raise self._unsupported_stmt_error(
+                        stmt, " with non 'py2mlog' import"
+                    )
+
+                if any(n.asname is not None for n in names):
+                    raise self._unsupported_stmt_error(
+                        stmt, " with aliases (from ... import ... as ...)"
+                    )
+
+                if any(n.name not in MLOG_BUILTIN_NAMESPACES for n in names):
+                    raise CompilerError(
+                        CompilerErrorType.BAD_IMPORT,
+                        self._get_src_loc_from_node(stmt),
+                        err="unrecognised namespace import",
                     )
 
             case _:

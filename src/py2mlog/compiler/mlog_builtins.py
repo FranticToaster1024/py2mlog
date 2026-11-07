@@ -97,3 +97,6 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
 }
 
 ENV_ATTR_MAP: Mapping[str, MlogExpr] = CONTENT_MAP | SPECIAL_BUILTIN_MAP
+
+
+MLOG_BUILTIN_NAMESPACES = {"Env", "Links"}
