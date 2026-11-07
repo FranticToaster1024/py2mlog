@@ -8,12 +8,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         submodules: true
 
     - name: Set up Python 3.10
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: "3.10"
 
@@ -28,6 +28,7 @@ jobs:
     
     - name: Check code typing
       run: hatch run type-check
+
 
   tests:
     needs: static-checks
@@ -54,4 +55,32 @@ jobs:
 
     - name: Test code
       run: hatch test --python ${{ matrix.python-version }}
+
+
+  update-web-whl:
+    needs: tests
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: Install Hatch
+      run: pipx install hatch
     
+    - name: Build wheel
+      run: hatch build -t wheel
+
+    - name: Copy wheel into web folder
+      run: cp dist/*.whl web/py2mlog.whl
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v5
+      with:
+        path: 'web/'
+
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v5

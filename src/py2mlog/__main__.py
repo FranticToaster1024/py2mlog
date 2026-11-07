@@ -135,17 +135,22 @@ def _compile_file(
         mlog = generate_mlog(emitter.instructions)
 
     except SyntaxError as e:
-        sys.stderr.write(
-            f"A syntax error occurred while compiling {target.name}:\n\n"
+        logger.exception(  # noqa: LOG007
+            "A syntax error occurred while compiling %s:\n\n",
+            target.name,
+            exc_info=False,
         )
         print_exception(e, limit=0)
         sys.exit(1)
 
     except CompilerError as e:
-        sys.stderr.write(
-            f"A compiler error occurred while compiling {target.name}:\n\n"
+        logger.exception(  # noqa:LOG007
+            "A compiler error occurred while compiling %s:\n\n%s: %s",
+            target.name,
+            type(e).__name__,
+            e,  # noqa: TRY401
+            exc_info=False,
         )
-        sys.stderr.write(f"{type(e).__name__}: {e}")
         sys.exit(1)
 
     try:
