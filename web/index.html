@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>py2mlog</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.js"></script>
+</head>
+<body>
+    <h1>py2mlog</h1>
+    <div id="editor">
+        <div>
+            <h4>Input (python)</h4>
+            <textarea id="input"></textarea>
+            <div class="buttons">
+                <button id="compile">Compile</button>
+            </div>
+        </div>
+        <div>
+            <h4>Output (mlog)</h4>
+            <textarea readonly id="output"></textarea>
+        </div>
+    </div>
+    <div id="loading">Loading...</div>
+    <div id="description">
+        <p>
+            Source code <a href=https://github.com/FranticToaster1024/py2mlog>here</a>.
+            This site is still pretty plain and the errors are also not well-formatted.
+        </p>
+    </div>
+</body>
+</html>
