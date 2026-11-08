@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from string import hexdigits
-from typing import Concatenate, TypeAlias
+from typing import Concatenate
 
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
@@ -169,9 +169,7 @@ def _inline_sleep(call_ctx: BuiltinCallCtx, t: MlogExpr, /) -> MlogNullLiteral:
     return MlogNullLiteral()
 
 
-_InlineBuiltinFunc: TypeAlias = Callable[
-    Concatenate[BuiltinCallCtx, ...], MlogExpr
-]
+type _InlineBuiltinFunc = Callable[Concatenate[BuiltinCallCtx, ...], MlogExpr]
 
 INLINE_BUILTIN_FUNC_MAP: dict[str, _InlineBuiltinFunc | None] = {
     "abs": _inline_abs,

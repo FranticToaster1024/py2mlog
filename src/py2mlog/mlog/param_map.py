@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from typing import TypeAlias
 
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import (
@@ -21,7 +20,7 @@ class ParamType(Enum):
     FILLER = auto()
 
 
-_ArgOrder: TypeAlias = tuple[ParamType, ...]
+type _ArgOrder = tuple[ParamType, ...]
 # default arg order:
 # [*suboperation], [*selectable], *var
 PARAM_MAP: dict[

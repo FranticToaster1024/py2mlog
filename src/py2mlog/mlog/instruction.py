@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import TypeAlias
 
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import MlogArg
@@ -24,4 +23,4 @@ class Label:
     name: str
 
 
-MlogItem: TypeAlias = Instruction | Label
+type MlogItem = Instruction | Label

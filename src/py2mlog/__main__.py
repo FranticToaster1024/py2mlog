@@ -10,7 +10,6 @@ from pathlib import Path
 from textwrap import indent
 from time import perf_counter
 from traceback import print_exception
-from typing import TypeAlias
 
 from py2mlog.compiler.compiler import Compiler
 from py2mlog.compiler.emitter import Emitter
@@ -43,7 +42,7 @@ def indent_log() -> Generator[None, None, None]:
     indent_level -= 1
 
 
-COMPILE_PATH_CALLABLE: TypeAlias = Callable[
+type COMPILE_PATH_CALLABLE = Callable[
     [argparse.ArgumentParser, Path, Path], None
 ]
 

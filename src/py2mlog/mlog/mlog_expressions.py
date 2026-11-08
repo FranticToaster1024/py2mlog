@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import TypeAlias
 
 
 @dataclass(frozen=True)
@@ -50,4 +49,4 @@ class MlogVar(MlogExpr):
     name: str
 
 
-MlogArg: TypeAlias = MlogExpr | LabelRef
+type MlogArg = MlogExpr | LabelRef
