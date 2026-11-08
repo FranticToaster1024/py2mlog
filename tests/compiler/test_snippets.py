@@ -770,6 +770,8 @@ from py2mlog.mlog.codegen import generate_mlog
             b = ord('a')
             c = min(a, 2)
             # d = min(1, 2, a, b)
+            sleep(10)
+            e = wait(a)  # why would you do this though
             """,
             (
                 "op abs a a",
@@ -778,6 +780,9 @@ from py2mlog.mlog.codegen import generate_mlog
                 # "op min __p2m_tmp0 b a",
                 # "op min __p2m_tmp1 __p2m_tmp0 2",
                 # "op min d __p2m_tmp1 1",
+                "wait 10",
+                "wait a",
+                "set e null",
             ),
             id="supported-inline-builtin-functions",
         ),

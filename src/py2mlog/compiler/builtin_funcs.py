@@ -13,6 +13,7 @@ from py2mlog.mlog.instruction import Instruction, InstructionType
 from py2mlog.mlog.mlog_expressions import (
     MlogColorLiteral,
     MlogExpr,
+    MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
 )
@@ -154,6 +155,13 @@ def _inline_Color(  # noqa: N802
     )
 
 
+def _inline_sleep(call_ctx: BuiltinCallCtx, t: MlogExpr, /) -> MlogNullLiteral:
+    call_ctx.emitter.emit_instruction(
+        Instruction(InstructionType.WAIT, None, (), (t,))
+    )
+    return MlogNullLiteral()
+
+
 _InlineBuiltinFunc: TypeAlias = Callable[
     Concatenate[BuiltinCallCtx, ...], MlogExpr
 ]
@@ -163,6 +171,8 @@ INLINE_BUILTIN_FUNC_MAP: dict[str, _InlineBuiltinFunc | None] = {
     "ord": _inline_ord,
     "min": _inline_min,
     "Color": _inline_Color,
+    "sleep": _inline_sleep,
+    "wait": _inline_sleep,
     "exec": None,
     "eval": None,
 }
