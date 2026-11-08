@@ -8,9 +8,8 @@ from inspect import signature
 from py2mlog.compiler import config
 from py2mlog.compiler.builtin_funcs import (
     INLINE_BUILTIN_FUNC_MAP,
-    SPECIAL_BUILTIN_FUNC_MAP,
     BuiltinCallCtx,
-    ast_const_to_mlog_col_literal,
+    builtin_color,
 )
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
@@ -49,6 +48,7 @@ from py2mlog.mlog.mlog_expressions import (
     MlogBoolLiteral,
     MlogBuiltin,
     MlogExpr,
+    MlogFillerExpr,
     MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
@@ -465,8 +465,13 @@ class Compiler:
                 # idt i can drop the '%' check
                 # even though it is a little repetitive
                 if config.STRING_LITERAL_AS_COLOR and val and val[0] == "%":
-                    return ast_const_to_mlog_col_literal(
-                        self._get_src_loc_from_node(const), self.emitter, const
+                    return builtin_color(
+                        BuiltinCallCtx(
+                            MlogFillerExpr(),
+                            self._get_src_loc_from_node(const),
+                            self.emitter,
+                        ),
+                        MlogStringLiteral(val),
                     )
 
                 return MlogStringLiteral(val)
@@ -517,27 +522,6 @@ class Compiler:
         if inline_func_def is not None:
             return self._compile_inline_func_call(
                 func_call, inline_func_def, output_expr
-            )
-
-        compile_special_builtin = SPECIAL_BUILTIN_FUNC_MAP.get(func_name, ...)
-        if compile_special_builtin is not ...:
-            # "DRY"
-            arg_map = resolve_args_from_signature(
-                # this is kinda cursed huh
-                # filler1 is output_expr, filler2 is src_loc
-                [FillerAstExpr(), *func_call.args],
-                func_kwargs,
-                src_location,
-                signature(compile_special_builtin),
-            )
-
-            return compile_special_builtin(
-                BuiltinCallCtx(output_expr, src_location, self.emitter),
-                *[
-                    e
-                    for e in arg_map.values()
-                    if not isinstance(e, FillerAstExpr)
-                ],
             )
 
         # TODO: non-inline builtins

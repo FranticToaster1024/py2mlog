@@ -42,6 +42,7 @@ def test_error(src: str, error_type: CompilerErrorType):
                 "abs(1, 2, 3)",
                 "ord()",
                 "ord(1, 2)",
+                "min()",
                 # does Color() belong here? might need separate testcase
                 "Color(True)",
                 "Color(16777215.0)",

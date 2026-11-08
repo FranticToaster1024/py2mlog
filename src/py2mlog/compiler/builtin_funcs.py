@@ -1,4 +1,3 @@
-import ast
 from collections.abc import Callable
 from dataclasses import dataclass
 from string import hexdigits
@@ -14,8 +13,8 @@ from py2mlog.mlog.instruction import Instruction, InstructionType
 from py2mlog.mlog.mlog_expressions import (
     MlogColorLiteral,
     MlogExpr,
-    MlogFillerExpr,
     MlogNumberLiteral,
+    MlogStringLiteral,
 )
 from py2mlog.mlog.suboperations import OperationSuboperation
 
@@ -99,34 +98,23 @@ def _inline_min(
     return call_ctx.output_expr
 
 
-_InlineBuiltinFunc: TypeAlias = Callable[
-    Concatenate[BuiltinCallCtx, ...], MlogExpr
-]
-
-INLINE_BUILTIN_FUNC_MAP: dict[str, _InlineBuiltinFunc | None] = {
-    "abs": _inline_abs,
-    "ord": _inline_ord,
-    "min": _inline_min,
-    "exec": None,
-    "eval": None,
-}
-
-
-# ----------------------------------------
-# special builtins
-# ----------------------------------------
-# these directly take ast expressions as arguments
-def _special_Color(  # noqa: N802
-    call_ctx: BuiltinCallCtx, x: ast.expr, /
+def _inline_Color(  # noqa: N802
+    call_ctx: BuiltinCallCtx, x: MlogExpr, /
 ) -> MlogColorLiteral:
-    if not isinstance(x, ast.Constant):
+    if not isinstance(
+        x, (MlogNumberLiteral, MlogStringLiteral, MlogColorLiteral)
+    ):
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
             call_ctx.src_loc,
-            err="Called 'Color()' with non-literal",
+            err=f"Called 'Color()' with unsupported MlogExpr type '{type(x).__name__}'",
         )
 
-    if isinstance(x.value, str):
+    # to handle Color("%ffffff")
+    if isinstance(x, MlogColorLiteral):
+        return x
+
+    if isinstance(x, MlogStringLiteral):
         val = x.value[1:] if x.value[0] == "%" else x.value
 
         if all(s in hexdigits for s in val):
@@ -146,7 +134,7 @@ def _special_Color(  # noqa: N802
         )
 
     # i keep forgetting bool is subclass of int
-    if type(x.value) is int:
+    if isinstance(x.value, int):
         if 0x000 <= x.value <= 0xFFFF:  # noqa: PLR2004
             # TODO: support shorthand hex color literals, possibly with a config
             pass
@@ -162,25 +150,23 @@ def _special_Color(  # noqa: N802
     raise CompilerError(
         CompilerErrorType.BAD_CALL,
         call_ctx.src_loc,
-        err=f"Called 'Color()' with unsupported literal type '{type(x.value).__name__}'",
+        err="Called 'Color()' with float",
     )
 
 
-_SpecialBuiltinFunc: TypeAlias = Callable[
+_InlineBuiltinFunc: TypeAlias = Callable[
     Concatenate[BuiltinCallCtx, ...], MlogExpr
 ]
 
-SPECIAL_BUILTIN_FUNC_MAP: dict[str, _SpecialBuiltinFunc] = {
-    "Color": _special_Color,
+INLINE_BUILTIN_FUNC_MAP: dict[str, _InlineBuiltinFunc | None] = {
+    "abs": _inline_abs,
+    "ord": _inline_ord,
+    "min": _inline_min,
+    "Color": _inline_Color,
+    "exec": None,
+    "eval": None,
 }
 
 
-# ----------------------------------------
-# miscellaneous
-# ----------------------------------------
-# this is probably a bad idea but DRY or something ¯\_(ツ)_/¯
-def ast_const_to_mlog_col_literal(
-    src_loc: SourceLocation, emitter: Emitter, x: ast.Constant
-) -> MlogColorLiteral:
-    """Internal use only."""
-    return _special_Color(BuiltinCallCtx(MlogFillerExpr(), src_loc, emitter), x)
+# ¯\_(ツ)_/¯
+builtin_color = _inline_Color
