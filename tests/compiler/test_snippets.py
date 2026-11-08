@@ -1266,10 +1266,26 @@ from py2mlog.mlog.codegen import generate_mlog
             """
             a = UnitType.flare
             b = UnitType.quell_missile
+
+            Unit.bind(a)
+            Unit.bind(UnitType.flare)
+            Unit.bind("flare")
+            Unit.bind("@flare")
+
+            Unit.move(100, abc)
+            Unit.move(x=100, y=abc)
             """,
             (
                 "set a @flare",
                 "set b @quell-missile",
+                # unit bind
+                "ubind a",
+                "ubind @flare",
+                "ubind @flare",
+                "ubind @flare",
+                # unit control
+                "ucontrol move 100 abc",
+                "ucontrol move 100 abc",
             ),
             id="unit-operations",
         ),

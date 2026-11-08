@@ -39,6 +39,7 @@ def test_error(src: str, error_type: CompilerErrorType):
         pytest.param(
             (
                 "abs()",
+                "abs(x=1)",
                 "abs(1, 2, 3)",
                 "ord()",
                 "ord(1, 2)",

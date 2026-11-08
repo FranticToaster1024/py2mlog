@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from string import hexdigits
@@ -9,18 +10,24 @@ from py2mlog.compiler.error import (
     CompilerErrorType,
     SourceLocation,
 )
+from py2mlog.compiler.mlog_builtins import UNIT_TYPE_MAP
 from py2mlog.mlog.instruction import Instruction, InstructionType
 from py2mlog.mlog.mlog_expressions import (
+    MlogBuiltin,
     MlogColorLiteral,
     MlogExpr,
     MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
 )
-from py2mlog.mlog.suboperations import OperationSuboperation
+from py2mlog.mlog.suboperations import (
+    OperationSuboperation,
+    UnitControlSuboperation,
+)
+
+logger = logging.getLogger(__name__)
 
 
-# back to this thing
 @dataclass(frozen=True)
 class BuiltinCallCtx:
     output_expr: MlogExpr
@@ -180,3 +187,66 @@ INLINE_BUILTIN_FUNC_MAP: dict[str, _InlineBuiltinFunc | None] = {
 
 # ¯\_(ツ)_/¯
 builtin_color = _inline_Color
+
+
+# ----------------------------------------
+# Unit namespace (Unit.*)
+# ----------------------------------------
+def _unit_bind(call_ctx: BuiltinCallCtx, type_: MlogExpr, /) -> MlogNullLiteral:
+    if isinstance(type_, (MlogStringLiteral, MlogBuiltin)):
+        type_str = (
+            type_.value.removeprefix("@")
+            if isinstance(type_, MlogStringLiteral)
+            else type_.name
+        )
+
+        mlog_builtin = UNIT_TYPE_MAP.get(type_str)
+        if mlog_builtin is None:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                call_ctx.src_loc,
+                err=f"Unknown unit type '{type_str}'",
+            )
+
+        call_ctx.emitter.emit_instruction(
+            Instruction(InstructionType.UNIT_BIND, None, (), (mlog_builtin,))
+        )
+
+    else:
+        # i mean if the user really wants to
+        # unit bind to a color literal
+        # im not gonna stop them
+        call_ctx.emitter.emit_instruction(
+            Instruction(InstructionType.UNIT_BIND, None, (), (type_,))
+        )
+
+    return MlogNullLiteral()
+
+
+# TODO: radar & locate
+
+
+# all the ucontrol stuff
+def _unit_move(
+    call_ctx: BuiltinCallCtx, x: MlogExpr, y: MlogExpr
+) -> MlogNullLiteral:
+    call_ctx.emitter.emit_instruction(
+        Instruction(
+            InstructionType.UNIT_CONTROL,
+            UnitControlSuboperation.MOVE,
+            (),
+            (x, y),
+        )
+    )
+    return MlogNullLiteral()
+
+
+# TODO: all the ucontrol stuff
+
+
+UNIT_NAMESPACE_BUILTIN_FUNC_MAP: dict[
+    str, Callable[Concatenate[BuiltinCallCtx, ...], MlogExpr] | None
+] = {
+    "bind": _unit_bind,
+    "move": _unit_move,
+}

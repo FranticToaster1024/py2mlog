@@ -1,13 +1,14 @@
 import ast
 import logging
 from collections import deque
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from inspect import signature
 
 from py2mlog.compiler import config
 from py2mlog.compiler.builtin_funcs import (
     INLINE_BUILTIN_FUNC_MAP,
+    UNIT_NAMESPACE_BUILTIN_FUNC_MAP,
     BuiltinCallCtx,
     builtin_color,
 )
@@ -500,15 +501,6 @@ class Compiler:
         self, func_call: ast.Call, output_expr: MlogExpr
     ) -> MlogExpr:
         """Returns the function call's output expression."""
-
-        if not isinstance(func_call.func, ast.Name):
-            raise self._unsupported_expr_error(func_call)
-        func_name = func_call.func.id
-
-        # can probably be bypassed easily
-        if f"{PREFIX_FUNC_SCOPE}{func_name}" in self._scope:
-            raise self._unsupported_expr_error(func_call, " with recursion")
-
         func_kwargs: dict[str, ast.expr] = {}
         for kwarg in func_call.keywords:
             if kwarg.arg in func_kwargs:
@@ -522,6 +514,21 @@ class Compiler:
                 raise self._unsupported_expr_error(kwarg.value)
 
             func_kwargs[kwarg.arg] = kwarg.value
+
+        if isinstance(func_call.func, ast.Attribute):
+            return self._compile_attr_func_call(
+                func_call, output_expr, func_kwargs
+            )
+
+        if not isinstance(func_call.func, ast.Name):
+            # idk what desc to put in the error sooo
+            # misleading error message again
+            raise self._unsupported_expr_error(func_call)
+        func_name = func_call.func.id
+
+        # basic recursion check
+        if f"{PREFIX_FUNC_SCOPE}{func_name}" in self._scope:
+            raise self._unsupported_expr_error(func_call, " with recursion")
 
         src_location = self._get_src_loc_from_node(func_call)
 
@@ -546,11 +553,13 @@ class Compiler:
         compile_inline_builtin = INLINE_BUILTIN_FUNC_MAP.get(func_name, ...)
         if compile_inline_builtin is None:
             raise self._unsupported_expr_error(
-                func_call, f": builtin {func_name}"
+                func_call, f" with builtin {func_name}"
             )
         if compile_inline_builtin is ...:
-            raise self._unsupported_expr_error(
-                func_call, f": unknown function {func_name}"
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_location,
+                err=f"unknown/undefined function {func_name}",
             )
 
         arg_map = resolve_args_from_signature(
@@ -560,17 +569,74 @@ class Compiler:
             signature(compile_inline_builtin),
         )
 
-        # misleading error message ¯\_(ツ)_/¯
-        compiled_arg_list = [
-            self.compile_expr(e)
-            for e in arg_map.values()
-            if not isinstance(e, FillerAstExpr)
-        ]
-
         return compile_inline_builtin(
             BuiltinCallCtx(output_expr, src_location, self.emitter),
-            *compiled_arg_list,
+            *self._compile_arglist(arg_map.values()),
         )
+
+    def _compile_attr_func_call(
+        self,
+        func_call: ast.Call,
+        output_expr: MlogExpr,
+        func_kwargs: dict[str, ast.expr],
+    ) -> MlogExpr:
+        if not isinstance(func_call.func, ast.Attribute):
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err="called '_compile_attr_func_call' with non-attr call",
+            )
+
+        if not isinstance(func_call.func.value, ast.Name):
+            raise self._unsupported_expr_error(
+                func_call, " with non-identifier as attribute"
+            )
+        namespace = func_call.func.value.id
+        func_name = func_call.func.attr
+
+        namespaced_builtin_func = None
+        match namespace:
+            case "Unit":
+                namespaced_builtin_func = UNIT_NAMESPACE_BUILTIN_FUNC_MAP.get(
+                    func_name
+                )
+
+            case _:
+                raise self._unsupported_expr_error(
+                    func_call, " with custom namespaces"
+                )
+
+        src_loc = self._get_src_loc_from_node(func_call)
+
+        if namespaced_builtin_func is None:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err=f"unknown/unsupported namespaced function {namespace}.{func_name}",
+            )
+
+        arg_map = resolve_args_from_signature(
+            [FillerAstExpr(), *func_call.args],
+            func_kwargs,
+            src_loc,
+            signature(namespaced_builtin_func),
+        )
+
+        return namespaced_builtin_func(
+            BuiltinCallCtx(output_expr, src_loc, self.emitter),
+            *self._compile_arglist(arg_map.values()),
+        )
+
+    def _compile_arglist(self, arglist: Iterable[ast.expr]) -> list[MlogExpr]:
+        # misleading error message ¯\_(ツ)_/¯
+        # TODO: add special case for *args or something
+        # also relying on the helper
+        # to filter out the FillerAstExpr is questionable
+        return [
+            self.compile_expr(e)
+            for e in arglist
+            if not isinstance(e, FillerAstExpr)
+        ]
 
     def _compile_inline_func_call(
         self,
