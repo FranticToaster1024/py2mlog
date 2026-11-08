@@ -9,6 +9,7 @@ from py2mlog.compiler import config
 from py2mlog.compiler.builtin_funcs import (
     INLINE_BUILTIN_FUNC_MAP,
     SPECIAL_BUILTIN_FUNC_MAP,
+    BuiltinCallCtx,
     ast_const_to_mlog_col_literal,
 )
 from py2mlog.compiler.emitter import Emitter
@@ -465,7 +466,7 @@ class Compiler:
                 # even though it is a little repetitive
                 if config.STRING_LITERAL_AS_COLOR and val and val[0] == "%":
                     return ast_const_to_mlog_col_literal(
-                        self._get_src_loc_from_node(const), const
+                        self._get_src_loc_from_node(const), self.emitter, const
                     )
 
                 return MlogStringLiteral(val)
@@ -524,19 +525,20 @@ class Compiler:
             arg_map = resolve_args_from_signature(
                 # this is kinda cursed huh
                 # filler1 is output_expr, filler2 is src_loc
-                [FillerAstExpr(), FillerAstExpr(), *func_call.args],
+                [FillerAstExpr(), *func_call.args],
                 func_kwargs,
                 src_location,
                 signature(compile_special_builtin),
             )
 
-            instrs, output = compile_special_builtin(
-                output_expr,
-                src_location,
-                *tuple(arg_map.values())[2:],  # skip both fillers
+            return compile_special_builtin(
+                BuiltinCallCtx(output_expr, src_location, self.emitter),
+                *[
+                    e
+                    for e in arg_map.values()
+                    if not isinstance(e, FillerAstExpr)
+                ],
             )
-            self.emitter.emit_items(instrs)
-            return output
 
         # TODO: non-inline builtins
 
@@ -551,21 +553,23 @@ class Compiler:
             )
 
         arg_map = resolve_args_from_signature(
-            # filler to account for first arg being output_expr
             [FillerAstExpr(), *func_call.args],
             func_kwargs,
             src_location,
             signature(compile_inline_builtin),
         )
-        arg_list = tuple(arg_map.values())[1:]  # skip the filler
+
         # misleading error message ¯\_(ツ)_/¯
-        compiled_arg_list = [self.compile_expr(e) for e in arg_list]
+        compiled_arg_list = [
+            self.compile_expr(e)
+            for e in arg_map.values()
+            if not isinstance(e, FillerAstExpr)
+        ]
 
-        output = compile_inline_builtin(output_expr, *compiled_arg_list)
-
-        self.emitter.emit_items(output)
-
-        return output_expr
+        return compile_inline_builtin(
+            BuiltinCallCtx(output_expr, src_location, self.emitter),
+            *compiled_arg_list,
+        )
 
     def _compile_inline_func_call(
         self,

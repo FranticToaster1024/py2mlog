@@ -768,12 +768,18 @@ from py2mlog.mlog.codegen import generate_mlog
             """
             a = abs(a)
             b = ord('a')
+            c = min(a, 2)
+            # d = min(1, 2, a, b)
             """,
             (
                 "op abs a a",
                 'read b "a" 0',
+                "op min c 2 a",
+                # "op min __p2m_tmp0 b a",
+                # "op min __p2m_tmp1 __p2m_tmp0 2",
+                # "op min d __p2m_tmp1 1",
             ),
-            id="supported-builtin-functions",
+            id="supported-inline-builtin-functions",
         ),
         pytest.param(
             "\n".join(
