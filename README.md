@@ -98,6 +98,7 @@ Very basic python builtins (`print` not supported yet), more coming soon<sup>TM<
 ```py
 x = abs(-5)
 y = ord("!")
+z = max(a, b)  # only 2 args for now unfortunately
 ```
 
 Non-recursive custom function definitions.
@@ -130,7 +131,7 @@ from py2mlog import Env, Links
 ```
 I still need to add a `.pyi` type stub though for the type checker to stop complaining.
 
-Access to very basic mlog builtins via `Env.*`, just like pyndustric.
+Access to some mlog builtins via `Env.*`, just like pyndustric.
 ```py
 c = Env.copper
 w = Env.water
@@ -144,8 +145,11 @@ l = Links[0]
 
 Color literals (through either the `Color()` builtin or a string literal in the form "%ffffff" for compatibility with pyndustric):
 ```py
-red = "%ff0000"
-blue = Color("%00ff00")
+red = "%FF0000"
+green = Color("%00FF00")
+green = Color("00FF00")
+green_with_alpha = Color("00FF00FF")
+blue = Color(0x0000FF)
 ```
 
 
