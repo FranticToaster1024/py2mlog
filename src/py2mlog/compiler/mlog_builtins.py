@@ -8,6 +8,9 @@ from py2mlog.compiler.mimex_utils import (
 )
 from py2mlog.mlog.mlog_expressions import MlogBuiltin, MlogExpr
 
+# ----------------------------------------
+# Env namespace (Env.*)
+# ----------------------------------------
 CONTENT_MAP: Mapping[str, MlogBuiltin] = {
     kebab_to_snake(s): MlogBuiltin(s)
     for file_name in (
@@ -66,6 +69,20 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
 ENV_ATTR_MAP: Mapping[str, MlogExpr] = CONTENT_MAP | SPECIAL_BUILTIN_MAP
 
 
+# ----------------------------------------
+# UnitType namespace (UnitType.*)
+# ----------------------------------------
+UNIT_TYPE_MAP = {
+    kebab_to_snake(s): MlogBuiltin(s)
+    for s in select_col(
+        (MIMEX_DATA_DIR / "mimex-units.txt").read_text(encoding="utf-8"), "name"
+    )
+}
+
+
+# ----------------------------------------
+# allowed namespaces or whatever
+# ----------------------------------------
 ALIAS_NAMESPACES = {
     "Link": ALIAS.LINK,
 }

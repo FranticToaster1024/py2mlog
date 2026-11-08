@@ -25,7 +25,11 @@ from py2mlog.compiler.func_utils import (
     resolve_args,
     resolve_args_from_signature,
 )
-from py2mlog.compiler.mlog_builtins import ENV_ATTR_MAP, MLOG_BUILTIN_NAMESPACES
+from py2mlog.compiler.mlog_builtins import (
+    ENV_ATTR_MAP,
+    MLOG_BUILTIN_NAMESPACES,
+    UNIT_TYPE_MAP,
+)
 from py2mlog.compiler.names import (
     GLOBAL_SCOPE,
     NAME_FUNC_RET_ADDR,
@@ -407,6 +411,19 @@ class Compiler:
                                 )
 
                             return builtin
+
+                        # this is literally identical to the Env thing ;-;
+                        case "UnitType":
+                            unit_type = UNIT_TYPE_MAP.get(attr)
+                            if unit_type is None:
+                                # TODO: use ErrorType.unknown or smth
+                                raise CompilerError(
+                                    CompilerErrorType.UNSUPPORTED,
+                                    self._get_src_loc_from_node(expr),
+                                    feature=f"Unknown UnitType attribute '{attr}'",
+                                )
+
+                            return unit_type
 
                         # TODO: predefined colors from mimex
 

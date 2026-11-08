@@ -1246,8 +1246,8 @@ from py2mlog.mlog.codegen import generate_mlog
             """
             a = Env.copper
             a = Env.water
-            a = Env.redStone
-            a = Env.navalFactory
+            a = Env.red_stone
+            a = Env.naval_factory
             a = Env.counter
             a = Env.time
             """,
@@ -1260,6 +1260,18 @@ from py2mlog.mlog.codegen import generate_mlog
                 "set a @time",
             ),
             id="env-attr-resources",
+        ),
+        pytest.param(
+            # TODO: actual unit operations
+            """
+            a = UnitType.flare
+            b = UnitType.quell_missile
+            """,
+            (
+                "set a @flare",
+                "set b @quell-missile",
+            ),
+            id="unit-operations",
         ),
         pytest.param(
             """
