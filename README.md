@@ -47,6 +47,12 @@ In the above example:
 - `path/to/file.py` will compile to `file.mlog`,
 - and `path/to/other/file.py` will compile to `path/to/other/file.mlog`.
 
+You can use `-s` or `--stdout` to print the compiled mlog to stdout. This does not override or clash with the file output.
+
+You can use `--no-file` to disable the file output. This must be used with `-s` or `--stdout`, otherwise the compiled program has nowhere to go.
+
+Information, warnings, and other diagnostics are printed to stderr.
+
 ## Supported features
 Assignment and operators:
 ```py
@@ -129,7 +135,7 @@ Imports from `py2mlog`, which don't actually do anything except please your type
 ```py
 from py2mlog import Env, Links
 ```
-I still need to add a `.pyi` type stub though for the type checker to stop complaining.
+The `.pyi` type stub still needs much work though for the type checker to stop complaining.
 
 Access to some mlog builtins via `Env.*`, just like pyndustric.
 ```py
@@ -152,11 +158,29 @@ green_with_alpha = Color("00FF00FF")
 blue = Color(0x0000FF)
 ```
 
+All draw operations, through the `Screen.*` namespace. If I didn't mess up somewhere, these should be fully compatible with pyndustric. I'm too lazy to write an actual sample so here is a snippet from the tests:
+```py
+Screen.clear(0, 127, 255)
+Screen.fill(a, b, c)  # alias for 'Screen.clear()'
+Screen.color(a, b, c)  # default alpha is 255
+Screen.color(a, b, c, d)
+Screen.col(Color("%ffffff"))
+Screen.stroke(3)
+Screen.line(0, 0, x2=80, y2=160)
+Screen.rect(0, 0, 80, height=160)
+Screen.fill_rect(a, y=b, width=c, height=d)  # alias for 'Screen.rect'
+Screen.linerect(0, 0, 80, 160)
+Screen.poly(80, 80, 6, 40 ,0)
+Screen.line_poly(80, 80, 6, 40, 0)
+
+Screen.flush()  # default is 'display1'
+```
+
 
 
 ## Things to note
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
-Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types
+Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types. The compiler does not currently check and enforce the mlog 1000 line limit.
 
 ## Future goals/To-do list
 - **Better errors**
@@ -174,7 +198,7 @@ Additionally, AI assistance was used for configuration files (such as .github/wo
 Any code from me in the rest of the repository (i.e. inside src/ and web/) was manually handwritten.
 
 ## Credits
-[mimex-data](https://github.com/cardillan/mimex-data) is the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably fucked up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
+[mimex-data](https://github.com/cardillan/mimex-data) is the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably messed up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
 
 [pyodide](https://github.com/pyodide/pyodide) is used to run the py2mlog python package in a browser.
 

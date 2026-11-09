@@ -80,6 +80,8 @@ class Instruction:
 
 <sub>I really should have put these inside the module docstrings instead shouldn't I?</sub>
 
+
+
 ### Compiler
 
 Some utilities are used to make the compiler's job easier:
@@ -97,18 +99,37 @@ The core compiler logic is in `compiler.py`. It traverses an abstract syntax tre
 
 Most nodes created by the builtin python `ast` module fall into two categories: `ast.expr` and `ast.stmt`. As such, the `Compiler` class mirrors this with its two main methods: `compile_expr` and `compile_stmt`.
 
-`compile_expr` has a parameter called `output_expr`. It provides, well, the output expression that the compiled expression's result will be stored at. If it is `None`, a temporary variable is allocated instead. This allows the compiler to cleanly compile code such as
+`compile_expr` has a parameter called `output_expr`. It provides, the output expression that the compiled expression's result will be stored at. If it is `None`, a temporary variable is allocated instead. This allows the compiler to cleanly compile code such as
 ```py
 x = a + b
 ```
+
 to
+
 ```
 op add x a b
 ```
+
 instead of
+
 ```
 op add some_tmp_var a b
 set x some_tmp_var
 ```
 
 ... I don't understand half the code in there either.
+TODO: update this thing
+
+
+
+### Web
+
+Webpage files are in the [`web/`](web/) folder. [`Pyodide`](https://github.com/pyodide/pyodide) is used to run this python package in a browser environment.
+
+### CLI
+
+<!--
+[`__main__.py`](src/py2mlog/__main__.py)
+looks pretty ugly due to underscore clashing with underline from path/link.
+-->
+CLI code is found in `__main__.py` ([here](src/py2mlog/__main__.py)). It's a bit of a mess.
