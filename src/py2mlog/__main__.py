@@ -26,6 +26,11 @@ VERSION = _version
 logger = logging.getLogger(__name__)
 
 
+# this might need cleanup at some point
+# probably also needs tests to check whether it errors properly
+# and like better tests in general
+# but i can't be bothered
+
 indent_level = 0
 
 
@@ -42,8 +47,15 @@ def indent_log() -> Generator[None, None, None]:
     indent_level -= 1
 
 
+class Py2mlogCLIArgs(argparse.Namespace):
+    targets: list[Path]
+    outputs: list[Path] | None
+    stdout: bool
+    file: bool
+
+
 type COMPILE_PATH_CALLABLE = Callable[
-    [argparse.ArgumentParser, Path, Path], None
+    [argparse.ArgumentParser, Py2mlogCLIArgs, Path, Path], None
 ]
 
 
@@ -52,12 +64,19 @@ def log_compile(
 ) -> COMPILE_PATH_CALLABLE:
     @wraps(func)
     def wrapper(
-        parser: argparse.ArgumentParser, target: Path, output: Path
+        parser: argparse.ArgumentParser,
+        args: Py2mlogCLIArgs,
+        target: Path,
+        output: Path,
     ) -> None:
         time_st = perf_counter()
-        logger.info("Compiling '%s' to '%s'...", target.name, output.name)
+        logger.info(
+            "Compiling '%s'%s...",
+            target.name,
+            f" to '{output.name}'" if args.file else "",
+        )
 
-        result = func(parser, target, output)
+        result = func(parser, args, target, output)
 
         logger.info("Done in %ss.", round(perf_counter() - time_st, 2))
 
@@ -67,18 +86,30 @@ def log_compile(
 
 
 def _compile_path(
-    parser: argparse.ArgumentParser, target: Path, output: Path
+    parser: argparse.ArgumentParser,
+    args: Py2mlogCLIArgs,
+    target: Path,
+    output: Path,
 ) -> None:
     if target.is_file():
-        _compile_file(parser, target, output)
+        _compile_file(parser, args, target, output)
 
     elif target.is_dir():
-        _compile_dir(parser, target, output)
+        _compile_dir(parser, args, target, output)
+
+    elif not target.exists():
+        parser.error(f"Target '{target.resolve()}' does not exist.")
+
+    else:
+        parser.error("Something went wrong.")
 
 
 @log_compile
 def _compile_dir(
-    parser: argparse.ArgumentParser, target: Path, output: Path
+    parser: argparse.ArgumentParser,
+    args: Py2mlogCLIArgs,
+    target: Path,
+    output: Path,
 ) -> None:
     if not output.exists():
         output.mkdir(parents=True)
@@ -94,6 +125,7 @@ def _compile_dir(
             with indent_log():
                 _compile_file(
                     parser,
+                    args,
                     path,
                     (output / path.relative_to(target)).with_suffix(".mlog"),
                 )
@@ -101,7 +133,10 @@ def _compile_dir(
 
 @log_compile
 def _compile_file(
-    parser: argparse.ArgumentParser, target: Path, output: Path
+    parser: argparse.ArgumentParser,
+    args: Py2mlogCLIArgs,
+    target: Path,
+    output: Path,
 ) -> None:
     if not target.is_file():
         parser.error(f"Target '{target.resolve()}' is not a file.")
@@ -134,40 +169,36 @@ def _compile_file(
         mlog = generate_mlog(emitter.instructions)
 
     except SyntaxError as e:
-        logger.exception(  # noqa: LOG007
-            "A syntax error occurred while compiling %s:\n\n",
-            target.name,
-            exc_info=False,
+        logger.error(  # noqa: TRY400
+            "A syntax error occurred while compiling %s:\n\n", target.name
         )
         print_exception(e, limit=0)
         sys.exit(1)
 
     except CompilerError as e:
-        logger.exception(  # noqa:LOG007
+        logger.error(  # noqa: TRY400
             "A compiler error occurred while compiling %s:\n\n%s: %s",
             target.name,
             type(e).__name__,
-            e,  # noqa: TRY401
-            exc_info=False,
+            e,
         )
         sys.exit(1)
 
-    try:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(mlog, encoding="utf-8")
-    except PermissionError:
-        parser.error(f"Could not write to '{output.resolve()}'.")
-    except FileNotFoundError:
-        parser.error(f"Could not find '{output.resolve()}'.")
-    except OSError as e:
-        parser.error(
-            f"An OS error occurred while writing to '{output.resolve()}': {e}"
-        )
+    if args.stdout:
+        sys.stdout.write(f"\n{indent(mlog, '\t' * (indent_level + 1))}\n\n")
 
-
-class Py2mlogCLIArgs(argparse.Namespace):
-    targets: list[Path]
-    outputs: list[Path] | None
+    if args.file:
+        try:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(mlog, encoding="utf-8")
+        except PermissionError:
+            parser.error(f"Could not write to '{output.resolve()}'.")
+        except FileNotFoundError:
+            parser.error(f"Could not find '{output.resolve()}'.")
+        except OSError as e:
+            parser.error(
+                f"An OS error occurred while writing to '{output.resolve()}': {e}"
+            )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -196,6 +227,21 @@ def main(argv: list[str] | None = None) -> None:
         help="The output file/folder(s) (defaults to path/to/python/src/<target>.mlog).",
         dest="outputs",
     )
+    parser.add_argument(
+        "-s",
+        "--stdout",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Whether to print result to standard output (defaults to False).",
+    )
+    parser.add_argument(
+        "-f",
+        "--file",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Whether to create output file/folder(s). "
+        "Overrides '--output' when False. Defaults to True.",
+    )
 
     args = parser.parse_args(argv, namespace=Py2mlogCLIArgs())
 
@@ -206,6 +252,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.outputs is None:
         args.outputs = []
 
+    if not args.stdout and not args.file:
+        parser.error(
+            "No output provided; cannot disable stdout and file outputs together."
+        )
+
     time_st = perf_counter()
     for i, target in enumerate(args.targets):
         if i < len(args.outputs):
@@ -213,6 +264,6 @@ def main(argv: list[str] | None = None) -> None:
         else:
             output = target.with_suffix(".mlog") if target.is_file() else target
 
-        _compile_path(parser, target, output)
+        _compile_path(parser, args, target, output)
 
     logger.info("All done in %ss!", round(perf_counter() - time_st, 2))
