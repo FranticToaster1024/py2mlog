@@ -19,95 +19,98 @@ def test_compile(tmp_path: Path):
     assert out_path.read_text(encoding="utf-8") == mlog
 
 
+_test_output_file_exists_testcases = [
+    pytest.param(
+        "py2mlog {} --output {}",
+        ["src.py", "out.mlog"],
+        ["src.py"],
+        ["out.mlog"],
+        id="single-file-explicit-output",
+    ),
+    pytest.param(
+        "py2mlog {}",
+        ["file.py"],
+        ["file.py"],
+        ["file.mlog"],
+        id="single-file-implicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {} --output {} {}",
+        ["src1.py", "src2.py", "out1.mlog", "out2.mlog"],
+        ["src1.py", "src2.py"],
+        ["out1.mlog", "out2.mlog"],
+        id="multiple-files-explicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {}",
+        ["file1.py", "file2.py"],
+        ["file1.py", "file2.py"],
+        ["file1.mlog", "file2.mlog"],
+        id="multiple-files-implicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {} --output {} {}",
+        [
+            "dir1/dir2/src.py",
+            "dir/src.py",
+            "dir1/dir2/out.mlog",
+            "out.mlog",
+        ],
+        ["dir1/dir2/src.py", "dir/src.py"],
+        ["dir1/dir2/out.mlog", "out.mlog"],
+        id="dir-files-explicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {}",
+        ["dir1/dir2/file.py", "dir/file.py"],
+        ["dir1/dir2/file.py", "dir/file.py"],
+        ["dir1/dir2/file.mlog", "dir/file.mlog"],
+        id="dir-files-implicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {} --output {} {}",
+        ["dir/", "dir1/dir2/", "out_dir/", "./"],
+        [
+            "dir/file1.py",
+            "dir/file2.py",
+            "dir/config.json",
+            "dir1/dir2/file.py",
+        ],
+        ["out_dir/file1.mlog", "out_dir/file2.mlog", "file.mlog"],
+        id="dir-explicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {}",
+        ["dir/", "dir1/dir2/"],
+        [
+            "dir/file1.py",
+            "dir/file2.py",
+            "dir/config.json",
+            "dir1/dir2/file.py",
+        ],
+        ["dir/file1.mlog", "dir/file2.mlog", "dir1/dir2/file.mlog"],
+        id="dir-implicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {} --output {} {}",
+        ["src.py", "dir/", "out.mlog", "out_dir/out.mlog"],
+        ["src.py", "dir/src.py"],
+        ["out.mlog", "out_dir/out.mlog"],
+        id="file-and-dir-explicit-output",
+    ),
+    pytest.param(
+        "py2mlog {} {}",
+        ["file.py", "dir/"],
+        ["file.py", "dir/file.py"],
+        ["file.mlog", "dir/file.mlog"],
+        id="file-and-dir-implicit-output",
+    ),
+]
+
+
 @pytest.mark.parametrize(
     ("cmd", "path_args", "input_files", "output_files"),
-    [
-        pytest.param(
-            "py2mlog {} --output {}",
-            ["src.py", "out.mlog"],
-            ["src.py"],
-            ["out.mlog"],
-            id="single-file-explicit-output",
-        ),
-        pytest.param(
-            "py2mlog {}",
-            ["file.py"],
-            ["file.py"],
-            ["file.mlog"],
-            id="single-file-implicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {} --output {} {}",
-            ["src1.py", "src2.py", "out1.mlog", "out2.mlog"],
-            ["src1.py", "src2.py"],
-            ["out1.mlog", "out2.mlog"],
-            id="multiple-files-explicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {}",
-            ["file1.py", "file2.py"],
-            ["file1.py", "file2.py"],
-            ["file1.mlog", "file2.mlog"],
-            id="multiple-files-implicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {} --output {} {}",
-            [
-                "dir1/dir2/src.py",
-                "dir/src.py",
-                "dir1/dir2/out.mlog",
-                "out.mlog",
-            ],
-            ["dir1/dir2/src.py", "dir/src.py"],
-            ["dir1/dir2/out.mlog", "out.mlog"],
-            id="dir-files-explicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {}",
-            ["dir1/dir2/file.py", "dir/file.py"],
-            ["dir1/dir2/file.py", "dir/file.py"],
-            ["dir1/dir2/file.mlog", "dir/file.mlog"],
-            id="dir-files-implicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {} --output {} {}",
-            ["dir/", "dir1/dir2/", "out_dir/", "./"],
-            [
-                "dir/file1.py",
-                "dir/file2.py",
-                "dir/config.json",
-                "dir1/dir2/file.py",
-            ],
-            ["out_dir/file1.mlog", "out_dir/file2.mlog", "file.mlog"],
-            id="dir-explicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {}",
-            ["dir/", "dir1/dir2/"],
-            [
-                "dir/file1.py",
-                "dir/file2.py",
-                "dir/config.json",
-                "dir1/dir2/file.py",
-            ],
-            ["dir/file1.mlog", "dir/file2.mlog", "dir1/dir2/file.mlog"],
-            id="dir-implicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {} --output {} {}",
-            ["src.py", "dir/", "out.mlog", "out_dir/out.mlog"],
-            ["src.py", "dir/src.py"],
-            ["out.mlog", "out_dir/out.mlog"],
-            id="file-and-dir-explicit-output",
-        ),
-        pytest.param(
-            "py2mlog {} {}",
-            ["file.py", "dir/"],
-            ["file.py", "dir/file.py"],
-            ["file.mlog", "dir/file.mlog"],
-            id="file-and-dir-implicit-output",
-        ),
-    ],
+    _test_output_file_exists_testcases,
 )
 def test_output_file_exists(
     cmd: str,
