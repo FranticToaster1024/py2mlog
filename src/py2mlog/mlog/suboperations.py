@@ -283,7 +283,7 @@ class SetMarkerSuboperation(Suboperation):
     COLORI = "colori"
 
 
-suboperation_map: dict[InstructionType, type[Suboperation]] = {
+SUBOPERATION_MAP: dict[InstructionType, type[Suboperation]] = {
     InstructionType.DRAW: DrawSuboperation,
     InstructionType.CONTROL: ControlSuboperation,
     InstructionType.OPERATION: OperationSuboperation,

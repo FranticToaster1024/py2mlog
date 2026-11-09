@@ -5,14 +5,8 @@ from collections.abc import Generator, Iterable
 from contextlib import contextmanager
 from inspect import signature
 
+from py2mlog import intrinsics
 from py2mlog.compiler import config
-from py2mlog.compiler.builtin_funcs import (
-    INLINE_BUILTIN_FUNC_MAP,
-    SCREEN_NAMESPACE_BUILTIN_FUNC_MAP,
-    UNIT_NAMESPACE_BUILTIN_FUNC_MAP,
-    BuiltinCallCtx,
-    builtin_color,
-)
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
     CompilerError,
@@ -49,6 +43,7 @@ from py2mlog.compiler.operation_maps import (
     NEGATED_CMP_OPS_MAP,
     UNARY_OP_MAP,
 )
+from py2mlog.intrinsics.intrinsic_func_utils import IntrinsicCallCtx
 from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
@@ -494,11 +489,10 @@ class Compiler:
                 return MlogNumberLiteral(val)
 
             case str(val):
-                # idt i can drop the '%' check
-                # even though it is a little repetitive
+                # a little repetitive
                 if config.STRING_LITERAL_AS_COLOR and val and val[0] == "%":
-                    return builtin_color(
-                        BuiltinCallCtx(
+                    return intrinsics.builtins.builtin_color(
+                        IntrinsicCallCtx(
                             MlogFillerExpr(),
                             self._get_src_loc_from_node(const),
                             self.emitter,
@@ -544,11 +538,8 @@ class Compiler:
         if f"{PREFIX_FUNC_SCOPE}{func_name}" in self._scope:
             raise self._unsupported_expr_error(func_call, " with recursion")
 
-        src_location = self._get_src_loc_from_node(func_call)
-
         # TODO: LEGB, passing function references
         # TODO: check outer scopes
-        # TODO: delayed resolution (??? i forgor what i meant when i wrote this)
 
         scope_str = self._get_scope_str(func_name)
 
@@ -562,9 +553,36 @@ class Compiler:
                 func_call, inline_func_def, output_expr
             )
 
+        output = self._compile_builtin_func_call(
+            func_call, output_expr, func_name, func_kwargs
+        )
+        if isinstance(output, MlogExpr):
+            return output
+
+        raise CompilerError(
+            CompilerErrorType.UNSUPPORTED,
+            self._get_src_loc_from_node(func_call),
+            feature=f"Called '{func_name}' builtin (which returns tuple) "
+            "without immediate iterable unpacking",
+        )
+
+    def _compile_builtin_func_call(
+        self,
+        func_call: ast.Call,
+        output_expr: MlogExpr,
+        func_name: str,
+        func_kwargs: dict[str, ast.expr],
+    ) -> MlogExpr | tuple[MlogExpr, ...]:
+        """
+        Call this directly for tuple return.
+        """
         # TODO: non-inline builtins
 
-        compile_inline_builtin = INLINE_BUILTIN_FUNC_MAP.get(func_name, ...)
+        src_loc = self._get_src_loc_from_node(func_call)
+
+        compile_inline_builtin = intrinsics.builtins.FUNC_MAP.get(
+            func_name, ...
+        )
         if compile_inline_builtin is None:
             raise self._unsupported_expr_error(
                 func_call, f" with builtin {func_name}"
@@ -572,19 +590,19 @@ class Compiler:
         if compile_inline_builtin is ...:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
-                src_location,
+                src_loc,
                 err=f"unknown/undefined function {func_name}",
             )
 
         arg_map = resolve_args_from_signature(
             [FillerAstExpr(), *func_call.args],
             func_kwargs,
-            src_location,
+            src_loc,
             signature(compile_inline_builtin),
         )
 
         return compile_inline_builtin(
-            BuiltinCallCtx(output_expr, src_location, self.emitter),
+            IntrinsicCallCtx(output_expr, src_loc, self.emitter),
             *self._compile_arglist(arg_map.values()),
         )
 
@@ -611,12 +629,12 @@ class Compiler:
         namespaced_builtin_func = None
         match namespace:
             case "Unit":
-                namespaced_builtin_func = UNIT_NAMESPACE_BUILTIN_FUNC_MAP.get(
+                namespaced_builtin_func = intrinsics.unit.FUNC_MAP.get(
                     func_name
                 )
 
             case "Screen":
-                namespaced_builtin_func = SCREEN_NAMESPACE_BUILTIN_FUNC_MAP.get(
+                namespaced_builtin_func = intrinsics.screen.FUNC_MAP.get(
                     func_name
                 )
 
@@ -642,7 +660,7 @@ class Compiler:
         )
 
         return namespaced_builtin_func(
-            BuiltinCallCtx(output_expr, src_loc, self.emitter),
+            IntrinsicCallCtx(output_expr, src_loc, self.emitter),
             *self._compile_arglist(arg_map.values()),
         )
 
@@ -1215,12 +1233,7 @@ class Compiler:
                     )
 
             case ast.ImportFrom(module=module, names=names, level=level):
-                if names and names[0].name == "*":
-                    raise self._unsupported_stmt_error(
-                        stmt, " with wildcard imports (from ... import *)"
-                    )
-
-                if module != "py2mlog" or level != 0:
+                if module != "py2mlog_api" or level != 0:
                     raise self._unsupported_stmt_error(
                         stmt, " with non 'py2mlog' import"
                     )
@@ -1230,7 +1243,11 @@ class Compiler:
                         stmt, " with aliases (from ... import ... as ...)"
                     )
 
-                if any(n.name not in MLOG_BUILTIN_NAMESPACES for n in names):
+                if any(
+                    n.name != "*"  # star import
+                    and n.name not in MLOG_BUILTIN_NAMESPACES
+                    for n in names
+                ):
                     raise CompilerError(
                         CompilerErrorType.BAD_IMPORT,
                         self._get_src_loc_from_node(stmt),

@@ -138,11 +138,11 @@ y = func(42)
 **Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
 
 
-Imports from `py2mlog`, which don't actually do anything except please your type checker.
+Imports from `py2mlog_api`, which don't actually do anything except please your type checker.
 ```py
-from py2mlog import Env, Links
+from py2mlog_api import Env, Links
 ```
-The `.pyi` type stub still needs much work though for the type checker to stop complaining.
+The `py2mlog_ai.pyi` type stub still needs much work though for the type checker to stop complaining.
 
 Access to some mlog builtins via `Env.*`, just like pyndustric.
 ```py
@@ -191,6 +191,7 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 
 ## Future goals/To-do list
 - **Better errors**
+- no-op star import
 - Compatibility with pyndustric-based code
 - Optimization
 - Inline mlog

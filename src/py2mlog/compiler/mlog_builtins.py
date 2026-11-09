@@ -9,6 +9,8 @@ from py2mlog.compiler.mimex_utils import (
 )
 from py2mlog.mlog.mlog_expressions import MlogBuiltin, MlogExpr
 
+# unsure if this belongs in compiler/ or mlog/
+
 # ----------------------------------------
 # Env namespace (Env.*)
 # ----------------------------------------

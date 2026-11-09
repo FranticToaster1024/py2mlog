@@ -1360,10 +1360,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            from py2mlog import Env, Links
+            from py2mlog_api import Env, Links
+            from py2mlog_api import *
             """,
         (),
-        id="py2mlog-namespace-imports",
+        id="py2mlog-api-namespace-imports",
     ),
 ]
 
