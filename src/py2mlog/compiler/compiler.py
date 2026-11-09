@@ -8,6 +8,7 @@ from inspect import signature
 from py2mlog.compiler import config
 from py2mlog.compiler.builtin_funcs import (
     INLINE_BUILTIN_FUNC_MAP,
+    SCREEN_NAMESPACE_BUILTIN_FUNC_MAP,
     UNIT_NAMESPACE_BUILTIN_FUNC_MAP,
     BuiltinCallCtx,
     builtin_color,
@@ -26,7 +27,9 @@ from py2mlog.compiler.func_utils import (
     resolve_args,
     resolve_args_from_signature,
 )
+from py2mlog.compiler.mimex_utils import snake_to_kebab
 from py2mlog.compiler.mlog_builtins import (
+    ALIGN_MAP,
     ENV_ATTR_MAP,
     MLOG_BUILTIN_NAMESPACES,
     UNIT_TYPE_MAP,
@@ -404,11 +407,23 @@ class Compiler:
                         case "Env":
                             builtin = ENV_ATTR_MAP.get(attr)
                             if builtin is None:
-                                # TODO: use ErrorType.unknown or smth
+                                builtin = MlogBuiltin(snake_to_kebab(attr))
+                                logger.warning(
+                                    "Unknown Env attribute '%s'. "
+                                    "Using '@%s' as fallback.",
+                                    attr,
+                                    builtin.name,
+                                )
+
+                            return builtin
+
+                        case "Align":
+                            builtin = ALIGN_MAP.get(attr)
+                            if builtin is None:
                                 raise CompilerError(
                                     CompilerErrorType.UNSUPPORTED,
                                     self._get_src_loc_from_node(expr),
-                                    feature=f"Unknown Env attribute '{attr}'",
+                                    feature=f"Unknown Align attribute '{attr}'",
                                 )
 
                             return builtin
@@ -417,7 +432,6 @@ class Compiler:
                         case "UnitType":
                             unit_type = UNIT_TYPE_MAP.get(attr)
                             if unit_type is None:
-                                # TODO: use ErrorType.unknown or smth
                                 raise CompilerError(
                                     CompilerErrorType.UNSUPPORTED,
                                     self._get_src_loc_from_node(expr),
@@ -601,6 +615,11 @@ class Compiler:
                     func_name
                 )
 
+            case "Screen":
+                namespaced_builtin_func = SCREEN_NAMESPACE_BUILTIN_FUNC_MAP.get(
+                    func_name
+                )
+
             case _:
                 raise self._unsupported_expr_error(
                     func_call, " with custom namespaces"
@@ -632,11 +651,16 @@ class Compiler:
         # TODO: add special case for *args or something
         # also relying on the helper
         # to filter out the FillerAstExpr is questionable
-        return [
-            self.compile_expr(e)
-            for e in arglist
-            if not isinstance(e, FillerAstExpr)
-        ]
+        compiled_arglist: list[MlogExpr] = []
+        for expr in arglist:
+            if isinstance(expr, FillerAstExpr):
+                continue
+            if isinstance(expr, MlogExpr):
+                continue
+
+            compiled_arglist.append(self.compile_expr(expr))
+
+        return compiled_arglist
 
     def _compile_inline_func_call(
         self,

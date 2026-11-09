@@ -3,6 +3,7 @@ from collections.abc import Mapping
 from py2mlog.compiler.config import ALIAS
 from py2mlog.compiler.mimex_utils import (
     MIMEX_DATA_DIR,
+    camel_to_snake,
     kebab_to_snake,
     select_col,
 )
@@ -78,6 +79,19 @@ UNIT_TYPE_MAP = {
         (MIMEX_DATA_DIR / "mimex-units.txt").read_text(encoding="utf-8"), "name"
     )
 }
+# ----------------------------------------
+# Align namespace (Align.*)
+# ----------------------------------------
+# for draw print alignments (e.g. '@topLeft')
+ALIGN_MAP = {
+    s: MlogBuiltin(raw_str)
+    for raw_str in select_col(
+        (MIMEX_DATA_DIR / "mimex-alignments.txt").read_text(encoding="utf-8"),
+        "name",
+    )
+    # accept 'topLeft', 'top_left', 'topleft'
+    for s in (raw_str, camel_to_snake(raw_str), raw_str.lower())
+}
 
 
 # ----------------------------------------
@@ -87,8 +101,23 @@ ALIAS_NAMESPACES = {
     "Link": ALIAS.LINK,
 }
 
-MLOG_BUILTIN_NAMESPACES = {
-    "Env",
-    "Links",
-    "Color",
-} | {k for k, v in ALIAS_NAMESPACES.items() if v}
+
+# TODO: extract from builtin_funcs.py
+EXTRA_BUILTIN_FUNCS = {
+    "sleep",
+    "wait",
+}
+
+MLOG_BUILTIN_NAMESPACES = (
+    {
+        "Env",
+        "Links",
+        "Color",
+        "Screen",
+        "UnitType",
+        "Unit",
+        "Align",  # for draw print alignments (see mimex-alignments.txt)
+    }
+    | EXTRA_BUILTIN_FUNCS
+    | {k for k, v in ALIAS_NAMESPACES.items() if v}
+)

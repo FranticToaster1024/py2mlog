@@ -20,6 +20,19 @@ def kebab_to_snake(s: str) -> str:
     return s.lower().replace("-", "_")
 
 
+def snake_to_kebab(s: str) -> str:
+    s_ = s.strip("_")
+    if s != s_:
+        logger.warning(
+            "Removed starting or trailing underscore in string '%s' "
+            "when converting snake_case to kebab-case",
+            s,
+        )
+        s = s_
+
+    return s.lower().replace("_", "-")
+
+
 def kebab_to_camel(s: str) -> str:
     s_ = s.strip("-")
     if s != s_:
@@ -32,6 +45,31 @@ def kebab_to_camel(s: str) -> str:
 
     words = s.split("-")
     return words[0] + "".join(word.capitalize() for word in words[1:])
+
+
+# this is getting kinda silly
+def snake_to_camel(s: str) -> str:
+    s_ = s.strip("_")
+    if s != s_:
+        logger.warning(
+            "Removed starting or trailing underscore in string '%s' "
+            "when converting snake_case to camelCase",
+            s,
+        )
+        s = s_
+
+    words = s.split("_")
+    return words[0] + "".join(word.capitalize() for word in words[1:])
+
+
+def camel_to_snake(s: str) -> str:
+    chars: list[str] = []
+    for c in s:
+        if c.isupper():
+            chars.append("_")
+        chars.append(c.lower())
+
+    return "".join(chars)
 
 
 def select_col(data: str, col_name: str) -> list[str]:
