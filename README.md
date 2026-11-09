@@ -170,7 +170,7 @@ Screen.line(0, 0, x2=80, y2=160)
 Screen.rect(0, 0, 80, height=160)
 Screen.fill_rect(a, y=b, width=c, height=d)  # alias for 'Screen.rect'
 Screen.linerect(0, 0, 80, 160)
-Screen.poly(80, 80, 6, 40 ,0)
+Screen.poly(80, 80, 6, 40, 0)
 Screen.line_poly(80, 80, 6, 40, 0)
 
 Screen.flush()  # default is 'display1'
