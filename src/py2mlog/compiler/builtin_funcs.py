@@ -1,8 +1,6 @@
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from functools import wraps
-from inspect import signature
 from string import hexdigits
 from typing import Concatenate
 
@@ -40,9 +38,6 @@ class BuiltinCallCtx:
 
 
 type _BuiltinFunc = Callable[Concatenate[BuiltinCallCtx, ...], MlogExpr]
-type _BuiltinFuncWithSelfRef = Callable[
-    Concatenate[BuiltinCallCtx, _BuiltinFunc, ...], MlogExpr
-]
 type _BuiltinFuncMap = dict[str, _BuiltinFunc | None]
 type _BuiltinFuncRevMap = dict[_BuiltinFunc | None, list[str]]
 
@@ -267,7 +262,7 @@ UNIT_NAMESPACE_BUILTIN_FUNC_MAP: _BuiltinFuncMap = {
 def _get_func_names(
     namespace: str, rev_map: _BuiltinFuncRevMap, func: _BuiltinFunc
 ) -> str:
-    func_names = "/".join(rev_map.get(func, ("[func not in _rev_map]")))
+    func_names = "/".join(rev_map.get(func, ("[func not in _rev_map]",)))
 
     return f"{namespace}.{func_names}"
 
@@ -298,40 +293,16 @@ def _validate_screen_arg_type(
             )
 
 
-def _screen_wrapper(func: _BuiltinFuncWithSelfRef) -> _BuiltinFunc:
-
-    # replace the signature manually ¯\_(ツ)_/¯
-    # all this clownery just to avoid hardcoding the func name btw
-    # was it worth it?
-    old_sig = signature(func)
-    old_params = list(old_sig.parameters.values())
-    new_params = [old_params[0], *old_params[2:]]
-    new_sig = old_sig.replace(parameters=new_params)
-
-    @wraps(func)
-    def wrapper(
-        call_ctx: BuiltinCallCtx, *args: MlogExpr, **kwargs: MlogExpr
-    ) -> MlogExpr:
-        return func(call_ctx, func, *args, **kwargs)
-
-    # ¯\_(ツ)_/¯ ¯\_(ツ)_/¯ ¯\_(ツ)_/¯
-    wrapper.__signature__ = new_sig  # type: ignore
-    return wrapper
-
-
-@_screen_wrapper
 def _screen_clear(
-    call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
-    r: MlogExpr,
-    g: MlogExpr,
-    b: MlogExpr,
+    call_ctx: BuiltinCallCtx, r: MlogExpr, g: MlogExpr, b: MlogExpr
 ) -> MlogNullLiteral:
     for arg in (r, g, b):
         if not isinstance(arg, (MlogNumberLiteral, MlogVar)):
             logger.warning(
                 "Called '%s' with non-number literal: '%s'.",
-                _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
+                _get_func_names(
+                    "Screen", SCREEN_NAMESPACE_REV_MAP, _screen_clear
+                ),
                 arg,
             )
 
@@ -339,7 +310,9 @@ def _screen_clear(
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
                 "with value outside bounds.",
-                _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
+                _get_func_names(
+                    "Screen", SCREEN_NAMESPACE_REV_MAP, _screen_clear
+                ),
                 arg,
             )
 
@@ -350,10 +323,8 @@ def _screen_clear(
 _MlogNumberLiteral255 = MlogNumberLiteral(255)
 
 
-@_screen_wrapper
 def _screen_color(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     r: MlogExpr,
     g: MlogExpr,
     b: MlogExpr,
@@ -363,7 +334,9 @@ def _screen_color(
         if not isinstance(arg, (MlogNumberLiteral, MlogVar)):
             logger.warning(
                 "Called '%s' with non-number literal: '%s'.",
-                _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
+                _get_func_names(
+                    "Screen", SCREEN_NAMESPACE_REV_MAP, _screen_color
+                ),
                 arg,
             )
 
@@ -371,7 +344,9 @@ def _screen_color(
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
                 "with value outside bounds.",
-                _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
+                _get_func_names(
+                    "Screen", SCREEN_NAMESPACE_REV_MAP, _screen_color
+                ),
                 arg,
             )
 
@@ -379,98 +354,64 @@ def _screen_color(
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_col(
-    call_ctx: BuiltinCallCtx, func: _BuiltinFunc, color: MlogExpr, /
+    call_ctx: BuiltinCallCtx, color: MlogExpr, /
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogColorLiteral, func, color)
+    _validate_screen_arg_type(MlogColorLiteral, _screen_col, color)
     _emit_draw_subop(call_ctx, DrawSuboperation.COL, color)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_stroke(
-    call_ctx: BuiltinCallCtx, func: _BuiltinFunc, width: MlogExpr
+    call_ctx: BuiltinCallCtx, width: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, width)
+    _validate_screen_arg_type(MlogNumberLiteral, _screen_stroke, width)
     _emit_draw_subop(call_ctx, DrawSuboperation.STROKE, width)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_line(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     x1: MlogExpr,
     y1: MlogExpr,
     x2: MlogExpr,
     y2: MlogExpr,
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x1, y1, x2, y2)
+    _validate_screen_arg_type(MlogNumberLiteral, _screen_line, x1, y1, x2, y2)
     _emit_draw_subop(call_ctx, DrawSuboperation.LINE, x1, y1, x2, y2)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_rect(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     x: MlogExpr,
     y: MlogExpr,
     width: MlogExpr,
     height: MlogExpr,
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x, y, width, height)
+    _validate_screen_arg_type(
+        MlogNumberLiteral, _screen_rect, x, y, width, height
+    )
     _emit_draw_subop(call_ctx, DrawSuboperation.RECT, x, y, width, height)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_line_rect(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     x: MlogExpr,
     y: MlogExpr,
     width: MlogExpr,
     height: MlogExpr,
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x, y, width, height)
+    _validate_screen_arg_type(
+        MlogNumberLiteral, _screen_line_rect, x, y, width, height
+    )
     _emit_draw_subop(call_ctx, DrawSuboperation.LINE_RECT, x, y, width, height)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_poly(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
-    x: MlogExpr,
-    y: MlogExpr,
-    sides: MlogExpr,
-    radius: MlogExpr,
-    rotation: MlogExpr,
-) -> MlogNullLiteral:
-    _validate_screen_arg_type(
-        MlogNumberLiteral, func, x, y, sides, radius, rotation
-    )
-    if isinstance(sides, MlogNumberLiteral) and not isinstance(
-        sides.value, int
-    ):
-        logger.warning(
-            "Called '%s' with float literal for arg 'sides': '%s'.",
-            _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
-            sides,
-        )
-
-    _emit_draw_subop(
-        call_ctx, DrawSuboperation.POLY, x, y, sides, radius, rotation
-    )
-    return MlogNullLiteral()
-
-
-@_screen_wrapper
-def _screen_line_poly(
-    call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     x: MlogExpr,
     y: MlogExpr,
     sides: MlogExpr,
@@ -485,7 +426,35 @@ def _screen_line_poly(
     ):
         logger.warning(
             "Called '%s' with float literal for arg 'sides': '%s'.",
-            _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
+            _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, _screen_poly),
+            sides,
+        )
+
+    _emit_draw_subop(
+        call_ctx, DrawSuboperation.POLY, x, y, sides, radius, rotation
+    )
+    return MlogNullLiteral()
+
+
+def _screen_line_poly(
+    call_ctx: BuiltinCallCtx,
+    x: MlogExpr,
+    y: MlogExpr,
+    sides: MlogExpr,
+    radius: MlogExpr,
+    rotation: MlogExpr,
+) -> MlogNullLiteral:
+    _validate_screen_arg_type(
+        MlogNumberLiteral, _screen_poly, x, y, sides, radius, rotation
+    )
+    if isinstance(sides, MlogNumberLiteral) and not isinstance(
+        sides.value, int
+    ):
+        logger.warning(
+            "Called '%s' with float literal for arg 'sides': '%s'.",
+            _get_func_names(
+                "Screen", SCREEN_NAMESPACE_REV_MAP, _screen_line_poly
+            ),
             sides,
         )
 
@@ -495,10 +464,8 @@ def _screen_line_poly(
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_triangle(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     x1: MlogExpr,
     y1: MlogExpr,
     x2: MlogExpr,
@@ -506,40 +473,37 @@ def _screen_triangle(
     x3: MlogExpr,
     y3: MlogExpr,
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x1, y1, x2, y2, x3, y3)
+    _validate_screen_arg_type(
+        MlogNumberLiteral, _screen_triangle, x1, y1, x2, y2, x3, y3
+    )
     _emit_draw_subop(
         call_ctx, DrawSuboperation.TRIANGLE, x1, y1, x2, y2, x3, y3
     )
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_image(
     call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
     x: MlogExpr,
     y: MlogExpr,
     image: MlogExpr,
     size: MlogExpr,
     rotation: MlogExpr,
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x, y, size, rotation)
-    _validate_screen_arg_type(MlogBuiltin, func, image)
+    _validate_screen_arg_type(
+        MlogNumberLiteral, _screen_image, x, y, size, rotation
+    )
+    _validate_screen_arg_type(MlogBuiltin, _screen_image, image)
     _emit_draw_subop(
         call_ctx, DrawSuboperation.IMAGE, x, y, image, size, rotation
     )
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_print(
-    call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
-    x: MlogExpr,
-    y: MlogExpr,
-    alignment: MlogExpr,
+    call_ctx: BuiltinCallCtx, x: MlogExpr, y: MlogExpr, alignment: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x, y)
+    _validate_screen_arg_type(MlogNumberLiteral, _screen_print, x, y)
     if isinstance(alignment, MlogStringLiteral):
         _alignment = ALIGN_MAP.get(alignment.value)
         if _alignment is None:
@@ -554,7 +518,7 @@ def _screen_print(
     elif not isinstance(alignment, (MlogBuiltin, MlogVar)):
         logger.warning(
             "Called '%s' with literal of type '%s'.",
-            _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, func),
+            _get_func_names("Screen", SCREEN_NAMESPACE_REV_MAP, _screen_print),
             type(alignment).__name__,
         )
 
@@ -562,35 +526,31 @@ def _screen_print(
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_translate(
-    call_ctx: BuiltinCallCtx, func: _BuiltinFunc, x: MlogExpr, y: MlogExpr
+    call_ctx: BuiltinCallCtx, x: MlogExpr, y: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x, y)
+    _validate_screen_arg_type(MlogNumberLiteral, _screen_translate, x, y)
     _emit_draw_subop(call_ctx, DrawSuboperation.TRANSLATE, x, y)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_scale(
-    call_ctx: BuiltinCallCtx, func: _BuiltinFunc, x: MlogExpr, y: MlogExpr
+    call_ctx: BuiltinCallCtx, x: MlogExpr, y: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, x, y)
+    _validate_screen_arg_type(MlogNumberLiteral, _screen_scale, x, y)
     _emit_draw_subop(call_ctx, DrawSuboperation.SCALE, x, y)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
 def _screen_rotate(
-    call_ctx: BuiltinCallCtx, func: _BuiltinFunc, degrees: MlogExpr
+    call_ctx: BuiltinCallCtx, degrees: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogNumberLiteral, func, degrees)
+    _validate_screen_arg_type(MlogNumberLiteral, _screen_rotate, degrees)
     _emit_draw_subop(call_ctx, DrawSuboperation.ROTATE, degrees)
     return MlogNullLiteral()
 
 
-@_screen_wrapper
-def _screen_reset(call_ctx: BuiltinCallCtx, _: _BuiltinFunc) -> MlogNullLiteral:
+def _screen_reset(call_ctx: BuiltinCallCtx) -> MlogNullLiteral:
     _emit_draw_subop(call_ctx, DrawSuboperation.RESET)
     return MlogNullLiteral()
 
@@ -598,13 +558,10 @@ def _screen_reset(call_ctx: BuiltinCallCtx, _: _BuiltinFunc) -> MlogNullLiteral:
 _MlogVar_display1 = MlogVar("display1")
 
 
-@_screen_wrapper
 def _screen_flush(
-    call_ctx: BuiltinCallCtx,
-    func: _BuiltinFunc,
-    target: MlogExpr = _MlogVar_display1,
+    call_ctx: BuiltinCallCtx, target: MlogExpr = _MlogVar_display1
 ) -> MlogNullLiteral:
-    _validate_screen_arg_type(MlogVar, func, target)
+    _validate_screen_arg_type(MlogVar, _screen_flush, target)
     call_ctx.emitter.emit_instruction(
         Instruction(InstructionType.DRAW_FLUSH, None, (), (target,))
     )
