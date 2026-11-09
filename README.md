@@ -5,8 +5,15 @@ A python to mindustry logic (mlog) compiler. https://xkcd.com/927/
 Don't want to deal with all the annoying cli stuff? Try py2mlog out in your browser, at https://frantictoaster1024.github.io/py2mlog/.
 
 ## Install
-To install py2mlog, run:
+Since it's a CLI tool, you can use `pipx` or `uv` or something to install it. It's probably the better method, if available. Unless you plan to use the modules in your python file for some reason?
+
+Or just install it with regular pip:
 ```sh
+# create and activate a venv
+# i guess you could skip this if you wanted to
+python -m venv .venv
+.venv/Scripts/activate.bat  # or however you activate a venv in your shell
+
 pip install "git+https://github.com/FranticToaster1024/py2mlog.git"
 ```
 

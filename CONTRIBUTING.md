@@ -5,7 +5,7 @@ Thank you for considering contributing to py2mlog! This file documents some info
 You can create a new issue [here](https://github.com/FranticToaster1024/py2mlog/issues/new). You can use these to raise bug reports, feature requests/suggestions, discuss code changes, request clarifications, or really anything related to this project.
 
 # Code contributions
-## Installing
+## Install
 To install in editable mode:
 
 ```sh
@@ -29,7 +29,7 @@ From here, there are 2 methods:
 - without hatch
     ```sh
     python -m venv .venv
-    .venv/Scripts/activate # or however you active a venv in your shell
+    .venv/Scripts/activate.bat  # or however you activate a venv in your shell
     pip install -e ".[dev]"
     ```
     Tool commands:
