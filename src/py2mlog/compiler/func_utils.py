@@ -10,7 +10,7 @@ from py2mlog.compiler.error import (
     SourceLocation,
 )
 from py2mlog.mlog.instruction import MlogItem
-from py2mlog.mlog.mlog_expressions import LabelRef, MlogVar
+from py2mlog.mlog.mlog_expressions import LabelRef, MlogExpr, MlogVar
 
 
 class FillerAstExpr(ast.expr):
@@ -32,14 +32,21 @@ class InlineFuncDef:
     func_def: ast.FunctionDef
 
 
+type ResolvedArg = ast.expr | MlogExpr
+type ResolvedPosArgs = tuple[ResolvedArg, ...]
+type ResolvedKwargs = Mapping[str, ResolvedArg]
+type ResolvedAllArgs = Mapping[str, ResolvedArg]
+type ResolvedArgs = tuple[ResolvedPosArgs, ResolvedKwargs, ResolvedAllArgs]
+
+
 # more confusing mixing of 'arg' and 'param'
 def resolve_args(
     call_args: list[ast.expr],
     call_kwargs: list[ast.keyword],
     src_loc: SourceLocation,
     args: ast.arguments,
-) -> Mapping[str, ast.expr]:
-    """L docstrings"""
+) -> ResolvedArgs:
+    """Be careful about using the third return value."""
 
     params: list[Parameter] = []
 
@@ -94,7 +101,8 @@ def resolve_args_from_signature(
     call_kwargs: dict[str, ast.expr],
     src_loc: SourceLocation,
     signature: inspect.Signature,
-) -> Mapping[str, ast.expr]:
+) -> ResolvedArgs:
+    """Be careful about using the third return value."""
     try:
         bound_args = signature.bind(*call_args, **call_kwargs)
     except TypeError as e:
@@ -103,4 +111,4 @@ def resolve_args_from_signature(
         ) from None
     bound_args.apply_defaults()
 
-    return bound_args.arguments
+    return (bound_args.args, bound_args.kwargs, bound_args.arguments)

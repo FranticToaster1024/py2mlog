@@ -1,7 +1,7 @@
 import ast
 import logging
 from collections import deque
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from inspect import signature
 
@@ -18,6 +18,8 @@ from py2mlog.compiler.func_utils import (
     CompiledFunc,
     FillerAstExpr,
     InlineFuncDef,
+    ResolvedKwargs,
+    ResolvedPosArgs,
     resolve_args,
     resolve_args_from_signature,
 )
@@ -594,16 +596,20 @@ class Compiler:
                 err=f"unknown/undefined function {func_name}",
             )
 
-        arg_map = resolve_args_from_signature(
+        pos_args, kwargs, _ = resolve_args_from_signature(
             [FillerAstExpr(), *func_call.args],
             func_kwargs,
             src_loc,
             signature(compile_inline_builtin),
         )
+        compiled_pos_args, compiled_kwargs = self._compile_args(
+            pos_args, kwargs
+        )
 
         return compile_inline_builtin(
             IntrinsicCallCtx(output_expr, src_loc, self.emitter),
-            *self._compile_arglist(arg_map.values()),
+            *compiled_pos_args,
+            **compiled_kwargs,
         )
 
     def _compile_attr_func_call(
@@ -652,33 +658,52 @@ class Compiler:
                 err=f"unknown/unsupported namespaced function {namespace}.{func_name}",
             )
 
-        arg_map = resolve_args_from_signature(
+        pos_args, kwargs, _ = resolve_args_from_signature(
             [FillerAstExpr(), *func_call.args],
             func_kwargs,
             src_loc,
             signature(namespaced_builtin_func),
         )
+        compiled_pos_args, compiled_kwargs = self._compile_args(
+            pos_args, kwargs
+        )
 
         return namespaced_builtin_func(
             IntrinsicCallCtx(output_expr, src_loc, self.emitter),
-            *self._compile_arglist(arg_map.values()),
+            *compiled_pos_args,
+            **compiled_kwargs,
         )
 
-    def _compile_arglist(self, arglist: Iterable[ast.expr]) -> list[MlogExpr]:
+    def _compile_args(
+        self, pos_args: ResolvedPosArgs, kwargs: ResolvedKwargs
+    ) -> tuple[tuple[MlogExpr, ...], Mapping[str, MlogExpr]]:
         # misleading error message ¯\_(ツ)_/¯
         # TODO: add special case for *args or something
-        # also relying on the helper
+        # also relying on this helper
         # to filter out the FillerAstExpr is questionable
-        compiled_arglist: list[MlogExpr] = []
-        for expr in arglist:
+
+        compiled_pos_args: list[MlogExpr] = []
+        for expr in pos_args:
             if isinstance(expr, FillerAstExpr):
                 continue
             if isinstance(expr, MlogExpr):
+                compiled_pos_args.append(expr)
                 continue
 
-            compiled_arglist.append(self.compile_expr(expr))
+            compiled_pos_args.append(self.compile_expr(expr))
 
-        return compiled_arglist
+        compiled_kwargs: Mapping[str, MlogExpr] = {}
+        for name, expr in kwargs.items():
+            if isinstance(expr, FillerAstExpr):
+                # if this happens something probably went wrong but ¯\_(ツ)_/¯
+                continue
+            if isinstance(expr, MlogExpr):
+                compiled_kwargs[name] = expr
+                continue
+
+            compiled_kwargs[name] = self.compile_expr(expr)
+
+        return (tuple(compiled_pos_args), compiled_kwargs)
 
     def _compile_inline_func_call(
         self,
@@ -697,14 +722,16 @@ class Compiler:
     def _compile_non_inline_func_call(
         self, func_call: ast.Call, compiled_func: CompiledFunc
     ) -> MlogExpr:
-        arg_list = resolve_args(
+        *_, arg_map = resolve_args(
             func_call.args,
             func_call.keywords,
             self._get_src_loc_from_node(func_call),
             compiled_func.params,
         )
 
-        for name, arg in arg_list.items():
+        for name, arg in arg_map.items():
+            if isinstance(arg, MlogExpr):
+                continue
             self.compile_expr(
                 arg, MlogVar(compiled_func.scoped_arg_prefix + name)
             )
@@ -1096,7 +1123,7 @@ class Compiler:
                         start = compiled_target  # i think this is fine?
                         stop = self.compile_expr(iter_.args[0])
                         step = MlogNumberLiteral(1)
-                    elif len(iter_.args) <= 3:  # noqa:PLR2004
+                    elif len(iter_.args) <= 3:  # noqa: PLR2004
                         start = self.compile_expr(
                             iter_.args[0], compiled_target
                         )
@@ -1455,7 +1482,7 @@ class Compiler:
         func_def: ast.FunctionDef,
         output_expr: MlogExpr,
     ):
-        arg_list = resolve_args(
+        *_, arg_map = resolve_args(
             func_call.args,
             func_call.keywords,
             self._get_src_loc_from_node(func_call),
@@ -1466,7 +1493,9 @@ class Compiler:
         with self._func_context(func_def, inline=True):
             self._filling_inline_arg_table = True
 
-            for name, arg in arg_list.items():
+            for name, arg in arg_map.items():
+                if isinstance(arg, MlogExpr):
+                    continue
                 self._arg_table[name] = self.compile_expr(arg)
 
             self._filling_inline_arg_table = False
