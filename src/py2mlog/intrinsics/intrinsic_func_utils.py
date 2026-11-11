@@ -4,17 +4,11 @@ from dataclasses import dataclass
 from typing import Concatenate, Protocol
 
 from py2mlog.compiler.emitter import Emitter
-from py2mlog.compiler.error import (
-    SourceLocation,
-)
+from py2mlog.compiler.error import SourceLocation
+from py2mlog.compiler.mimex_utils import snake_to_camel
 from py2mlog.mlog.instruction import Instruction, InstructionType
-from py2mlog.mlog.mlog_expressions import (
-    MlogExpr,
-    MlogVar,
-)
-from py2mlog.mlog.suboperations import (
-    Suboperation,
-)
+from py2mlog.mlog.mlog_expressions import MlogExpr, MlogVar
+from py2mlog.mlog.suboperations import Suboperation
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +52,10 @@ def emit_subop_func_factory(instr_type: InstructionType) -> _EmitSubopFunc:
 
 class _ValidateArgTypeFunc(Protocol):
     def __call__(
-        self, type_: type[MlogExpr], func: IntrinsicFunc, *args: MlogExpr
+        self,
+        type_: type[MlogExpr] | tuple[type[MlogExpr], ...],
+        func: IntrinsicFunc,
+        *args: MlogExpr,
     ) -> None: ...
 
 
@@ -67,17 +64,33 @@ def validate_arg_type_factory(
 ) -> _ValidateArgTypeFunc:
     # this might like mess up the logger location but ¯\_(ツ)_/¯
     def _validate_arg_type(
-        type_: type[MlogExpr], func: IntrinsicFunc, *args: MlogExpr
+        type_: type[MlogExpr] | tuple[type[MlogExpr], ...],
+        func: IntrinsicFunc,
+        *args: MlogExpr,
     ) -> None:
-        """Accepts MlogVar along with given type."""
+        """Accepts MlogVar along with given type(s)."""
+        if not type_:
+            logger.warning(
+                "(Internal) Called _validate_arg_type with empty tuple as type."
+            )
+        types = type_ if isinstance(type_, tuple) else (type_,)
+
         for arg in args:
-            if not isinstance(arg, (type_, MlogVar)):
+            if not isinstance(arg, (*types, MlogVar)):
                 logger.warning(
-                    "Called '%s' with arg '%s'. Expected type: '%s'%s.",
+                    "Called '%s' with arg '%s'. Expected type(s): %s%s.",
                     get_func_names(namespace, rev_map, func),
                     arg,
-                    type(type_).__name__,
-                    " or 'MlogVar'" if type_ is not MlogVar else "",
+                    ", ".join(type(t).__name__ for t in types),
+                    ", 'MlogVar'" if MlogVar in types else "",
                 )
 
     return _validate_arg_type
+
+
+def generate_aliases(m: IntrinsicFuncMap) -> IntrinsicFuncMap:
+    return {
+        alias: func
+        for name, func in m.items()
+        for alias in (name, snake_to_camel(name), name.replace("_", ""))
+    }

@@ -184,6 +184,8 @@ Screen.flush()  # default is 'display1'
 ```
 
 
+TODO: Unit.*
+
 
 ## Things to note
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
@@ -191,8 +193,6 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 
 ## Future goals/To-do list
 - **Better errors**
-- no-op star import
-- Compatibility with pyndustric-based code
 - Optimization
 - Inline mlog
 - Config file?
@@ -203,7 +203,7 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
 Additionally, AI assistance was used for configuration files (such as .github/workflows/ci.yml, pyproject.toml).
-Any code from me in the rest of the repository (i.e. inside src/ and web/) was manually handwritten.
+AI assistance was also used in some parts of the source code, including [`func_utils.py`](src/py2mlog/compiler/func_utils.py) and [`script.js`](web/script.js). All source code was handwritten though.
 
 ## Credits
 [mimex-data](https://github.com/cardillan/mimex-data) is the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably messed up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.

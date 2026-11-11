@@ -1273,8 +1273,37 @@ _test_snippet_testcases = [
         d = Unit.radar("flying", enemy, order="max", key=max_health)
         e = Unit.radar("ground", boss, attacker, order=False, key=maxhealth)
 
+        Unit.idle()
+        Unit.stop()
         Unit.move(100, abc)
         Unit.move(x=100, y=abc)
+        Unit.approach(100, 200, radius=10)
+        Unit.pathfind(150, 150)
+        Unit.auto_pathfind()
+        Unit.boost(True)
+        Unit.shoot()
+        Unit.shoot(100, 100)
+        Unit.target(100, 100, False)
+        Unit.targetp(router1, False)
+        Unit.target_unit(some_unit, True)
+        Unit.ceasefire()
+        Unit.item_drop(vault1)
+        Unit.itemdrop(vault1, 123)
+        Unit.store(container1, 123)
+        Unit.itemTake(nucleus1, Env.copper, 123)
+        Unit.fetch(vault1, Env.copper)
+        Unit.pay_drop()
+        Unit.drop()
+        Unit.pay_take(False)
+        Unit.lift()
+        Unit.carry()
+        Unit.pay_enter()
+        Unit.mine(x, y)
+        Unit.flag(123)
+        Unit.build(150, 150, Env.copper_wall)
+        Unit.deconstruct(150, 150)
+        w = Unit.within(150, 150, 10)
+        Unit.unbind()
         """,
         (
             "set a @flare",
@@ -1285,12 +1314,42 @@ _test_snippet_testcases = [
             "ubind @flare",
             "ubind @flare",
             # unit radar
-            "uradar ally any any maxHealth _ 0 c",
-            "uradar flying enemy any maxHealth _ 0 d",
-            "uradar ground boss attacker maxHealth _ 0 e",
+            "uradar ally any any maxHealth _ false c",
+            "uradar flying enemy any maxHealth _ false d",
+            "uradar ground boss attacker maxHealth _ false e",
             # unit control
+            "ucontrol idle",
+            "ucontrol stop",
             "ucontrol move 100 abc",
             "ucontrol move 100 abc",
+            "ucontrol approach 100 200 10",
+            "ucontrol pathfind 150 150",
+            "ucontrol autoPathfind",
+            "ucontrol boost true",
+            "ucontrol targetp @unit true",
+            "ucontrol target 100 100 true",
+            "ucontrol target 100 100 false",
+            "ucontrol targetp router1 false",
+            "ucontrol targetp some_unit true",
+            "ucontrol target 0 0 false",
+            # 9999 is arbitrary so this test is pretty brittle ¯\_(ツ)_/¯
+            "ucontrol itemDrop vault1 9999",
+            "ucontrol itemDrop vault1 123",
+            "ucontrol itemDrop container1 123",
+            "ucontrol itemTake nucleus1 @copper 123",
+            "ucontrol itemTake vault1 @copper 9999",
+            "ucontrol payDrop",
+            "ucontrol payDrop",
+            "ucontrol payTake false",
+            "ucontrol payTake true",
+            "ucontrol payTake true",
+            "ucontrol payEnter",
+            "ucontrol mine x y",
+            "ucontrol flag 123",
+            "ucontrol build 150 150 @copper-wall 0 null",
+            "ucontrol deconstruct 150 150",
+            "ucontrol within 150 150 10 w",
+            "ucontrol unbind",
         ),
         id="unit-operations",
     ),
