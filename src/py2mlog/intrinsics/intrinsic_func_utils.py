@@ -69,10 +69,11 @@ def validate_arg_type_factory(
     def _validate_arg_type(
         type_: type[MlogExpr], func: IntrinsicFunc, *args: MlogExpr
     ) -> None:
+        """Accepts MlogVar along with given type."""
         for arg in args:
             if not isinstance(arg, (type_, MlogVar)):
                 logger.warning(
-                    "Called '%s' with '%s'. Expected '%s'%s.",
+                    "Called '%s' with arg '%s'. Expected type: '%s'%s.",
                     get_func_names(namespace, rev_map, func),
                     arg,
                     type(type_).__name__,

@@ -5,7 +5,10 @@ import logging
 from string import hexdigits
 
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
-from py2mlog.intrinsics.intrinsic_func_utils import IntrinsicCallCtx, IntrinsicFuncMap
+from py2mlog.intrinsics.intrinsic_func_utils import (
+    IntrinsicCallCtx,
+    IntrinsicFuncMap,
+)
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (

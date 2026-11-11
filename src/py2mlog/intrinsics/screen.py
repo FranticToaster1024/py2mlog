@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 # ----------------------------------------
 # Screen namespace (Screen.*)
 # ----------------------------------------
+_NAMESPACE = "Screen"
 
 
 def _screen_clear(
@@ -41,7 +42,7 @@ def _screen_clear(
         if not isinstance(arg, (MlogNumberLiteral, MlogVar)):
             logger.warning(
                 "Called '%s' with non-number literal: '%s'.",
-                get_func_names("Screen", _REV_MAP, _screen_clear),
+                get_func_names(_NAMESPACE, _REV_MAP, _screen_clear),
                 arg,
             )
 
@@ -49,11 +50,11 @@ def _screen_clear(
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
                 "with value outside bounds.",
-                get_func_names("Screen", _REV_MAP, _screen_clear),
+                get_func_names(_NAMESPACE, _REV_MAP, _screen_clear),
                 arg,
             )
 
-    _emit_subop(call_ctx, DrawSuboperation.CLEAR, r, g, b)
+    _emit_draw_subop(call_ctx, DrawSuboperation.CLEAR, r, g, b)
     return MlogNullLiteral()
 
 
@@ -71,7 +72,7 @@ def _screen_color(
         if not isinstance(arg, (MlogNumberLiteral, MlogVar)):
             logger.warning(
                 "Called '%s' with non-number literal: '%s'.",
-                get_func_names("Screen", _REV_MAP, _screen_color),
+                get_func_names(_NAMESPACE, _REV_MAP, _screen_color),
                 arg,
             )
 
@@ -79,11 +80,11 @@ def _screen_color(
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
                 "with value outside bounds.",
-                get_func_names("Screen", _REV_MAP, _screen_color),
+                get_func_names(_NAMESPACE, _REV_MAP, _screen_color),
                 arg,
             )
 
-    _emit_subop(call_ctx, DrawSuboperation.COLOR, r, g, b, a)
+    _emit_draw_subop(call_ctx, DrawSuboperation.COLOR, r, g, b, a)
     return MlogNullLiteral()
 
 
@@ -91,7 +92,7 @@ def _screen_col(
     call_ctx: IntrinsicCallCtx, color: MlogExpr, /
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogColorLiteral, _screen_col, color)
-    _emit_subop(call_ctx, DrawSuboperation.COL, color)
+    _emit_draw_subop(call_ctx, DrawSuboperation.COL, color)
     return MlogNullLiteral()
 
 
@@ -99,7 +100,7 @@ def _screen_stroke(
     call_ctx: IntrinsicCallCtx, width: MlogExpr
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_stroke, width)
-    _emit_subop(call_ctx, DrawSuboperation.STROKE, width)
+    _emit_draw_subop(call_ctx, DrawSuboperation.STROKE, width)
     return MlogNullLiteral()
 
 
@@ -111,7 +112,7 @@ def _screen_line(
     y2: MlogExpr,
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_line, x1, y1, x2, y2)
-    _emit_subop(call_ctx, DrawSuboperation.LINE, x1, y1, x2, y2)
+    _emit_draw_subop(call_ctx, DrawSuboperation.LINE, x1, y1, x2, y2)
     return MlogNullLiteral()
 
 
@@ -123,7 +124,7 @@ def _screen_rect(
     height: MlogExpr,
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_rect, x, y, width, height)
-    _emit_subop(call_ctx, DrawSuboperation.RECT, x, y, width, height)
+    _emit_draw_subop(call_ctx, DrawSuboperation.RECT, x, y, width, height)
     return MlogNullLiteral()
 
 
@@ -137,7 +138,7 @@ def _screen_line_rect(
     _validate_arg_type(
         MlogNumberLiteral, _screen_line_rect, x, y, width, height
     )
-    _emit_subop(call_ctx, DrawSuboperation.LINE_RECT, x, y, width, height)
+    _emit_draw_subop(call_ctx, DrawSuboperation.LINE_RECT, x, y, width, height)
     return MlogNullLiteral()
 
 
@@ -157,11 +158,13 @@ def _screen_poly(
     ):
         logger.warning(
             "Called '%s' with float literal for arg 'sides': '%s'.",
-            get_func_names("Screen", _REV_MAP, _screen_poly),
+            get_func_names(_NAMESPACE, _REV_MAP, _screen_poly),
             sides,
         )
 
-    _emit_subop(call_ctx, DrawSuboperation.POLY, x, y, sides, radius, rotation)
+    _emit_draw_subop(
+        call_ctx, DrawSuboperation.POLY, x, y, sides, radius, rotation
+    )
     return MlogNullLiteral()
 
 
@@ -181,11 +184,11 @@ def _screen_line_poly(
     ):
         logger.warning(
             "Called '%s' with float literal for arg 'sides': '%s'.",
-            get_func_names("Screen", _REV_MAP, _screen_line_poly),
+            get_func_names(_NAMESPACE, _REV_MAP, _screen_line_poly),
             sides,
         )
 
-    _emit_subop(
+    _emit_draw_subop(
         call_ctx, DrawSuboperation.LINE_POLY, x, y, sides, radius, rotation
     )
     return MlogNullLiteral()
@@ -203,7 +206,9 @@ def _screen_triangle(
     _validate_arg_type(
         MlogNumberLiteral, _screen_triangle, x1, y1, x2, y2, x3, y3
     )
-    _emit_subop(call_ctx, DrawSuboperation.TRIANGLE, x1, y1, x2, y2, x3, y3)
+    _emit_draw_subop(
+        call_ctx, DrawSuboperation.TRIANGLE, x1, y1, x2, y2, x3, y3
+    )
     return MlogNullLiteral()
 
 
@@ -217,7 +222,9 @@ def _screen_image(
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_image, x, y, size, rotation)
     _validate_arg_type(MlogBuiltin, _screen_image, image)
-    _emit_subop(call_ctx, DrawSuboperation.IMAGE, x, y, image, size, rotation)
+    _emit_draw_subop(
+        call_ctx, DrawSuboperation.IMAGE, x, y, image, size, rotation
+    )
     return MlogNullLiteral()
 
 
@@ -239,11 +246,11 @@ def _screen_print(
     elif not isinstance(alignment, (MlogBuiltin, MlogVar)):
         logger.warning(
             "Called '%s' with literal of type '%s'.",
-            get_func_names("Screen", _REV_MAP, _screen_print),
+            get_func_names(_NAMESPACE, _REV_MAP, _screen_print),
             type(alignment).__name__,
         )
 
-    _emit_subop(call_ctx, DrawSuboperation.PRINT, x, y, alignment)
+    _emit_draw_subop(call_ctx, DrawSuboperation.PRINT, x, y, alignment)
     return MlogNullLiteral()
 
 
@@ -251,7 +258,7 @@ def _screen_translate(
     call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_translate, x, y)
-    _emit_subop(call_ctx, DrawSuboperation.TRANSLATE, x, y)
+    _emit_draw_subop(call_ctx, DrawSuboperation.TRANSLATE, x, y)
     return MlogNullLiteral()
 
 
@@ -259,7 +266,7 @@ def _screen_scale(
     call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_scale, x, y)
-    _emit_subop(call_ctx, DrawSuboperation.SCALE, x, y)
+    _emit_draw_subop(call_ctx, DrawSuboperation.SCALE, x, y)
     return MlogNullLiteral()
 
 
@@ -267,12 +274,12 @@ def _screen_rotate(
     call_ctx: IntrinsicCallCtx, degrees: MlogExpr
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _screen_rotate, degrees)
-    _emit_subop(call_ctx, DrawSuboperation.ROTATE, degrees)
+    _emit_draw_subop(call_ctx, DrawSuboperation.ROTATE, degrees)
     return MlogNullLiteral()
 
 
 def _screen_reset(call_ctx: IntrinsicCallCtx) -> MlogNullLiteral:
-    _emit_subop(call_ctx, DrawSuboperation.RESET)
+    _emit_draw_subop(call_ctx, DrawSuboperation.RESET)
     return MlogNullLiteral()
 
 
@@ -326,5 +333,5 @@ for k, v in FUNC_MAP.items():
 _REV_MAP = _rev_map
 
 
-_emit_subop = emit_subop_func_factory(InstructionType.DRAW)
-_validate_arg_type = validate_arg_type_factory("Screen", _REV_MAP)
+_emit_draw_subop = emit_subop_func_factory(InstructionType.DRAW)
+_validate_arg_type = validate_arg_type_factory(_NAMESPACE, _REV_MAP)

@@ -77,7 +77,8 @@ PARAM_MAP: dict[
         ParamType.SELECTABLE,
         ParamType.SELECTABLE,
         ParamType.SELECTABLE,
-        ParamType.FILLER,  # ?????
+        # i suspect this is cuz uradar just ripped code from regular radar
+        ParamType.FILLER,
         ParamType.VAR,
         ParamType.VAR,
     ),

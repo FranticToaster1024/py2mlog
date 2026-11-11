@@ -1269,6 +1269,10 @@ _test_snippet_testcases = [
         Unit.bind("flare")
         Unit.bind("@flare")
 
+        c = Unit.radar("ally", order=max, key=maxHealth)
+        d = Unit.radar("flying", enemy, order="max", key=max_health)
+        e = Unit.radar("ground", boss, attacker, order=False, key=maxhealth)
+
         Unit.move(100, abc)
         Unit.move(x=100, y=abc)
         """,
@@ -1280,6 +1284,10 @@ _test_snippet_testcases = [
             "ubind @flare",
             "ubind @flare",
             "ubind @flare",
+            # unit radar
+            "uradar ally any any maxHealth _ 0 c",
+            "uradar flying enemy any maxHealth _ 0 d",
+            "uradar ground boss attacker maxHealth _ 0 e",
             # unit control
             "ucontrol move 100 abc",
             "ucontrol move 100 abc",
