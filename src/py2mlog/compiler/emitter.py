@@ -5,6 +5,7 @@ from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.compiler.mimex_utils import MIMEX_DATA_DIR, select_col
 from py2mlog.compiler.names import PREFIX_LABEL, PREFIX_TMP
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
+from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mimex_arg_types import (
     MIMEX_SELECTABLE_PARAM_ARG_TYPE_MAP,
     MIMEX_SUBOP_ARG_TYPE_MAP,
@@ -27,48 +28,53 @@ _INSTRUCTION_DATA = (MIMEX_DATA_DIR / "mimex-logic-statements.txt").read_text(
 )
 
 
-_instr_arg_shapes: dict[str, _InstrArgShape] = {}
-for opcode, arg_types in zip(
-    select_col(_INSTRUCTION_DATA, "opcode"),
-    select_col(_INSTRUCTION_DATA, "argumentTypes"),
-    strict=True,
-):
-    subop = None
-    sel_params: list[type[SelectableParam]] = []
-    var_arg_count = 0
-    for arg_type in arg_types.split():
-        if arg_type in MIMEX_VAR_ARG_NAMES:
-            var_arg_count += 1
-            continue
-
-        sel_param = MIMEX_SELECTABLE_PARAM_ARG_TYPE_MAP.get(arg_type)
-        if sel_param is not None:
-            sel_params.append(sel_param)
-            continue
-
-        curr_subop = MIMEX_SUBOP_ARG_TYPE_MAP.get(arg_type)
-        if curr_subop is not None:
-            if subop is None:
-                subop = curr_subop
+# stuff inside loops leaking is kinda annoying sometimes
+def _get_instr_arg_shapes() -> dict[str, _InstrArgShape]:
+    instr_arg_shapes: dict[str, _InstrArgShape] = {}
+    for opcode, arg_types in zip(
+        select_col(_INSTRUCTION_DATA, "opcode"),
+        select_col(_INSTRUCTION_DATA, "argumentTypes"),
+        strict=True,
+    ):
+        subop = None
+        sel_params: list[type[SelectableParam]] = []
+        var_arg_count = 0
+        for arg_type in arg_types.split():
+            if arg_type in MIMEX_VAR_ARG_NAMES:
+                var_arg_count += 1
                 continue
+
+            sel_param = MIMEX_SELECTABLE_PARAM_ARG_TYPE_MAP.get(arg_type)
+            if sel_param is not None:
+                sel_params.append(sel_param)
+                continue
+
+            curr_subop = MIMEX_SUBOP_ARG_TYPE_MAP.get(arg_type)
+            if curr_subop is not None:
+                if subop is None:
+                    subop = curr_subop
+                    continue
+
+                raise CompilerError(
+                    CompilerErrorType.INTERNAL,
+                    None,
+                    err=f"Multiple suboperations when parsing mimex argumentTypes '{arg_types}'",
+                )
 
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
                 None,
-                err=f"Multiple suboperations when parsing mimex argumentTypes '{arg_types}'",
+                err=f"Unknown arg type '{arg_type}' when parsing mimex argumentTypes",
             )
 
-        raise CompilerError(
-            CompilerErrorType.INTERNAL,
-            None,
-            err=f"Unknown arg type '{arg_type}' when parsing mimex argumentTypes",
+        instr_arg_shapes[opcode] = _InstrArgShape(
+            subop, tuple(sel_params), var_arg_count
         )
 
-    _instr_arg_shapes[opcode] = _InstrArgShape(
-        subop, tuple(sel_params), var_arg_count
-    )
+    return instr_arg_shapes
 
-_INSTRUCTION_ARG_SHAPES = _instr_arg_shapes
+
+_INSTRUCTION_ARG_SHAPES = _get_instr_arg_shapes()
 
 
 class Emitter:
@@ -109,7 +115,7 @@ class Emitter:
                 None,
                 # 'effect' might be one false positive?
                 # i don't really feel like manually tracking though
-                err=f"Attempted to create invalid mlog instruction:\n{instr!r}. "
+                err=f"Attempted to create invalid mlog instruction:\n{instr!r}.\n"
                 "False positives may happen; if you think this is one, "
                 "you can file a bug report at "
                 "https://github.com/FranticToaster1024/py2mlog/issues",
@@ -136,13 +142,25 @@ class Emitter:
         elif not isinstance(instr.suboperation, expected_arg_shape.subop):
             return False
 
+        if len(instr.selectable_args) != len(expected_arg_shape.sel_params):
+            return False
         if not all(
             isinstance(sel_param, expected_sel_param)
-            for expected_sel_param in expected_arg_shape.sel_params
+            for sel_param, expected_sel_param in zip(
+                instr.selectable_args,
+                expected_arg_shape.sel_params,
+                strict=True,
+            )
         ):
             return False
 
         var_arg_count = len(instr.args)
+
+        # TODO: maybe move this to another function or use some kinda mapping?
+        # for now its just uradar though
+        if instr.type == InstructionType.UNIT_RADAR:
+            var_arg_count += 1
+
         if instr.suboperation is None:
             return var_arg_count == expected_arg_shape.var_arg_count
 
