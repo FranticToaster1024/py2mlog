@@ -181,9 +181,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            if condition:
-                result = first
-            """,
+        if condition:
+            result = first
+        """,
         (
             "jump __p2m_label0 equal condition false",
             "set result first",
@@ -193,9 +193,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            if x < 5:
-                x = x + 1
-            """,
+        if x < 5:
+            x = x + 1
+        """,
         (
             "jump __p2m_label0 greaterThanEq x 5",
             "op add x x 1",
@@ -205,11 +205,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            if condition:
-                result = first
-            else:
-                result = second
-            """,
+        if condition:
+            result = first
+        else:
+            result = second
+        """,
         (
             "jump __p2m_label0 equal condition false",
             "set result first",
@@ -222,13 +222,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            if first_condition:
-                result = first
-            elif second_condition:
-                result = second
-            else:
-                result = fallback
-            """,
+        if first_condition:
+            result = first
+        elif second_condition:
+            result = second
+        else:
+            result = fallback
+        """,
         (
             "jump __p2m_label0 equal first_condition false",
             "set result first",
@@ -246,13 +246,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            if first_condition:
-                result = first
-            elif second_condition:
-                result = second
-            elif third_condition:
-                result = third
-            """,
+        if first_condition:
+            result = first
+        elif second_condition:
+            result = second
+        elif third_condition:
+            result = third
+        """,
         (
             "jump __p2m_label0 equal first_condition false",
             "set result first",
@@ -272,9 +272,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while condition:
-                result = value
-            """,
+        while condition:
+            result = value
+        """,
         (
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
@@ -286,9 +286,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while count < limit:
-                count = count + 1
-            """,
+        while count < limit:
+            count = count + 1
+        """,
         (
             "jump __p2m_label1 greaterThanEq count limit",
             "__p2m_label0:",
@@ -300,10 +300,10 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while outer_condition:
-                while inner_condition:
-                    result = value
-            """,
+        while outer_condition:
+            while inner_condition:
+                result = value
+        """,
         (
             "jump __p2m_label1 equal outer_condition false",
             "__p2m_label0:",
@@ -319,9 +319,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while condition:
-                break
-            """,
+        while condition:
+            break
+        """,
         (
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
@@ -333,13 +333,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while condition1:
-                if condition2:
-                    break
-
-                x += 10
+        while condition1:
+            if condition2:
                 break
-            """,
+
+            x += 10
+            break
+        """,
         (
             "jump __p2m_label1 equal condition1 false",
             "__p2m_label0:",
@@ -356,9 +356,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while condition:
-                continue
-            """,
+        while condition:
+            continue
+        """,
         (
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
@@ -372,11 +372,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while condition:
-                result = False
-            else:
-                result = True
-            """,
+        while condition:
+            result = False
+        else:
+            result = True
+        """,
         (
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
@@ -389,12 +389,12 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while condition:
-                result = False
-                break
-            else:
-                result = True
-            """,
+        while condition:
+            result = False
+            break
+        else:
+            result = True
+        """,
         (
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
@@ -409,11 +409,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            while outer_condition:
-                while inner_condition:
-                    break
-                continue
-            """,
+        while outer_condition:
+            while inner_condition:
+                break
+            continue
+        """,
         (
             "jump __p2m_label1 equal outer_condition false",
             "__p2m_label0:",
@@ -431,9 +431,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(5):
-                result = index
-            """,
+        for index in range(5):
+            result = index
+        """,
         (
             "set index 0",
             "op sub __p2m_tmp0 index 5",
@@ -451,9 +451,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(2, 8):
-                result = index
-            """,
+        for index in range(2, 8):
+            result = index
+        """,
         (
             "set index 2",
             "op sub __p2m_tmp0 index 8",
@@ -471,9 +471,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(1, 10, 2):
-                result = index
-            """,
+        for index in range(1, 10, 2):
+            result = index
+        """,
         (
             "set index 1",
             "op sub __p2m_tmp0 index 10",
@@ -491,9 +491,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(stop):
-                result = index
-            """,
+        for index in range(stop):
+            result = index
+        """,
         (
             "set index 0",
             "op sub __p2m_tmp0 index stop",
@@ -511,9 +511,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(start, stop, step):
-                result = index
-            """,
+        for index in range(start, stop, step):
+            result = index
+        """,
         (
             "set index start",
             "op sub __p2m_tmp0 index stop",
@@ -531,9 +531,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(start + offset, limit * 2, step + 1):
-                result = index
-            """,
+        for index in range(start + offset, limit * 2, step + 1):
+            result = index
+        """,
         (
             "op add index start offset",
             "op mul __p2m_tmp0 limit 2",
@@ -553,10 +553,10 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for outer in range(3):
-                for inner in range(outer):
-                    result = outer + inner
-            """,
+        for outer in range(3):
+            for inner in range(outer):
+                result = outer + inner
+        """,
         (
             "set outer 0",
             "op sub __p2m_tmp0 outer 3",
@@ -584,11 +584,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(10):
-                if should_stop:
-                    break
-                result = index
-            """,
+        for index in range(10):
+            if should_stop:
+                break
+            result = index
+        """,
         (
             "set index 0",
             "op sub __p2m_tmp0 index 10",
@@ -610,11 +610,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(10):
-                if should_skip:
-                    continue
-                result = index
-            """,
+        for index in range(10):
+            if should_skip:
+                continue
+            result = index
+        """,
         (
             "set index 0",
             "op sub __p2m_tmp0 index 10",
@@ -637,11 +637,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(5):
-                result = index
-            else:
-                completed = True
-            """,
+        for index in range(5):
+            result = index
+        else:
+            completed = True
+        """,
         (
             "set index 0",
             "op sub __p2m_tmp0 index 5",
@@ -660,12 +660,12 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for index in range(5):
-                if should_stop:
-                    break
-            else:
-                completed = True
-            """,
+        for index in range(5):
+            if should_stop:
+                break
+        else:
+            completed = True
+        """,
         (
             "set index 0",
             "op sub __p2m_tmp0 index 5",
@@ -687,14 +687,14 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            for outer in range(3):
-                for inner in range(4):
-                    if should_stop:
-                        break
-                    if should_skip:
-                        continue
-                    result = outer + inner
-            """,
+        for outer in range(3):
+            for inner in range(4):
+                if should_stop:
+                    break
+                if should_skip:
+                    continue
+                result = outer + inner
+        """,
         (
             "set outer 0",
             "op sub __p2m_tmp0 outer 3",
@@ -729,9 +729,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            assert False, "abc"
-            x = 123
-            """,
+        assert False, "abc"
+        x = 123
+        """,
         (
             'set __p2m_msg_err "abc"',
             "jump __p2m_label_err_assert equal false false",
@@ -746,9 +746,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            assert x > y
-            x += y
-            """,
+        assert x > y
+        x += y
+        """,
         (
             'set __p2m_msg_err ""',
             "jump __p2m_label_err_assert lessThanEq x y",
@@ -763,13 +763,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            a = abs(a)
-            b = ord('a')
-            c = min(a, 2)
-            # d = min(1, 2, a, b)
-            sleep(10)
-            e = wait(a)  # why would you do this though
-            """,
+        a = abs(a)
+        b = ord('a')
+        c = min(a, 2)
+        # d = min(1, 2, a, b)
+        sleep(10)
+        e = wait(a)  # why would you do this though
+        """,
         (
             "op abs a a",
             'read b "a" 0',
@@ -816,11 +816,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def get_value():
-                return 42
+        def get_value():
+            return 42
 
-            result = get_value()
-            """,
+        result = get_value()
+        """,
         (
             "op add __p2m_func_scope_get_value.__p2m_func_ret_addr @counter 2",
             "jump __p2m_label0 always",
@@ -834,11 +834,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def add(left, right):
-                return left + right
+        def add(left, right):
+            return left + right
 
-            result = add(2, 3)
-            """,
+        result = add(2, 3)
+        """,
         (
             "set __p2m_func_scope_add.__p2m_func_arg_left 2",
             "set __p2m_func_scope_add.__p2m_func_arg_right 3",
@@ -857,11 +857,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def add(left, right):
-                return left + right
+        def add(left, right):
+            return left + right
 
-            result = add(left=2, right=3)
-            """,
+        result = add(left=2, right=3)
+        """,
         (
             "set __p2m_func_scope_add.__p2m_func_arg_left 2",
             "set __p2m_func_scope_add.__p2m_func_arg_right 3",
@@ -879,11 +879,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def double(value):
-                return value * 2
+        def double(value):
+            return value * 2
 
-            result = double(left + right)
-            """,
+        result = double(left + right)
+        """,
         (
             "op add __p2m_func_scope_double.__p2m_func_arg_value left right",
             "op add __p2m_func_scope_double.__p2m_func_ret_addr @counter 2",
@@ -899,11 +899,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def add(left, right=3):
-                return left + right
+        def add(left, right=3):
+            return left + right
 
-            result = add(2)
-            """,
+        result = add(2)
+        """,
         (
             "set __p2m_func_scope_add.__p2m_func_arg_left 2",
             "set __p2m_func_scope_add.__p2m_func_arg_right 3",
@@ -921,11 +921,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def add(left, /, right):
-                return left + right
+        def add(left, /, right):
+            return left + right
 
-            result = add(2, right=3)
-            """,
+        result = add(2, right=3)
+        """,
         (
             "set __p2m_func_scope_add.__p2m_func_arg_left 2",
             "set __p2m_func_scope_add.__p2m_func_arg_right 3",
@@ -943,11 +943,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def add(left, *, right):
-                return left + right
+        def add(left, *, right):
+            return left + right
 
-            result = add(2, right=3)
-            """,
+        result = add(2, right=3)
+        """,
         (
             "set __p2m_func_scope_add.__p2m_func_arg_left 2",
             "set __p2m_func_scope_add.__p2m_func_arg_right 3",
@@ -965,13 +965,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            a = 1
+        a = 1
 
-            def assign():
-                a = 2
+        def assign():
+            a = 2
 
-            assign()
-            """,
+        assign()
+        """,
         (
             "set a 1",
             "op add __p2m_func_scope_assign.__p2m_func_ret_addr @counter 2",
@@ -986,13 +986,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def choose(condition):
-                if condition:
-                    return 1
-                return 2
+        def choose(condition):
+            if condition:
+                return 1
+            return 2
 
-            result = choose(condition)
-            """,
+        result = choose(condition)
+        """,
         (
             "set __p2m_func_scope_choose.__p2m_func_arg_condition condition",
             "op add __p2m_func_scope_choose.__p2m_func_ret_addr @counter 2",
@@ -1013,12 +1013,12 @@ _test_snippet_testcases = [
     # when compiling ifexp unscoped the identifiers
     pytest.param(
         """
-            def choose(condition):
-                a = 1
-                return a if condition else 2
+        def choose(condition):
+            a = 1
+            return a if condition else 2
 
-            result = choose(condition)
-            """,
+        result = choose(condition)
+        """,
         (
             "set __p2m_func_scope_choose.__p2m_func_arg_condition condition",
             "op add __p2m_func_scope_choose.__p2m_func_ret_addr @counter 2",
@@ -1036,11 +1036,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def return_nothing():
-                return
+        def return_nothing():
+            return
 
-            result = return_nothing()
-            """,
+        result = return_nothing()
+        """,
         (
             "op add __p2m_func_scope_return_nothing.__p2m_func_ret_addr @counter 2",
             "jump __p2m_label0 always",
@@ -1054,13 +1054,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def return_early():
-                return
-                result = 123
-                return result
+        def return_early():
+            return
+            result = 123
+            return result
 
-            result = return_early()
-            """,
+        result = return_early()
+        """,
         (
             "op add __p2m_func_scope_return_early.__p2m_func_ret_addr @counter 2",
             "jump __p2m_label0 always",
@@ -1074,11 +1074,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def implicit_return():
-                pass
+        def implicit_return():
+            pass
 
-            result = implicit_return()
-            """,
+        result = implicit_return()
+        """,
         (
             "op add __p2m_func_scope_implicit_return.__p2m_func_ret_addr @counter 2",
             "jump __p2m_label0 always",
@@ -1093,14 +1093,14 @@ _test_snippet_testcases = [
     # closures not yet supported
     pytest.param(
         """
-            def outer():
-                def inner():
-                    return 123
+        def outer():
+            def inner():
+                return 123
 
-                return inner()
+            return inner()
 
-            result = outer()
-            """,
+        result = outer()
+        """,
         (
             "op add __p2m_func_scope_outer.__p2m_func_ret_addr @counter 2",
             "jump __p2m_label0 always",
@@ -1120,13 +1120,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            def outer(value):
-                return value * 2
-            def inner(value):
-                return value + 1
+        def outer(value):
+            return value * 2
+        def inner(value):
+            return value + 1
 
-            result = outer(inner(input_value))
-            """,
+        result = outer(inner(input_value))
+        """,
         (
             "set __p2m_func_scope_inner.__p2m_func_arg_value input_value",
             "op add __p2m_func_scope_inner.__p2m_func_ret_addr @counter 2",
@@ -1150,24 +1150,24 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            @inline
-            def inline_func():
-                return 42
+        @inline
+        def inline_func():
+            return 42
 
-            x = inline_func()
-            """,
+        x = inline_func()
+        """,
         ("set x 42",),
         id="inline-func",
     ),
     pytest.param(
         """
-            @inline
-            def inline_func(x, /, *, y):
-                return abs(x) + y - 1
+        @inline
+        def inline_func(x, /, *, y):
+            return abs(x) + y - 1
 
-            x = 10
-            z = inline_func(x, y=21 * 2)
-            """,
+        x = 10
+        z = inline_func(x, y=21 * 2)
+        """,
         (
             "set x 10",
             "op mul __p2m_tmp0 21 2",
@@ -1179,30 +1179,30 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
+        @inline
+        def outer(value):
             @inline
-            def outer(value):
-                @inline
-                def inner():
-                    return value + 1
+            def inner():
+                return value + 1
 
-                return inner()
+            return inner()
 
-            result = outer(input_value)
-            """,
+        result = outer(input_value)
+        """,
         ("op add result input_value 1",),
         id="inline-func-with-nested-inline-func",
     ),
     pytest.param(
         """
-            def outer(value):
-                @inline
-                def inner():
-                    return value + 1
+        def outer(value):
+            @inline
+            def inner():
+                return value + 1
 
-                return inner()
+            return inner()
 
-            result = outer(input_value)
-            """,
+        result = outer(input_value)
+        """,
         (
             "set __p2m_func_scope_outer.__p2m_func_arg_value input_value",
             "op add __p2m_func_scope_outer.__p2m_func_ret_addr @counter 2",
@@ -1217,13 +1217,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            @inline
-            def inline_func(x):
-                return x * 2
+        @inline
+        def inline_func(x):
+            return x * 2
 
-            a = inline_func(2)
-            b = inline_func(4)
-            """,
+        a = inline_func(2)
+        b = inline_func(4)
+        """,
         ("op mul a 2 2", "op mul b 4 2"),
         id="multiple-inline-func-calls",
     ),
@@ -1241,13 +1241,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            a = Env.copper
-            a = Env.water
-            a = Env.red_stone
-            a = Env.naval_factory
-            a = Env.counter
-            a = Env.time
-            """,
+        a = Env.copper
+        a = Env.water
+        a = Env.red_stone
+        a = Env.naval_factory
+        a = Env.counter
+        a = Env.time
+        """,
         (
             "set a @copper",
             "set a @water",
@@ -1261,17 +1261,17 @@ _test_snippet_testcases = [
     pytest.param(
         # TODO: actual unit operations
         """
-            a = UnitType.flare
-            b = UnitType.quell_missile
+        a = UnitType.flare
+        b = UnitType.quell_missile
 
-            Unit.bind(a)
-            Unit.bind(UnitType.flare)
-            Unit.bind("flare")
-            Unit.bind("@flare")
+        Unit.bind(a)
+        Unit.bind(UnitType.flare)
+        Unit.bind("flare")
+        Unit.bind("@flare")
 
-            Unit.move(100, abc)
-            Unit.move(x=100, y=abc)
-            """,
+        Unit.move(100, abc)
+        Unit.move(x=100, y=abc)
+        """,
         (
             "set a @flare",
             "set b @quell-missile",
@@ -1288,29 +1288,29 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            Screen.clear(0, 127, 255)
-            Screen.fill(a, b, c)
-            Screen.color(a, b, c)
-            Screen.color(a, b, c, d)
-            Screen.col(Color("%ffffff"))
-            Screen.stroke(3)
-            Screen.line(0, 0, x2=80, y2=160)
-            Screen.rect(0, 0, 80, height=160)
-            Screen.fill_rect(a, y=b, width=c, height=d)
-            Screen.linerect(0, 0, 80, 160)
-            Screen.poly(80, 80, 6, 40 ,0)
-            Screen.line_poly(80, 80, 6, 40, 0)
-            Screen.triangle(50, 50, 100, 50, 50, 100)
-            Screen.image(80, 80, Env.router, 40, 0)
-            Screen.print(80, 80, Align.top_left)
-            Screen.print(80, 80, "topleft")
-            Screen.translate(80, 80)
-            Screen.scale(2, 2)
-            Screen.rotate(180)
-            Screen.reset()
-            Screen.flush()
-            Screen.flush(display2)
-            """,
+        Screen.clear(0, 127, 255)
+        Screen.fill(a, b, c)
+        Screen.color(a, b, c)
+        Screen.color(a, b, c, d)
+        Screen.col(Color("%ffffff"))
+        Screen.stroke(3)
+        Screen.line(0, 0, x2=80, y2=160)
+        Screen.rect(0, 0, 80, height=160)
+        Screen.fill_rect(a, y=b, width=c, height=d)
+        Screen.linerect(0, 0, 80, 160)
+        Screen.poly(80, 80, 6, 40 ,0)
+        Screen.line_poly(80, 80, 6, 40, 0)
+        Screen.triangle(50, 50, 100, 50, 50, 100)
+        Screen.image(80, 80, Env.router, 40, 0)
+        Screen.print(80, 80, Align.top_left)
+        Screen.print(80, 80, "topleft")
+        Screen.translate(80, 80)
+        Screen.scale(2, 2)
+        Screen.rotate(180)
+        Screen.reset()
+        Screen.flush()
+        Screen.flush(display2)
+        """,
         (
             "draw clear 0 127 255",
             "draw clear a b c",
@@ -1339,13 +1339,13 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            a = Links[0]
-            b = Links[1 + 2 * 3]
-            c = Links[i]
-            d = Links[abs(-1)]
+        a = Links[0]
+        b = Links[1 + 2 * 3]
+        c = Links[i]
+        d = Links[abs(-1)]
 
-            e = Link[0]
-            """,
+        e = Link[0]
+        """,
         (
             "getlink a 0",
             "op mul __p2m_tmp1 2 3",
@@ -1360,9 +1360,9 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-            from py2mlog_api import Env, Links
-            from py2mlog_api import *
-            """,
+        from py2mlog_api import Env, Links
+        from py2mlog_api import *
+        """,
         (),
         id="py2mlog-api-namespace-imports",
     ),

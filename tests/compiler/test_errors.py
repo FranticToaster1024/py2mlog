@@ -68,15 +68,15 @@ _test_error_list_testcases = [
     pytest.param(
         (
             """
-                while True:
-                    def x():
-                        break
-                """,
+            while True:
+                def x():
+                    break
+            """,
             """
-                while True:
-                    def x():
-                        continue
-                """,
+            while True:
+                def x():
+                    continue
+            """,
         ),
         CompilerErrorType.SYNTAX,
         id="break-and-continue-in-func-def-in-loop",
@@ -84,21 +84,21 @@ _test_error_list_testcases = [
     pytest.param(
         (
             """
-                while True:
-                    @inline
-                    def x():
-                        break
+            while True:
+                @inline
+                def x():
+                    break
 
-                    x()  # inline func defers compilation to call site
-                """,
+                x()  # inline func defers compilation to call site
+            """,
             """
-                while True:
-                    @inline
-                    def x():
-                        continue
+            while True:
+                @inline
+                def x():
+                    continue
 
-                    x()  # inline func defers compilation to call site
-                """,
+                x()  # inline func defers compilation to call site
+            """,
         ),
         CompilerErrorType.SYNTAX,
         id="break-and-continue-in-inline-func-def-in-loop",
