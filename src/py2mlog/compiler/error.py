@@ -15,6 +15,7 @@ class CompilerErrorType(Enum):
     UNSUPPORTED = auto()
     SYNTAX = auto()
     BAD_CALL = auto()
+    BAD_ASSIGN = auto()
     BAD_IMPORT = auto()
     INTERNAL = auto()
 
@@ -23,6 +24,7 @@ _ERR_DESCRIPTIONS = {
     CompilerErrorType.UNSUPPORTED: "Unsupported feature: {feature}.",
     CompilerErrorType.SYNTAX: "Syntax error: {err}.",
     CompilerErrorType.BAD_CALL: "Invalid function call: {err}.",
+    CompilerErrorType.BAD_ASSIGN: "Invalid assignment: {err}",
     CompilerErrorType.BAD_IMPORT: "Invalid import: {err}.",
     CompilerErrorType.INTERNAL: "An internal error occurred: {err}.",
 }

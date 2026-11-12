@@ -103,6 +103,37 @@ _test_error_list_testcases = [
         CompilerErrorType.SYNTAX,
         id="break-and-continue-in-inline-func-def-in-loop",
     ),
+    pytest.param(
+        (
+            """
+            def x(n):
+                if n == 0:
+                    return 0
+                return x(n - 1)
+
+            x()
+            """,
+            """
+            def x(n):
+                def y(n):
+                    x(n)
+                y(n)
+
+            x()
+            """,
+        ),
+        CompilerErrorType.UNSUPPORTED,
+        id="recursion",
+    ),
+    pytest.param(
+        (
+            "x, y = Unit.bind(UnitType.flare)",
+            "x, y = Unit.within(150, 150, 10)",
+            "x, y = Unit.get_block(150, 150)",
+        ),
+        CompilerErrorType.BAD_ASSIGN,
+        id="bad-iterable-unpack-assignments",
+    ),
 ]
 
 

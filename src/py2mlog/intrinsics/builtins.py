@@ -32,10 +32,10 @@ def _inline_abs(call_ctx: IntrinsicCallCtx, x: MlogExpr, /) -> MlogExpr:
             InstructionType.OPERATION,
             OperationSuboperation.ABS,
             (),
-            (call_ctx.output_expr, x),
+            (call_ctx.output_expr[0], x),
         ),
     )
-    return call_ctx.output_expr
+    return call_ctx.output_expr[0]
 
 
 def _inline_ord(call_ctx: IntrinsicCallCtx, character: MlogExpr, /) -> MlogExpr:
@@ -44,10 +44,10 @@ def _inline_ord(call_ctx: IntrinsicCallCtx, character: MlogExpr, /) -> MlogExpr:
             InstructionType.READ,
             None,
             (),
-            (call_ctx.output_expr, character, MlogNumberLiteral(0)),
+            (call_ctx.output_expr[0], character, MlogNumberLiteral(0)),
         ),
     )
-    return call_ctx.output_expr
+    return call_ctx.output_expr[0]
 
 
 def _inline_min(
@@ -86,12 +86,12 @@ def _inline_min(
                 InstructionType.OPERATION,
                 OperationSuboperation.MIN,
                 (),
-                (call_ctx.output_expr, curr, arg1),
+                (call_ctx.output_expr[0], curr, arg1),
             ),
         )
     )
 
-    return call_ctx.output_expr
+    return call_ctx.output_expr[0]
 
 
 def _inline_Color(  # noqa: N802

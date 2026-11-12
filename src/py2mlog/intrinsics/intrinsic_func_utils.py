@@ -15,12 +15,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class IntrinsicCallCtx:
-    output_expr: MlogExpr
+    output_expr: tuple[MlogExpr, ...]
     src_loc: SourceLocation
     emitter: Emitter
 
 
-type IntrinsicFunc = Callable[Concatenate[IntrinsicCallCtx, ...], MlogExpr]
+type IntrinsicFunc = Callable[
+    Concatenate[IntrinsicCallCtx, ...], MlogExpr | tuple[MlogExpr, ...]
+]
 type IntrinsicFuncMap = dict[str, IntrinsicFunc | None]
 type IntrinsicFuncRevMap = dict[IntrinsicFunc | None, list[str]]
 

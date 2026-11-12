@@ -1302,6 +1302,7 @@ _test_snippet_testcases = [
         Unit.flag(123)
         Unit.build(150, 150, Env.copper_wall)
         Unit.deconstruct(150, 150)
+        t, b, f = Unit.get_block(150, 150)
         w = Unit.within(150, 150, 10)
         Unit.unbind()
         """,
@@ -1348,6 +1349,7 @@ _test_snippet_testcases = [
             "ucontrol flag 123",
             "ucontrol build 150 150 @copper-wall 0 null",
             "ucontrol deconstruct 150 150",
+            "ucontrol getBlock 150 150 t b f",
             "ucontrol within 150 150 10 w",
             "ucontrol unbind",
         ),

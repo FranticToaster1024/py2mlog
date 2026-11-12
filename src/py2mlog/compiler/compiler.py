@@ -45,7 +45,10 @@ from py2mlog.compiler.operation_maps import (
     NEGATED_CMP_OPS_MAP,
     UNARY_OP_MAP,
 )
-from py2mlog.intrinsics.intrinsic_func_utils import IntrinsicCallCtx
+from py2mlog.intrinsics.intrinsic_func_utils import (
+    IntrinsicCallCtx,
+    IntrinsicFunc,
+)
 from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
@@ -332,7 +335,7 @@ class Compiler:
                 return output_expr
 
             case ast.Call():
-                return self._compile_func_call(
+                return self.compile_func_call(
                     expr, self._get_output_expr(output_expr)
                 )
 
@@ -425,7 +428,7 @@ class Compiler:
 
                             return builtin
 
-                        # this is literally identical to the Env thing ;-;
+                        # this is literally almost identical to the other cases ;-;
                         case "UnitType":
                             unit_type = UNIT_TYPE_MAP.get(attr)
                             if unit_type is None:
@@ -495,7 +498,7 @@ class Compiler:
                 if config.STRING_LITERAL_AS_COLOR and val and val[0] == "%":
                     return intrinsics.builtins.builtin_color(
                         IntrinsicCallCtx(
-                            MlogFillerExpr(),
+                            (MlogFillerExpr(),),
                             self._get_src_loc_from_node(const),
                             self.emitter,
                         ),
@@ -507,10 +510,33 @@ class Compiler:
             case _:
                 raise self._unsupported_expr_error(const)
 
-    def _compile_func_call(
+    def compile_func_call(
         self, func_call: ast.Call, output_expr: MlogExpr
     ) -> MlogExpr:
-        """Returns the function call's output expression."""
+        output = self._compile_func_call(func_call, (output_expr,))
+
+        if isinstance(output, tuple):
+            # this raises even when just calling it with no output
+            # but like why would you do that anyway
+            raise CompilerError(
+                CompilerErrorType.UNSUPPORTED,
+                self._get_src_loc_from_node(func_call),
+                # don't wanna deal with passing func name everywhere
+                # location should be enough info anyway
+                feature="Called builtin which returns tuple "
+                "without immediate iterable unpacking",
+            )
+
+        return output
+
+    def _compile_func_call(
+        self, func_call: ast.Call, output_expr: tuple[MlogExpr, ...]
+    ) -> MlogExpr | tuple[MlogExpr, ...]:
+        """
+        Only call this directly for tuple return.
+        """
+        src_loc = self._get_src_loc_from_node(func_call)
+
         func_kwargs: dict[str, ast.expr] = {}
         for kwarg in func_call.keywords:
             if kwarg.arg in func_kwargs:
@@ -526,14 +552,19 @@ class Compiler:
             func_kwargs[kwarg.arg] = kwarg.value
 
         if isinstance(func_call.func, ast.Attribute):
-            return self._compile_attr_func_call(
-                func_call, output_expr, func_kwargs
+            return self._compile_builtin_func_call(
+                func_call,
+                output_expr,
+                func_kwargs,
+                self._get_attr_call_func(func_call),
             )
 
         if not isinstance(func_call.func, ast.Name):
             # idk what desc to put in the error sooo
             # misleading error message again
-            raise self._unsupported_expr_error(func_call)
+            raise self._unsupported_expr_error(
+                func_call, "with non-identifier/attribute"
+            )
         func_name = func_call.func.id
 
         # basic recursion check
@@ -551,95 +582,83 @@ class Compiler:
 
         inline_func_def = self._inline_func_table.get(scope_str)
         if inline_func_def is not None:
+            if len(output_expr) != 1:
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    src_loc,
+                    err="Called inline function with multiple output expressions "
+                    "(possibly due to attempted iterable unpacking on its result)",
+                )
+
             return self._compile_inline_func_call(
-                func_call, inline_func_def, output_expr
+                func_call, inline_func_def, output_expr[0]
             )
 
-        output = self._compile_builtin_func_call(
-            func_call, output_expr, func_name, func_kwargs
-        )
-        if isinstance(output, MlogExpr):
-            return output
-
-        raise CompilerError(
-            CompilerErrorType.UNSUPPORTED,
-            self._get_src_loc_from_node(func_call),
-            feature=f"Called '{func_name}' builtin (which returns tuple) "
-            "without immediate iterable unpacking",
-        )
-
-    def _compile_builtin_func_call(
-        self,
-        func_call: ast.Call,
-        output_expr: MlogExpr,
-        func_name: str,
-        func_kwargs: dict[str, ast.expr],
-    ) -> MlogExpr | tuple[MlogExpr, ...]:
-        """
-        Call this directly for tuple return.
-        """
         # TODO: non-inline builtins
-
-        src_loc = self._get_src_loc_from_node(func_call)
-
-        compile_inline_builtin = intrinsics.builtins.FUNC_MAP.get(
-            func_name, ...
-        )
-        if compile_inline_builtin is None:
+        inline_builtin = intrinsics.builtins.FUNC_MAP.get(func_name, ...)
+        if inline_builtin is None:
             raise self._unsupported_expr_error(
                 func_call, f" with builtin {func_name}"
             )
-        if compile_inline_builtin is ...:
+        if inline_builtin is ...:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
                 src_loc,
                 err=f"unknown/undefined function {func_name}",
             )
 
+        return self._compile_builtin_func_call(
+            func_call, output_expr, func_kwargs, inline_builtin
+        )
+
+    def _compile_builtin_func_call(
+        self,
+        func_call: ast.Call,
+        output_expr: tuple[MlogExpr, ...],
+        func_kwargs: dict[str, ast.expr],
+        func_ref: IntrinsicFunc,
+    ) -> MlogExpr | tuple[MlogExpr, ...]:
+        src_loc = self._get_src_loc_from_node(func_call)
+
         pos_args, kwargs, _ = resolve_args_from_signature(
             [FillerAstExpr(), *func_call.args],
             func_kwargs,
             src_loc,
-            signature(compile_inline_builtin),
+            signature(func_ref),
         )
         compiled_pos_args, compiled_kwargs = self._compile_args(
             pos_args, kwargs
         )
 
-        return compile_inline_builtin(
+        return func_ref(
             IntrinsicCallCtx(output_expr, src_loc, self.emitter),
             *compiled_pos_args,
             **compiled_kwargs,
         )
 
-    def _compile_attr_func_call(
-        self,
-        func_call: ast.Call,
-        output_expr: MlogExpr,
-        func_kwargs: dict[str, ast.expr],
-    ) -> MlogExpr:
+    def _get_attr_call_func(self, func_call: ast.Call) -> IntrinsicFunc:
         if not isinstance(func_call.func, ast.Attribute):
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
                 None,
-                err="called '_compile_attr_func_call' with non-attr call",
+                err="called '_get_attr_call_func' with non-attr call",
             )
 
         if not isinstance(func_call.func.value, ast.Name):
             raise self._unsupported_expr_error(
-                func_call, " with non-identifier as attribute"
+                func_call, " with non-identifier as target of attribute access"
             )
         namespace = func_call.func.value.id
         func_name = func_call.func.attr
 
         namespaced_builtin_func = None
         match namespace:
-            case "Unit":
+            case intrinsics.unit.NAMESPACE:
                 namespaced_builtin_func = intrinsics.unit.FUNC_MAP.get(
                     func_name
                 )
 
-            case "Screen":
+            case intrinsics.screen.NAMESPACE:
                 namespaced_builtin_func = intrinsics.screen.FUNC_MAP.get(
                     func_name
                 )
@@ -649,30 +668,14 @@ class Compiler:
                     func_call, " with custom namespaces"
                 )
 
-        src_loc = self._get_src_loc_from_node(func_call)
-
         if namespaced_builtin_func is None:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
-                src_loc,
+                self._get_src_loc_from_node(func_call),
                 err=f"unknown/unsupported namespaced function {namespace}.{func_name}",
             )
 
-        pos_args, kwargs, _ = resolve_args_from_signature(
-            [FillerAstExpr(), *func_call.args],
-            func_kwargs,
-            src_loc,
-            signature(namespaced_builtin_func),
-        )
-        compiled_pos_args, compiled_kwargs = self._compile_args(
-            pos_args, kwargs
-        )
-
-        return namespaced_builtin_func(
-            IntrinsicCallCtx(output_expr, src_loc, self.emitter),
-            *compiled_pos_args,
-            **compiled_kwargs,
-        )
+        return namespaced_builtin_func
 
     def _compile_args(
         self, pos_args: ResolvedPosArgs, kwargs: ResolvedKwargs
@@ -860,24 +863,67 @@ class Compiler:
         )
 
     def compile_stmt(self, stmt: ast.stmt) -> None:
+        src_loc = self._get_src_loc_from_node(stmt)
         match stmt:
             case ast.Expr(value=value):
                 self.compile_expr(value)
 
             case ast.Assign(targets=targets, value=value):
-                value_expr = self.compile_expr(
-                    value, self.compile_target(targets[0])
-                )
-
-                for target in targets[1:]:
-                    self.emitter.emit_instruction(
-                        Instruction(
-                            InstructionType.SET,
-                            None,
-                            (),
-                            (self.compile_target(target), value_expr),
+                if any(isinstance(t, ast.Tuple) for t in targets):
+                    if len(targets) > 1:
+                        raise CompilerError(
+                            CompilerErrorType.UNSUPPORTED,
+                            src_loc,
+                            feature="Multiple assignment targets with iterable unpacking",
                         )
+
+                    if not isinstance(value, ast.Call):
+                        raise CompilerError(
+                            CompilerErrorType.BAD_ASSIGN,
+                            src_loc,
+                            feature="Non-call value with iterable unpacking assignment",
+                        )
+
+                    if not isinstance(targets[0], ast.Tuple):
+                        raise CompilerError(
+                            CompilerErrorType.INTERNAL,
+                            src_loc,
+                            err="this shouldn't be possible and is just to please the type checker",
+                        )
+
+                    output = self._compile_func_call(
+                        value,
+                        tuple(self.compile_target(t) for t in targets[0].elts),
                     )
+
+                    expected_len = (
+                        len(output) if isinstance(output, tuple) else 1
+                    )
+                    actual_len = len(targets[0].elts)
+                    if actual_len != expected_len:
+                        raise CompilerError(
+                            CompilerErrorType.BAD_ASSIGN,
+                            src_loc,
+                            err="Mismatch in number of values to unpack: "
+                            f"Expected {expected_len} but got {actual_len}",
+                        )
+
+                    # don't wanna use return in case i add stuff to bottom of compile_stmt later
+                else:
+                    value_expr = self.compile_expr(
+                        value, self.compile_target(targets[0])
+                    )
+
+                    for target in targets[1:]:
+                        self.emitter.emit_instruction(
+                            Instruction(
+                                InstructionType.SET,
+                                None,
+                                (),
+                                (self.compile_target(target), value_expr),
+                            )
+                        )
+
             case ast.AugAssign(target=target, op=op, value=value):
                 op_subop = BIN_OP_MAP.get(type(op))
 
@@ -1516,7 +1562,7 @@ class Compiler:
     ) -> CompilerError:
         ctx = getattr(expr, "ctx", None)
         ctx_str = (
-            '(under context "{type(ctx).__name__}")' if ctx is not None else ""
+            '(under context "{type(ctx).__name__}") ' if ctx is not None else ""
         )
 
         return CompilerError(

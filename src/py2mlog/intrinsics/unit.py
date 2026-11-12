@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # ----------------------------------------
 # Unit namespace (Unit.*)
 # ----------------------------------------
-_NAMESPACE = "Unit"
+NAMESPACE = "Unit"
 
 
 def _unit_bind(
@@ -66,7 +66,7 @@ def _unit_bind(
         if not isinstance(type_, MlogVar):
             logger.warning(
                 "Called '%s' with literal of type '%s'.",
-                get_func_names(_NAMESPACE, _REV_MAP, _unit_bind),
+                get_func_names(NAMESPACE, _REV_MAP, _unit_bind),
                 type(type_).__name__,
             )
 
@@ -112,7 +112,7 @@ def _unit_radar(
     order: MlogExpr = _MlogBoolLiteral_True,
     key: MlogExpr = _RadarSortSelParam_Distance,
 ) -> MlogExpr:
-    this_func_name = get_func_names(_NAMESPACE, _REV_MAP, _unit_radar)
+    this_func_name = get_func_names(NAMESPACE, _REV_MAP, _unit_radar)
 
     filter_sel_params: list[RadarTargetSelectableParam] = []
     for arg in (filter1, filter2, filter3):
@@ -188,10 +188,10 @@ def _unit_radar(
             InstructionType.UNIT_RADAR,
             None,
             (*filter_sel_params, key_sel_param),
-            (order, call_ctx.output_expr),
+            (order, call_ctx.output_expr[0]),
         )
     )
-    return call_ctx.output_expr
+    return call_ctx.output_expr[0]
 
 
 # TODO: ulocate
@@ -274,7 +274,7 @@ def _unit_shoot(
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
             call_ctx.src_loc,
-            err=f"Called {get_func_names(_NAMESPACE, _REV_MAP, _unit_shoot)} "
+            err=f"Called {get_func_names(NAMESPACE, _REV_MAP, _unit_shoot)} "
             "with one arg. Expected exactly zero or two.",
         )
 
@@ -331,7 +331,7 @@ def _unit_item_drop(
         # error message kinda sucks
         logger.warning(
             "Called '%s' with non-'air' %s for param 'to': '%s'. ",
-            get_func_names(_NAMESPACE, _REV_MAP, _unit_item_drop),
+            get_func_names(NAMESPACE, _REV_MAP, _unit_item_drop),
             to,
             MlogBuiltin.__name__,
         )
@@ -424,14 +424,23 @@ def _unit_deconstruct(
     return MlogNullLiteral()
 
 
-# TODO: ucontrol getBlock has 3 return values so uh
+def _unit_get_block(
+    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
+) -> tuple[MlogExpr, ...]:
+    # padding
+    output_expr = (call_ctx.output_expr + (MlogVar("_"),) * 3)[:3]
+
+    _validate_arg_type(MlogNumberLiteral, _unit_get_block, x, y)
+    _emit_ucontrol_subop(
+        call_ctx, UnitControlSuboperation.GET_BLOCK, x, y, *output_expr
+    )
+
+    # length of this is used to validate the unpacking
+    return output_expr
 
 
 def _unit_within(
-    call_ctx: IntrinsicCallCtx,
-    x: MlogExpr,
-    y: MlogExpr,
-    radius: MlogExpr,
+    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr, radius: MlogExpr
 ) -> MlogExpr:
     _validate_arg_type(MlogNumberLiteral, _unit_within, x, y, radius)
     _emit_ucontrol_subop(
@@ -440,9 +449,9 @@ def _unit_within(
         x,
         y,
         radius,
-        call_ctx.output_expr,
+        call_ctx.output_expr[0],
     )
-    return call_ctx.output_expr
+    return call_ctx.output_expr[0]
 
 
 # use snake case here; aliases are generated based on it
@@ -480,6 +489,7 @@ _func_map: IntrinsicFuncMap = {
     "flag": _unit_flag,
     "build": _unit_build,
     "deconstruct": _unit_deconstruct,
+    "get_block": _unit_get_block,
     "within": _unit_within,
     "unbind": _argless_ucontrol_func_factory(UnitControlSuboperation.UNBIND),
 }
@@ -494,4 +504,4 @@ _REV_MAP = _rev_map
 
 
 _emit_ucontrol_subop = emit_subop_func_factory(InstructionType.UNIT_CONTROL)
-_validate_arg_type = validate_arg_type_factory(_NAMESPACE, _REV_MAP)
+_validate_arg_type = validate_arg_type_factory(NAMESPACE, _REV_MAP)
