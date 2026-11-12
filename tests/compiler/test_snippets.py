@@ -1259,7 +1259,6 @@ _test_snippet_testcases = [
         id="env-attr-resources",
     ),
     pytest.param(
-        # TODO: actual unit operations
         """
         a = UnitType.flare
         b = UnitType.quell_missile
@@ -1269,9 +1268,17 @@ _test_snippet_testcases = [
         Unit.bind("flare")
         Unit.bind("@flare")
 
-        c = Unit.radar("ally", order=max, key=maxHealth)
-        d = Unit.radar("flying", enemy, order="max", key=max_health)
-        e = Unit.radar("ground", boss, attacker, order=False, key=maxhealth)
+        a = Unit.radar("ally", order=max, key=maxHealth)
+        b = Unit.radar("flying", enemy, order="max", key=max_health)
+        c = Unit.radar("ground", boss, attacker, order=False, key=maxhealth)
+
+        a, b, c = Unit.locate("ore", ore_type=Env.copper)
+        a, b, c, d = Unit.locate("building", block_flag="core", is_enemy_building=False)
+        a, b, c, d = Unit.locate("building", block_flag="turret", is_enemy_building="ally")
+        a, b, c, d = Unit.locate("spawn")
+        a, b, c, d = Unit.locate("damaged")
+
+        Unit.flag = 123
 
         Unit.idle()
         Unit.stop()
@@ -1315,9 +1322,17 @@ _test_snippet_testcases = [
             "ubind @flare",
             "ubind @flare",
             # unit radar
-            "uradar ally any any maxHealth _ false c",
-            "uradar flying enemy any maxHealth _ false d",
-            "uradar ground boss attacker maxHealth _ false e",
+            "uradar ally any any maxHealth _ false a",
+            "uradar flying enemy any maxHealth _ false b",
+            "uradar ground boss attacker maxHealth _ false c",
+            # unit locate
+            "ulocate ore _ _ @copper a b c",
+            "ulocate building core false _ a b c d",
+            "ulocate building turret false _ a b c d",
+            "ulocate spawn _ _ _ a b c d",
+            "ulocate damaged _ _ _ a b c d",
+            # setting Unit.flag property instead of using Unit.flag() for some reason
+            "ucontrol flag 123",
             # unit control
             "ucontrol idle",
             "ucontrol stop",
@@ -1366,6 +1381,7 @@ _test_snippet_testcases = [
         Screen.line(0, 0, x2=80, y2=160)
         Screen.rect(0, 0, 80, height=160)
         Screen.fill_rect(a, y=b, width=c, height=d)
+        Screen.fillRect(a, y=b, width=c, height=d)
         Screen.linerect(0, 0, 80, 160)
         Screen.poly(80, 80, 6, 40 ,0)
         Screen.line_poly(80, 80, 6, 40, 0)
@@ -1389,6 +1405,7 @@ _test_snippet_testcases = [
             "draw stroke 3",
             "draw line 0 0 80 160",
             "draw rect 0 0 80 160",
+            "draw rect a b c d",
             "draw rect a b c d",
             "draw lineRect 0 0 80 160",
             "draw poly 80 80 6 40 0",

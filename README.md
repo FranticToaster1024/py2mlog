@@ -165,7 +165,7 @@ green_with_alpha = Color("00FF00FF")
 blue = Color(0x0000FF)
 ```
 
-All draw operations, through the `Screen.*` namespace. If I didn't mess up somewhere, these should be fully compatible with pyndustric. I'm too lazy to write an actual sample so here is a snippet from the tests:
+All draw operations, through the `Screen.*` namespace. Any in-game operation names should work here. snake_case and whatevercasethisis variants as well as a few aliases are also available. These should be compatible with pyndustric. I'm too lazy to write an actual sample so here is a snippet from the tests:
 ```py
 Screen.clear(0, 127, 255)
 Screen.fill(a, b, c)  # alias for 'Screen.clear()'
@@ -176,6 +176,7 @@ Screen.stroke(3)
 Screen.line(0, 0, x2=80, y2=160)
 Screen.rect(0, 0, 80, height=160)
 Screen.fill_rect(a, y=b, width=c, height=d)  # alias for 'Screen.rect'
+Screen.fillRect(a, y=b, width=c, height=d)  # another alias for 'Screen.rect'
 Screen.linerect(0, 0, 80, 160)
 Screen.poly(80, 80, 6, 40, 0)
 Screen.line_poly(80, 80, 6, 40, 0)
@@ -184,7 +185,7 @@ Screen.flush()  # default is 'display1'
 ```
 
 
-TODO: Unit.*
+All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric and its aliases. This includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc.
 
 
 ## Things to note

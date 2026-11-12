@@ -46,6 +46,18 @@ _test_error_list_testcases = [
             "Color(True)",
             "Color(16777215.0)",
             "Color(1 + 2)",
+            # unit stuff ig
+            '_ = Unit.radar("foobarbaz")',
+            *(
+                f"_, _, _, _ = {f}"
+                for f in (
+                    'Unit.locate("foobarbaz")',
+                    'Unit.locate("building")',
+                    'Unit.locate("building", ore_type=Env.copper)',
+                    'Unit.locate("spawn", ore_type=Env.copper)',
+                    'Unit.locate("damaged", block_flag="turret")',
+                )
+            ),
         ),
         CompilerErrorType.BAD_CALL,
         id="bad-builtin-calls",
@@ -127,9 +139,10 @@ _test_error_list_testcases = [
     ),
     pytest.param(
         (
-            "x, y = Unit.bind(UnitType.flare)",
-            "x, y = Unit.within(150, 150, 10)",
-            "x, y = Unit.get_block(150, 150)",
+            "a, b = Unit.bind(UnitType.flare)",
+            'a, b, c, bad = Unit.locate("ore", ore_type=Env.copper)',
+            "a, b = Unit.within(150, 150, 10)",
+            "a, b = Unit.get_block(150, 150)",
         ),
         CompilerErrorType.BAD_ASSIGN,
         id="bad-iterable-unpack-assignments",

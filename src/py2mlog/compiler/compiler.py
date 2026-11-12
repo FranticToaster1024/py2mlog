@@ -65,6 +65,7 @@ from py2mlog.mlog.mlog_expressions import (
 from py2mlog.mlog.suboperations import (
     ConditionOpSuboperation,
     OperationSuboperation,
+    UnitControlSuboperation,
 )
 
 logger = logging.getLogger(__name__)
@@ -869,7 +870,25 @@ class Compiler:
                 self.compile_expr(value)
 
             case ast.Assign(targets=targets, value=value):
-                if any(isinstance(t, ast.Tuple) for t in targets):
+                # pyndustric compatibility
+                if (
+                    len(targets) == 1
+                    and isinstance(targets[0], ast.Attribute)
+                    and isinstance(targets[0].value, ast.Name)
+                    and targets[0].value.id == intrinsics.unit.NAMESPACE
+                    and targets[0].attr == "flag"
+                ):
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.UNIT_CONTROL,
+                            UnitControlSuboperation.FLAG,
+                            (),
+                            (self.compile_expr(value),),
+                        )
+                    )
+                    # don't wanna use return in case i add stuff to bottom of compile_stmt later
+
+                elif any(isinstance(t, ast.Tuple) for t in targets):
                     if len(targets) > 1:
                         raise CompilerError(
                             CompilerErrorType.UNSUPPORTED,
@@ -908,7 +927,6 @@ class Compiler:
                             f"Expected {expected_len} but got {actual_len}",
                         )
 
-                    # don't wanna use return in case i add stuff to bottom of compile_stmt later
                 else:
                     value_expr = self.compile_expr(
                         value, self.compile_target(targets[0])

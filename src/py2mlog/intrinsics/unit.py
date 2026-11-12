@@ -1,7 +1,10 @@
 import logging
 from collections.abc import Callable
 
-from py2mlog.compiler.error import CompilerError, CompilerErrorType
+from py2mlog.compiler.error import (
+    CompilerError,
+    CompilerErrorType,
+)
 from py2mlog.compiler.mimex_utils import camel_to_snake
 from py2mlog.compiler.mlog_builtins import UNIT_TYPE_MAP
 from py2mlog.intrinsics.intrinsic_func_utils import (
@@ -11,6 +14,7 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
     emit_subop_func_factory,
     generate_aliases,
     get_func_names,
+    pad_output_expr,
     validate_arg_type_factory,
 )
 from py2mlog.mlog.instruction import Instruction
@@ -28,8 +32,12 @@ from py2mlog.mlog.mlog_expressions import (
 from py2mlog.mlog.selectable_params import (
     RadarSortSelectableParam,
     RadarTargetSelectableParam,
+    UnitLocateBuildingSelectableParam,
 )
-from py2mlog.mlog.suboperations import UnitControlSuboperation
+from py2mlog.mlog.suboperations import (
+    UnitControlSuboperation,
+    UnitLocateSuboperation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +150,7 @@ def _unit_radar(
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
             call_ctx.src_loc,
-            err=f"Called '{this_func_name}' with arg '{arg}'. "
+            err=f"Called '{this_func_name}' with arg '{arg}' for param 'key'. "
             f"Expected type: '{MlogStringLiteral.__name__}' "
             f"or '{MlogVar.__name__}'",
         )
@@ -194,7 +202,169 @@ def _unit_radar(
     return call_ctx.output_expr[0]
 
 
-# TODO: ulocate
+_ULOCATE_BUILDING_SEL_PARAM = {
+    name: sel_param
+    for sel_param in UnitLocateBuildingSelectableParam
+    for name in (
+        sel_param.value,
+        camel_to_snake(sel_param.value),
+        sel_param.value.lower(),
+    )
+}
+_IS_ENEMY_STR_MAP = {
+    "False": MlogBoolLiteral(False),
+    "ally": MlogBoolLiteral(False),
+    "True": MlogBoolLiteral(True),
+    "enemy": MlogBoolLiteral(True),
+}
+_MlogFillerExpr = MlogFillerExpr()
+
+
+def _unit_locate(
+    call_ctx: IntrinsicCallCtx,
+    subop: MlogExpr,
+    /,
+    *,
+    block_flag: MlogExpr = _MlogFillerExpr,
+    is_enemy_building: MlogExpr = _MlogFillerExpr,
+    ore_type: MlogExpr = _MlogFillerExpr,
+) -> tuple[MlogExpr, ...]:
+    this_func_name = get_func_names(NAMESPACE, _REV_MAP, _unit_locate)
+
+    if not isinstance(subop, (MlogStringLiteral, MlogVar)):
+        raise CompilerError(
+            CompilerErrorType.BAD_CALL,
+            call_ctx.src_loc,
+            err=f"Called '{this_func_name}' with arg '{subop}' for param 'subop'. "
+            f"Allowed types: '{MlogStringLiteral.__name__}' or '{MlogVar.__name__}'",
+        )
+    subop_str = (
+        subop.value if isinstance(subop, MlogStringLiteral) else subop.name
+    )
+
+    output_expr = pad_output_expr(call_ctx.output_expr, 4)
+
+    # using kwargs here is a little cursed
+    # and the func name is also kinda misleading
+    # but its just a tiny helper cut me some slack ok
+    def _validate_arg_presence(
+        expect_present: bool,  # noqa: FBT001
+        **kwargs: MlogExpr,
+    ) -> None:
+        for param_name, arg in kwargs.items():
+            is_present = not isinstance(arg, MlogFillerExpr)
+            if is_present != expect_present:
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    call_ctx.src_loc,
+                    err=f"{'Missing' if expect_present else 'Unexpected'} "
+                    f"arg for param '{param_name}'",
+                )
+
+    _emit_ulocate_subop = emit_subop_func_factory(InstructionType.UNIT_LOCATE)
+    match subop_str:
+        case "ore":
+            _validate_arg_presence(
+                False,
+                block_flag=block_flag,
+                is_enemy_building=is_enemy_building,
+            )
+            _validate_arg_presence(True, ore_type=ore_type)
+            _validate_arg_type(MlogBuiltin, _unit_locate, ore_type)
+
+            # ulocate ore only returns 3 values
+            # also :3
+            output_expr = output_expr[:3]
+            _emit_ulocate_subop(
+                call_ctx, UnitLocateSuboperation.ORE, ore_type, *output_expr
+            )
+
+        case "building":
+            _validate_arg_presence(False, ore_type=ore_type)
+            _validate_arg_presence(
+                True, block_flag=block_flag, is_enemy_building=is_enemy_building
+            )
+
+            # block flag is a sel param, hence this mess
+            if not isinstance(block_flag, (MlogStringLiteral, MlogVar)):
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    call_ctx.src_loc,
+                    err=f"Called '{this_func_name}' with arg '{block_flag}' for param 'subop'. "
+                    f"Allowed types: '{MlogStringLiteral.__name__}' or '{MlogVar.__name__}'",
+                )
+            block_flag_str = (
+                block_flag.value
+                if isinstance(block_flag, MlogStringLiteral)
+                else block_flag.name
+            )
+            block_flag_sel_param = _ULOCATE_BUILDING_SEL_PARAM.get(
+                block_flag_str
+            )
+            if block_flag_sel_param is None:
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    call_ctx.src_loc,
+                    err=f"Unknown value for param 'block_flag' for '{this_func_name}': {subop_str}",
+                )
+
+            _validate_arg_type(
+                (MlogBoolLiteral, MlogNumberLiteral, MlogStringLiteral),
+                _unit_locate,
+                is_enemy_building,
+            )
+            if isinstance(is_enemy_building, MlogStringLiteral):
+                mapped = _IS_ENEMY_STR_MAP.get(is_enemy_building.value)
+                if mapped is None:
+                    logger.warning(
+                        "Called '%s' with %s with value other than %s "
+                        "for param 'is_enemy_building': '%s'. ",
+                        get_func_names(NAMESPACE, _REV_MAP, _unit_item_drop),
+                        MlogStringLiteral.__name__,
+                        "/".join(_IS_ENEMY_STR_MAP),
+                        is_enemy_building,
+                    )
+                else:
+                    is_enemy_building = mapped
+
+            _emit_ulocate_subop(
+                call_ctx,
+                UnitLocateSuboperation.BUILDING,
+                is_enemy_building,
+                *output_expr,
+                sel_args=(block_flag_sel_param,),
+            )
+
+        case "spawn":
+            _validate_arg_presence(
+                False,
+                ore_type=ore_type,
+                block_flag=block_flag,
+                is_enemy_building=is_enemy_building,
+            )
+            _emit_ulocate_subop(
+                call_ctx, UnitLocateSuboperation.SPAWN, *output_expr
+            )
+
+        case "damaged":
+            _validate_arg_presence(
+                False,
+                ore_type=ore_type,
+                block_flag=block_flag,
+                is_enemy_building=is_enemy_building,
+            )
+            _emit_ulocate_subop(
+                call_ctx, UnitLocateSuboperation.DAMAGED, *output_expr
+            )
+
+        case _:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                call_ctx.src_loc,
+                err=f"Unknown pos arg ('subop') for '{this_func_name}': {subop_str}",
+            )
+
+    return output_expr
 
 
 # all the ucontrol stuff
@@ -243,9 +413,6 @@ def _unit_boost(
     )
     _emit_ucontrol_subop(call_ctx, UnitControlSuboperation.BOOST, enabled)
     return MlogNullLiteral()
-
-
-_MlogFillerExpr = MlogFillerExpr()
 
 
 def _unit_shoot(
@@ -332,8 +499,8 @@ def _unit_item_drop(
         logger.warning(
             "Called '%s' with non-'air' %s for param 'to': '%s'. ",
             get_func_names(NAMESPACE, _REV_MAP, _unit_item_drop),
-            to,
             MlogBuiltin.__name__,
+            to,
         )
     _validate_arg_type(MlogNumberLiteral, _unit_item_drop, amount)
     _emit_ucontrol_subop(
@@ -427,8 +594,7 @@ def _unit_deconstruct(
 def _unit_get_block(
     call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
 ) -> tuple[MlogExpr, ...]:
-    # padding
-    output_expr = (call_ctx.output_expr + (MlogVar("_"),) * 3)[:3]
+    output_expr = pad_output_expr(call_ctx.output_expr, 3)
 
     _validate_arg_type(MlogNumberLiteral, _unit_get_block, x, y)
     _emit_ucontrol_subop(
@@ -458,6 +624,7 @@ def _unit_within(
 _func_map: IntrinsicFuncMap = {
     "bind": _unit_bind,
     "radar": _unit_radar,
+    "locate": _unit_locate,
     # ucontrol
     "idle": _argless_ucontrol_func_factory(UnitControlSuboperation.IDLE),
     "stop": _argless_ucontrol_func_factory(UnitControlSuboperation.STOP),

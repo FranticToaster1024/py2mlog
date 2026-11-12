@@ -10,6 +10,7 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicFuncMap,
     IntrinsicFuncRevMap,
     emit_subop_func_factory,
+    generate_aliases,
     get_func_names,
     validate_arg_type_factory,
 )
@@ -296,7 +297,7 @@ def _screen_flush(
     return MlogNullLiteral()
 
 
-FUNC_MAP: IntrinsicFuncMap = {
+_func_map: IntrinsicFuncMap = {
     "clear": _screen_clear,
     "fill": _screen_clear,  # alias
     "color": _screen_color,
@@ -304,16 +305,12 @@ FUNC_MAP: IntrinsicFuncMap = {
     "stroke": _screen_stroke,
     "line": _screen_line,
     "rect": _screen_rect,
-    "fillrect": _screen_rect,  # alias
     "fill_rect": _screen_rect,  # alias
     "line_rect": _screen_line_rect,
-    "linerect": _screen_line_rect,  # alias
     "hollow_rect": _screen_line_rect,  # alias
     "poly": _screen_poly,
-    "fillpoly": _screen_poly,  # alias
     "fill_poly": _screen_poly,  # alias
     "line_poly": _screen_line_poly,
-    "linepoly": _screen_line_poly,  # alias
     "hollow_poly": _screen_line_poly,  # alias
     "triangle": _screen_triangle,
     "image": _screen_image,
@@ -324,6 +321,7 @@ FUNC_MAP: IntrinsicFuncMap = {
     "reset": _screen_reset,
     "flush": _screen_flush,
 }
+FUNC_MAP = generate_aliases(_func_map)
 
 
 _rev_map: IntrinsicFuncRevMap = {}

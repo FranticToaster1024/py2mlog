@@ -142,16 +142,19 @@ class Emitter:
         elif not isinstance(instr.suboperation, expected_arg_shape.subop):
             return False
 
-        if len(instr.selectable_args) != len(expected_arg_shape.sel_params):
-            return False
-        if not all(
-            isinstance(sel_param, expected_sel_param)
-            for sel_param, expected_sel_param in zip(
-                instr.selectable_args,
-                expected_arg_shape.sel_params,
-                strict=True,
-            )
-        ):
+        if instr.suboperation is None:
+            if len(instr.selectable_args) != len(expected_arg_shape.sel_params):
+                return False
+            if not all(
+                isinstance(sel_param, expected_sel_param)
+                for sel_param, expected_sel_param in zip(
+                    instr.selectable_args,
+                    expected_arg_shape.sel_params,
+                    strict=True,
+                )
+            ):
+                return False
+        elif len(instr.selectable_args) > len(expected_arg_shape.sel_params):
             return False
 
         var_arg_count = len(instr.args)

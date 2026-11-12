@@ -8,6 +8,7 @@ from py2mlog.compiler.error import SourceLocation
 from py2mlog.compiler.mimex_utils import snake_to_camel
 from py2mlog.mlog.instruction import Instruction, InstructionType
 from py2mlog.mlog.mlog_expressions import MlogExpr, MlogVar
+from py2mlog.mlog.selectable_params import SelectableParam
 from py2mlog.mlog.suboperations import Suboperation
 
 logger = logging.getLogger(__name__)
@@ -37,16 +38,23 @@ def get_func_names(
 
 class _EmitSubopFunc(Protocol):
     def __call__(
-        self, call_ctx: IntrinsicCallCtx, subop: Suboperation, *args: MlogExpr
+        self,
+        call_ctx: IntrinsicCallCtx,
+        subop: Suboperation,
+        *args: MlogExpr,
+        sel_args: tuple[SelectableParam, ...] = (),
     ) -> None: ...
 
 
 def emit_subop_func_factory(instr_type: InstructionType) -> _EmitSubopFunc:
     def _emit_subop_func(
-        call_ctx: IntrinsicCallCtx, subop: Suboperation, *args: MlogExpr
+        call_ctx: IntrinsicCallCtx,
+        subop: Suboperation,
+        *args: MlogExpr,
+        sel_args: tuple[SelectableParam, ...] = (),
     ) -> None:
         call_ctx.emitter.emit_instruction(
-            Instruction(instr_type, subop, (), args)
+            Instruction(instr_type, subop, sel_args, args)
         )
 
     return _emit_subop_func
@@ -96,3 +104,7 @@ def generate_aliases(m: IntrinsicFuncMap) -> IntrinsicFuncMap:
         for name, func in m.items()
         for alias in (name, snake_to_camel(name), name.replace("_", ""))
     }
+
+
+def pad_output_expr(output_expr: tuple[MlogExpr, ...], n: int):
+    return (output_expr + (MlogVar("_"),) * n)[:n]

@@ -99,7 +99,7 @@ def _build_arg_list(
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
                 None,
-                err=f"Instruction {instr!r} did not match PARAM_MAP: missing {param_type}.",
+                err=f"Instruction '{instr!r}' did not match PARAM_MAP: missing '{param_type}'",
             ) from None
 
 
