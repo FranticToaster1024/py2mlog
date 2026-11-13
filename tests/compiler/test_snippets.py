@@ -1446,6 +1446,26 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
+        x = abs(Mem.cell1[1])
+        Mem.cell2[10] = x * 2
+        Mem.cell1[1] = Mem.cell2[10]
+        y = Mem.read(cell1, 1)
+        Mem.write(y, cell2, 10)
+        """,
+        (
+            "read __p2m_tmp0 cell1 1",
+            "op abs x __p2m_tmp0",
+            "op mul __p2m_tmp1 x 2",
+            "write __p2m_tmp1 cell2 10",
+            "read __p2m_tmp2 cell1 1",
+            "write __p2m_tmp2 cell2 10",
+            "read y cell1 1",
+            "write y cell2 10",
+        ),
+        id="mem-operations-and-subscript-access",
+    ),
+    pytest.param(
+        """
         from py2mlog_api import Env, Links
         from py2mlog_api import *
         """,

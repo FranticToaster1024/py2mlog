@@ -147,16 +147,18 @@ class Compiler:
 
         result = self._compile_expr(expr, output_expr)
 
-        if output_expr is not None and result != output_expr:
-            self.emitter.emit_instruction(
-                Instruction(
-                    InstructionType.SET, None, (), (output_expr, result)
-                )
-            )
+        return self._set_expr_output(result, output_expr)
 
+    def _set_expr_output(
+        self, expr: MlogExpr, output_expr: MlogExpr | None
+    ) -> MlogExpr:
+        if output_expr is not None and expr != output_expr:
+            self.emitter.emit_instruction(
+                Instruction(InstructionType.SET, None, (), (output_expr, expr))
+            )
             return output_expr
 
-        return result
+        return expr
 
     def _compile_expr(
         self, expr: ast.expr, output_expr: MlogExpr | None
@@ -451,12 +453,33 @@ class Compiler:
                 )
 
             case ast.Subscript(value=value, slice=slice):
-                if not isinstance(value, ast.Name):
-                    raise self._unsupported_expr_error(
-                        expr, " non-identifier subscript target"
-                    )
-
                 output_expr = self._get_output_expr(output_expr)
+
+                if (
+                    isinstance(value, ast.Attribute)
+                    and isinstance(value.value, ast.Name)
+                    and value.value.id == "Mem"
+                ):
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.READ,
+                            None,
+                            (),
+                            (
+                                output_expr,
+                                MlogVar(value.attr),
+                                self.compile_expr(slice),
+                            ),
+                        )
+                    )
+                    return output_expr
+
+                if not isinstance(value, ast.Name):
+                    raise CompilerError(
+                        CompilerErrorType.UNSUPPORTED,
+                        self._get_src_loc_from_node(expr),
+                        feature="Complex subscript target",
+                    )
 
                 match value.id:
                     # slightly silly snippet
@@ -474,8 +497,10 @@ class Compiler:
                         )
 
                     case _:
-                        raise self._unsupported_expr_error(
-                            expr, " non-special subscript target"
+                        raise CompilerError(
+                            CompilerErrorType.UNSUPPORTED,
+                            self._get_src_loc_from_node(expr),
+                            feature="Unknown subscript target",
                         )
 
                 return output_expr
@@ -654,6 +679,7 @@ class Compiler:
 
         namespaced_builtin_func = None
         match namespace:
+            # TODO: DRY or something
             case intrinsics.unit.NAMESPACE:
                 namespaced_builtin_func = intrinsics.unit.FUNC_MAP.get(
                     func_name
@@ -663,6 +689,9 @@ class Compiler:
                 namespaced_builtin_func = intrinsics.screen.FUNC_MAP.get(
                     func_name
                 )
+
+            case intrinsics.mem.NAMESPACE:
+                namespaced_builtin_func = intrinsics.mem.FUNC_MAP.get(func_name)
 
             case _:
                 raise self._unsupported_expr_error(
@@ -779,7 +808,9 @@ class Compiler:
             and isinstance(expr.operand.value, (int, float))
         )
 
-    def compile_target(self, expr: ast.expr) -> MlogExpr:
+    def compile_target(
+        self, expr: ast.expr, input_expr: MlogExpr | None = None
+    ) -> MlogExpr:
         """Resolves an expression in store context and returns its location."""
 
         if not isinstance(getattr(expr, "ctx", None), ast.Store):
@@ -807,6 +838,40 @@ class Compiler:
                 return self._arg_table.get(
                     name, MlogVar(self._get_scope_str(name))
                 )
+
+            # case ast.Subscript(value=value, slice=slice):
+            #     if input_expr is None:
+            #         raise CompilerError(
+            #             CompilerErrorType.INTERNAL,
+            #             self._get_src_loc_from_node(expr),
+            #             err="Called 'compile_target' with 'None' as 'input_expr' "
+            #             f"when expr was of type '{ast.Subscript.__name__}'",
+            #         )
+
+            #     if (
+            #         isinstance(value, ast.Attribute)
+            #         and isinstance(value.value, ast.Name)
+            #         and value.value.id == "Mem"
+            #     ):
+            #         self.emitter.emit_instruction(
+            #             Instruction(
+            #                 InstructionType.WRITE,
+            #                 None,
+            #                 (),
+            #                 (
+            #                     input_expr,
+            #                     MlogVar(value.attr),
+            #                     self.compile_expr(slice),
+            #                 ),
+            #             )
+            #         )
+            #         return input_expr
+
+            #     raise CompilerError(
+            #         CompilerErrorType.UNSUPPORTED,
+            #         self._get_src_loc_from_node(expr),
+            #         feature="Complex subscript target",
+            #     )
 
             case _:
                 raise self._unsupported_expr_error(expr)
@@ -1580,7 +1645,9 @@ class Compiler:
     ) -> CompilerError:
         ctx = getattr(expr, "ctx", None)
         ctx_str = (
-            '(under context "{type(ctx).__name__}") ' if ctx is not None else ""
+            f'(under context "{type(ctx).__name__}") '
+            if ctx is not None
+            else ""
         )
 
         return CompilerError(

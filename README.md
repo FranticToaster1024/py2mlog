@@ -61,6 +61,8 @@ You can use `--no-file` to disable the file output. This must be used with `-s` 
 Information, warnings, and other diagnostics are printed to stderr.
 
 ## Supported features
+Im NoT a CoPyCaT iTs AlL fOr CoMpAtIbIlItY rEaSoNs!
+
 Assignment and operators:
 ```py
 x = 42
@@ -165,7 +167,7 @@ green_with_alpha = Color("00FF00FF")
 blue = Color(0x0000FF)
 ```
 
-All draw operations, through the `Screen.*` namespace. Any in-game operation names should work here. snake_case and whatevercasethisis variants as well as a few aliases are also available. These should be compatible with pyndustric. I'm too lazy to write an actual sample so here is a snippet from the tests:
+All draw operations, through the `Screen.*` namespace. Any in-game operation names should work here. snake_case and whatevercasethisis variants as well as a few aliases are also available. These should be compatible with pyndustric. I'm too lazy to write an actual sample so here is a slightly modified snippet from the tests:
 ```py
 Screen.clear(0, 127, 255)
 Screen.fill(a, b, c)  # alias for 'Screen.clear()'
@@ -185,7 +187,10 @@ Screen.flush()  # default is 'display1'
 ```
 
 
-All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric and its aliases. This includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc.
+All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric. This namespace includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc.
+
+
+Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.read()` and `Mem.write()`:
 
 
 ## Things to note
