@@ -3,9 +3,22 @@ Internal modules: compiler, mlog, mimex_data, intrinsics.
 Avoid importing them for regular use.
 """
 
-from typing import Self
+from abc import ABC
+from typing import Any, Self
 
 from py2mlog._gen import *  # noqa: F403
+
+# move this to generated stub
+class Senseable(ABC):
+    # TODO: attributes or something
+    ...
+
+# move this to generated stub
+class Controllable(ABC):
+    # TODO: attributes or something
+    ...
+
+class Building(Senseable, Controllable): ...
 
 # i dunno maybe we can even generate these from the maps too instead
 # ima just manually write these for now
@@ -23,5 +36,12 @@ class Color(float):
     """
     def __new__(cls, x: str | int) -> Self: ...
 
-# TODO: generate stuff like Env.* from mimex because i am NOT writing that manually
 # because im feeling lazy maybe also generate Screen.* and similar stuff from the maps
+
+class MemBuilding(Building):
+    def __getitem__(self, index: int) -> Any: ...
+    def __setitem__(self, index: int, value: Any) -> None: ...
+
+class Mem:
+    def __getattr__(self, name: str) -> MemBuilding: ...
+    # TODO: methods

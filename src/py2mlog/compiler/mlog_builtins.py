@@ -27,7 +27,7 @@ CONTENT_MAP: Mapping[str, MlogBuiltin] = {
 }
 
 SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
-    kebab_to_snake(s): MlogBuiltin(s)
+    camel_to_snake(s): MlogBuiltin(s)
     for s in (
         # Processor
         "this",

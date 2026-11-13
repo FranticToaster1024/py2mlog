@@ -488,28 +488,28 @@ class Env:
     ipt: Content
     pi: Content
     e: Content
-    degtorad: Content
-    radtodeg: Content
+    deg_to_rad: Content
+    rad_to_deg: Content
     time: Content
     tick: Content
     second: Content
     minute: Content
-    wavenumber: Content
-    wavetime: Content
+    wave_number: Content
+    wave_time: Content
     mapw: Content
     maphserver: Content
     client: Content
-    clientlocale: Content
-    clientunit: Content
-    clientname: Content
-    clientteam: Content
-    clientmobile: Content
-    clientmusicplaying: Content
-    clientcurrentmusic: Content
-    blockcount: Content
-    unitcount: Content
-    itemcount: Content
-    liquidcount: Content
+    client_locale: Content
+    client_unit: Content
+    client_name: Content
+    client_team: Content
+    client_mobile: Content
+    client_music_playing: Content
+    client_current_music: Content
+    block_count: Content
+    unit_count: Content
+    item_count: Content
+    liquid_count: Content
     counter: Content
     null: Content
 
