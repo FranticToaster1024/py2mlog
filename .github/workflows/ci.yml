@@ -75,6 +75,9 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Install packages
+      run: pip install -e ".[dev]"
+
     - name: Generated stub
       run: python src/py2mlog/scripts/stub_gen.py
     
