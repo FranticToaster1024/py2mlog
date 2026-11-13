@@ -83,7 +83,7 @@ jobs:
     
 
   update-whl-and-deploy:
-    needs: stub-gen
+    needs: check-stub-gen
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
