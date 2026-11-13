@@ -64,7 +64,7 @@ extend-select = ["I", "UP", "SIM", "TCH", "RUF"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["FLY002", "S101"]
 "__init__.py" = ["TID252"]
-"py2mlog_api.pyi" = ["PYI021"]
+"*.pyi" = ["PYI021", "N815"]
 
 [tool.ruff.format]
 quote-style = "double"

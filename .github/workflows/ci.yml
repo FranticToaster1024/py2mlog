@@ -57,8 +57,36 @@ jobs:
       run: hatch test --python ${{ matrix.python-version }}
 
 
-  update-whl-and-deploy:
+  check-stub-gen:
     needs: tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+      with:
+        submodules: true
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+
+    - name: Install packages
+      run: pip install -e ".[dev]"
+
+    - name: Generated stub
+      run: python src/py2mlog/scripts/stub_gen.py
+    
+    - name: Check generated stub
+      run: git diff --exit-code -- src/py2mlog/scripts/stub_gen.py
+    
+
+  update-whl-and-deploy:
+    needs: check-stub-gen
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
