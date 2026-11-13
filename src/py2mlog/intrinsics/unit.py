@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Callable
+from typing import cast
 
 from py2mlog.compiler.error import (
     CompilerError,
@@ -49,8 +50,12 @@ NAMESPACE = "Unit"
 
 
 def _unit_bind(
-    call_ctx: IntrinsicCallCtx, type_: MlogExpr, /
+    call_ctx: IntrinsicCallCtx,
+    type: MlogStringLiteral | MlogBuiltin,  # noqa: A002
+    /,
 ) -> MlogNullLiteral:
+    type_ = cast("MlogExpr", type)
+
     if isinstance(type_, (MlogStringLiteral, MlogBuiltin)):
         type_str = (
             type_.value.removeprefix("@")
@@ -75,7 +80,7 @@ def _unit_bind(
             logger.warning(
                 "Called '%s' with literal of type '%s'.",
                 get_func_names(NAMESPACE, _REV_MAP, _unit_bind),
-                type(type_).__name__,
+                type_.__class__.__name__,  # oops i shadowed 'type()'
             )
 
         call_ctx.emitter.emit_instruction(
@@ -112,18 +117,25 @@ _MlogBoolLiteral_True = MlogBoolLiteral(True)
 
 def _unit_radar(
     call_ctx: IntrinsicCallCtx,
-    filter1: MlogExpr = _RadarTargetSelParam_Any,
-    filter2: MlogExpr = _RadarTargetSelParam_Any,
-    filter3: MlogExpr = _RadarTargetSelParam_Any,
+    filter1: MlogStringLiteral | MlogVar = _RadarTargetSelParam_Any,
+    filter2: MlogStringLiteral | MlogVar = _RadarTargetSelParam_Any,
+    filter3: MlogStringLiteral | MlogVar = _RadarTargetSelParam_Any,
     /,
     *,
-    order: MlogExpr = _MlogBoolLiteral_True,
-    key: MlogExpr = _RadarSortSelParam_Distance,
+    order: MlogBoolLiteral
+    | MlogNumberLiteral
+    | MlogStringLiteral = _MlogBoolLiteral_True,
+    key: MlogStringLiteral = _RadarSortSelParam_Distance,
 ) -> MlogExpr:
+    order_ = cast("MlogExpr", order)
+    key_ = cast("MlogExpr", key)
+
     this_func_name = get_func_names(NAMESPACE, _REV_MAP, _unit_radar)
 
     filter_sel_params: list[RadarTargetSelectableParam] = []
     for arg in (filter1, filter2, filter3):
+        arg = cast("MlogExpr", arg)
+
         if not isinstance(arg, (MlogStringLiteral, MlogVar)):
             # raise an error instead of the usual warning
             raise CompilerError(
@@ -146,7 +158,7 @@ def _unit_radar(
 
         filter_sel_params.append(filter_sel_param)
 
-    if not isinstance(key, (MlogStringLiteral, MlogVar)):
+    if not isinstance(key_, (MlogStringLiteral, MlogVar)):
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
             call_ctx.src_loc,
@@ -154,7 +166,7 @@ def _unit_radar(
             f"Expected type: '{MlogStringLiteral.__name__}' "
             f"or '{MlogVar.__name__}'",
         )
-    key_str = key.value if isinstance(key, MlogStringLiteral) else key.name
+    key_str = key_.value if isinstance(key_, MlogStringLiteral) else key_.name
     key_sel_param = _RADAR_SORT_NAME_MAP.get(key_str)
     if key_sel_param is None:
         raise CompilerError(
@@ -165,38 +177,38 @@ def _unit_radar(
         )
 
     if not isinstance(
-        order, (MlogVar, MlogNumberLiteral, MlogBoolLiteral, MlogStringLiteral)
+        order_, (MlogVar, MlogNumberLiteral, MlogBoolLiteral, MlogStringLiteral)
     ):
         logger.warning(
             "Called '%s' with literal of type '%s' for 'order' kwarg.",
             this_func_name,
-            type(order).__name__,
+            type(order_).__name__,
         )
 
-    if isinstance(order, MlogStringLiteral):
-        order_ = _RADAR_ORDER_NAMES.get(order.value)
-        if order_ is None:
+    if isinstance(order_, MlogStringLiteral):
+        mapped = _RADAR_ORDER_NAMES.get(order_.value)
+        if mapped is None:
             logger.warning(
                 "Called '%s' with unrecognised string literal '%s'. Defaulting to '%s'.",
                 this_func_name,
-                order.value,
+                order_.value,
                 _MlogBoolLiteral_True.value,
             )
-            order_ = _MlogBoolLiteral_True
+            mapped = _MlogBoolLiteral_True
 
-        order = order_
+        order_ = mapped
 
-    elif isinstance(order, MlogVar):
-        order_ = _RADAR_ORDER_NAMES.get(order.name)
-        if order_ is not None:
-            order = order_
+    elif isinstance(order_, MlogVar):
+        mapped = _RADAR_ORDER_NAMES.get(order_.name)
+        if mapped is not None:
+            order_ = mapped
 
     call_ctx.emitter.emit_instruction(
         Instruction(
             InstructionType.UNIT_RADAR,
             None,
             (*filter_sel_params, key_sel_param),
-            (order, call_ctx.output_expr[0]),
+            (order_, call_ctx.output_expr[0]),
         )
     )
     return call_ctx.output_expr[0]
@@ -380,7 +392,7 @@ def _argless_ucontrol_func_factory(
 
 
 def _unit_move(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, y: MlogNumberLiteral
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_move, x, y)
     _emit_ucontrol_subop(call_ctx, UnitControlSuboperation.MOVE, x, y)
@@ -388,7 +400,10 @@ def _unit_move(
 
 
 def _unit_approach(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr, radius: MlogExpr
+    call_ctx: IntrinsicCallCtx,
+    x: MlogNumberLiteral,
+    y: MlogNumberLiteral,
+    radius: MlogNumberLiteral,
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_approach, x, y, radius)
     _emit_ucontrol_subop(
@@ -398,7 +413,7 @@ def _unit_approach(
 
 
 def _unit_pathfind(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, y: MlogNumberLiteral
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_pathfind, x, y)
     _emit_ucontrol_subop(call_ctx, UnitControlSuboperation.PATHFIND, x, y)
@@ -406,7 +421,7 @@ def _unit_pathfind(
 
 
 def _unit_boost(
-    call_ctx: IntrinsicCallCtx, enabled: MlogExpr
+    call_ctx: IntrinsicCallCtx, enabled: MlogBoolLiteral | MlogNumberLiteral
 ) -> MlogNullLiteral:
     _validate_arg_type(
         (MlogBoolLiteral, MlogNumberLiteral), _unit_boost, enabled
@@ -449,7 +464,10 @@ def _unit_shoot(
 
 
 def _unit_target(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr, shoot: MlogExpr
+    call_ctx: IntrinsicCallCtx,
+    x: MlogNumberLiteral,
+    y: MlogNumberLiteral,
+    shoot: MlogBoolLiteral | MlogNumberLiteral,
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_target, x, y)
     _validate_arg_type(
@@ -530,7 +548,7 @@ _unit_pay_drop = _argless_ucontrol_func_factory(
 
 
 def _unit_pay_take(
-    call_ctx: IntrinsicCallCtx, take_units: MlogExpr
+    call_ctx: IntrinsicCallCtx, take_units: MlogBoolLiteral | MlogNumberLiteral
 ) -> MlogNullLiteral:
     _validate_arg_type(
         (MlogBoolLiteral, MlogNumberLiteral), _unit_pay_take, take_units
@@ -547,7 +565,7 @@ def _unit_pay_take_unit(call_ctx: IntrinsicCallCtx) -> MlogNullLiteral:
 
 
 def _unit_mine(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, y: MlogNumberLiteral
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_mine, x, y)
     _emit_ucontrol_subop(call_ctx, UnitControlSuboperation.MINE, x, y)
@@ -555,7 +573,7 @@ def _unit_mine(
 
 
 def _unit_flag(
-    call_ctx: IntrinsicCallCtx, value: MlogExpr, /
+    call_ctx: IntrinsicCallCtx, value: MlogNumberLiteral, /
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_flag, value)
     _emit_ucontrol_subop(call_ctx, UnitControlSuboperation.FLAG, value)
@@ -568,10 +586,10 @@ _MlogNullLiteral = MlogNullLiteral()
 
 def _unit_build(
     call_ctx: IntrinsicCallCtx,
-    x: MlogExpr,
-    y: MlogExpr,
-    block: MlogExpr,
-    rotation: MlogExpr = _MlogNumberLiteral_0,
+    x: MlogNumberLiteral,
+    y: MlogNumberLiteral,
+    block: MlogBuiltin,
+    rotation: MlogNumberLiteral = _MlogNumberLiteral_0,
     config: MlogExpr = _MlogNullLiteral,
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_build, x, y, rotation)
@@ -584,7 +602,7 @@ def _unit_build(
 
 
 def _unit_deconstruct(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, y: MlogNumberLiteral
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogNumberLiteral, _unit_deconstruct, x, y)
     _emit_ucontrol_subop(call_ctx, UnitControlSuboperation.DECONSTRUCT, x, y)
@@ -592,7 +610,7 @@ def _unit_deconstruct(
 
 
 def _unit_get_block(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, y: MlogNumberLiteral
 ) -> tuple[MlogExpr, ...]:
     output_expr = pad_output_expr(call_ctx.output_expr, 3)
 
@@ -606,7 +624,10 @@ def _unit_get_block(
 
 
 def _unit_within(
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, y: MlogExpr, radius: MlogExpr
+    call_ctx: IntrinsicCallCtx,
+    x: MlogNumberLiteral,
+    y: MlogNumberLiteral,
+    radius: MlogNumberLiteral,
 ) -> MlogExpr:
     _validate_arg_type(MlogNumberLiteral, _unit_within, x, y, radius)
     _emit_ucontrol_subop(

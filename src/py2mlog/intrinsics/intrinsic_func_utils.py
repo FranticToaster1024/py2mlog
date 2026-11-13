@@ -69,6 +69,9 @@ class _ValidateArgTypeFunc(Protocol):
     ) -> None: ...
 
 
+# the param types in intrinsic func defs aren't actually enforced
+# they are just used for stub generation
+# so this is needed for runtime
 def validate_arg_type_factory(
     namespace: str, rev_map: IntrinsicFuncRevMap
 ) -> _ValidateArgTypeFunc:
@@ -98,11 +101,15 @@ def validate_arg_type_factory(
     return _validate_arg_type
 
 
+def generate_alias(s: str) -> set[str]:
+    return {s, snake_to_camel(s), s.replace("_", "").lower()}
+
+
 def generate_aliases(m: IntrinsicFuncMap) -> IntrinsicFuncMap:
     return {
         alias: func
         for name, func in m.items()
-        for alias in (name, snake_to_camel(name), name.replace("_", ""))
+        for alias in generate_alias(name)
     }
 
 

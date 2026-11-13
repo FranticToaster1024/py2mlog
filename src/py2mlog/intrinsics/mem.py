@@ -18,7 +18,7 @@ NAMESPACE = "Mem"
 
 
 def _mem_read(
-    call_ctx: IntrinsicCallCtx, cell: MlogExpr, index: MlogExpr
+    call_ctx: IntrinsicCallCtx, cell: MlogExpr, index: MlogNumberLiteral
 ) -> MlogExpr:
     _validate_arg_type(MlogVar, _mem_read, cell)
     _validate_arg_type(MlogNumberLiteral, _mem_read, index)
@@ -34,7 +34,10 @@ def _mem_read(
 
 
 def _mem_write(
-    call_ctx: IntrinsicCallCtx, value: MlogExpr, cell: MlogExpr, index: MlogExpr
+    call_ctx: IntrinsicCallCtx,
+    value: MlogExpr,
+    cell: MlogExpr,
+    index: MlogNumberLiteral,
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogVar, _mem_write, cell)
     _validate_arg_type(MlogNumberLiteral, _mem_write, index)

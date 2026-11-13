@@ -1,4 +1,8 @@
 from dataclasses import dataclass
+from types import NoneType
+from typing import Any
+
+from py2mlog._base import Content, _Color
 
 
 @dataclass(frozen=True)
@@ -50,3 +54,15 @@ class MlogVar(MlogExpr):
 
 
 type MlogArg = MlogExpr | LabelRef
+
+
+MLOG_EXPR_TYPE_MAP = {
+    MlogExpr: Any,
+    MlogBuiltin: Content,
+    MlogStringLiteral: str,
+    MlogNumberLiteral: float,  # linter yells if i use int | float
+    MlogBoolLiteral: bool,
+    MlogColorLiteral: _Color,
+    MlogNullLiteral: NoneType,
+    MlogVar: Any,
+}

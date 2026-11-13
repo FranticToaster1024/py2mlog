@@ -11,20 +11,24 @@ from py2mlog.mlog.mlog_expressions import MlogBuiltin, MlogExpr, MlogNullLiteral
 
 # unsure if this belongs in compiler/ or mlog/
 
+
+def _build_builtin_map(file_name: str) -> dict[str, MlogBuiltin]:
+    return {
+        kebab_to_snake(s): MlogBuiltin(s)
+        for s in select_col(
+            (MIMEX_DATA_DIR / file_name).read_text(encoding="utf-8"), "name"
+        )
+    }
+
+
 # ----------------------------------------
 # Env namespace (Env.*)
 # ----------------------------------------
-CONTENT_MAP: Mapping[str, MlogBuiltin] = {
-    kebab_to_snake(s): MlogBuiltin(s)
-    for file_name in (
-        "mimex-items.txt",
-        "mimex-liquids.txt",
-        "mimex-blocks.txt",
-    )
-    for s in select_col(
-        (MIMEX_DATA_DIR / file_name).read_text(encoding="utf-8"), "name"
-    )
-}
+ITEM_MAP = _build_builtin_map("mimex-items.txt")
+LIQUID_MAP = _build_builtin_map("mimex-liquids.txt")
+BLOCK_MAP = _build_builtin_map("mimex-blocks.txt")
+
+CONTENT_MAP: Mapping[str, MlogBuiltin] = ITEM_MAP | LIQUID_MAP | BLOCK_MAP
 
 SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
     camel_to_snake(s): MlogBuiltin(s)
