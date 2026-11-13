@@ -31,3 +31,6 @@ subprocess.run(
 )
 subprocess.run([sys.executable, "-m", "ruff", "format", gen_path], check=True)
 subprocess.run([sys.executable, "-m", "pyright", gen_path], check=True)
+
+
+sys.stdout.write("Successfully generated stub :D\n")
