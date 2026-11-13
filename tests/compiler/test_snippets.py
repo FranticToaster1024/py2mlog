@@ -43,12 +43,11 @@ _test_snippet_testcases = [
         id="basic-assignment-and-types",
     ),
     pytest.param(
-        "first = second = value",
+        "first = second = third = value",
         (
             "set first value",
-            # 'first' instead of 'value'
-            # does it matter? ¯\_(ツ)_/¯
             "set second first",
+            "set third first",
         ),
         id="multiple-assignment-targets",
     ),
@@ -1451,16 +1450,25 @@ _test_snippet_testcases = [
         Mem.cell1[1] = Mem.cell2[10]
         y = Mem.read(cell1, 1)
         Mem.write(y, cell2, 10)
+        x = y = Mem.cell1[1]
+        Mem.cell2[10] = x = 123
+        x = Mem.cell2[10] = 123
         """,
         (
             "read __p2m_tmp0 cell1 1",
             "op abs x __p2m_tmp0",
             "op mul __p2m_tmp1 x 2",
             "write __p2m_tmp1 cell2 10",
-            "read __p2m_tmp2 cell1 1",
-            "write __p2m_tmp2 cell2 10",
+            "read __p2m_tmp2 cell2 10",
+            "write __p2m_tmp2 cell1 1",
             "read y cell1 1",
             "write y cell2 10",
+            "read x cell1 1",
+            "set y x",
+            "write 123 cell2 10",
+            "set x 123",
+            "set x 123",
+            "write x cell2 10",
         ),
         id="mem-operations-and-subscript-access",
     ),

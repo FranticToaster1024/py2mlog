@@ -455,11 +455,7 @@ class Compiler:
             case ast.Subscript(value=value, slice=slice):
                 output_expr = self._get_output_expr(output_expr)
 
-                if (
-                    isinstance(value, ast.Attribute)
-                    and isinstance(value.value, ast.Name)
-                    and value.value.id == "Mem"
-                ):
+                if (val := self._is_mem_expr(expr)) is not None:
                     self.emitter.emit_instruction(
                         Instruction(
                             InstructionType.READ,
@@ -467,7 +463,7 @@ class Compiler:
                             (),
                             (
                                 output_expr,
-                                MlogVar(value.attr),
+                                MlogVar(val.attr),
                                 self.compile_expr(slice),
                             ),
                         )
@@ -839,39 +835,35 @@ class Compiler:
                     name, MlogVar(self._get_scope_str(name))
                 )
 
-            # case ast.Subscript(value=value, slice=slice):
-            #     if input_expr is None:
-            #         raise CompilerError(
-            #             CompilerErrorType.INTERNAL,
-            #             self._get_src_loc_from_node(expr),
-            #             err="Called 'compile_target' with 'None' as 'input_expr' "
-            #             f"when expr was of type '{ast.Subscript.__name__}'",
-            #         )
+            case ast.Subscript(slice=slice):
+                if input_expr is None:
+                    raise CompilerError(
+                        CompilerErrorType.INTERNAL,
+                        self._get_src_loc_from_node(expr),
+                        err="Called 'compile_target' with 'None' as 'input_expr' "
+                        f"when expr was of type '{ast.Subscript.__name__}'",
+                    )
 
-            #     if (
-            #         isinstance(value, ast.Attribute)
-            #         and isinstance(value.value, ast.Name)
-            #         and value.value.id == "Mem"
-            #     ):
-            #         self.emitter.emit_instruction(
-            #             Instruction(
-            #                 InstructionType.WRITE,
-            #                 None,
-            #                 (),
-            #                 (
-            #                     input_expr,
-            #                     MlogVar(value.attr),
-            #                     self.compile_expr(slice),
-            #                 ),
-            #             )
-            #         )
-            #         return input_expr
+                if (val := self._is_mem_expr(expr)) is not None:
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.WRITE,
+                            None,
+                            (),
+                            (
+                                input_expr,
+                                MlogVar(val.attr),
+                                self.compile_expr(slice),
+                            ),
+                        )
+                    )
+                    return input_expr
 
-            #     raise CompilerError(
-            #         CompilerErrorType.UNSUPPORTED,
-            #         self._get_src_loc_from_node(expr),
-            #         feature="Complex subscript target",
-            #     )
+                raise CompilerError(
+                    CompilerErrorType.UNSUPPORTED,
+                    self._get_src_loc_from_node(expr),
+                    feature="Complex subscript target",
+                )
 
             case _:
                 raise self._unsupported_expr_error(expr)
@@ -993,17 +985,23 @@ class Compiler:
                         )
 
                 else:
-                    value_expr = self.compile_expr(
-                        value, self.compile_target(targets[0])
-                    )
+                    # i don't even want to think about this
+                    if self._is_mem_expr(targets[0]) is not None:
+                        value_expr = self.compile_expr(value)
+                        self.compile_target(targets[0], value_expr)
+                    else:
+                        value_expr = self.compile_expr(
+                            value, self.compile_target(targets[0])
+                        )
 
                     for target in targets[1:]:
+                        t = self.compile_target(target, value_expr)
+                        if self._is_mem_expr(target) is not None:
+                            continue
+
                         self.emitter.emit_instruction(
                             Instruction(
-                                InstructionType.SET,
-                                None,
-                                (),
-                                (self.compile_target(target), value_expr),
+                                InstructionType.SET, None, (), (t, value_expr)
                             )
                         )
 
@@ -1412,6 +1410,20 @@ class Compiler:
 
             case _:
                 raise self._unsupported_stmt_error(stmt)
+
+    def _is_mem_expr(self, expr: ast.expr) -> ast.Attribute | None:
+        """
+        Returns the ast.Attribute if criteria is met.
+        """
+        if (
+            isinstance(expr, ast.Subscript)
+            and isinstance(expr.value, ast.Attribute)
+            and isinstance(expr.value.value, ast.Name)
+            and expr.value.value.id == "Mem"
+        ):
+            return expr.value
+
+        return None
 
     def _compile_func_def(self, func_def: ast.FunctionDef) -> None:
         # TODO: non-special decorators
