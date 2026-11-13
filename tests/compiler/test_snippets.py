@@ -1246,6 +1246,7 @@ _test_snippet_testcases = [
         a = Env.naval_factory
         a = Env.counter
         a = Env.time
+        a = Env.null  # ;-;
         """,
         (
             "set a @copper",
@@ -1254,8 +1255,9 @@ _test_snippet_testcases = [
             "set a @naval-factory",
             "set a @counter",
             "set a @time",
+            "set a null",
         ),
-        id="env-attr-resources",
+        id="env-attr",
     ),
     pytest.param(
         """

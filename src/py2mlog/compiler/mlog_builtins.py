@@ -7,7 +7,7 @@ from py2mlog.compiler.mimex_utils import (
     kebab_to_snake,
     select_col,
 )
-from py2mlog.mlog.mlog_expressions import MlogBuiltin, MlogExpr
+from py2mlog.mlog.mlog_expressions import MlogBuiltin, MlogExpr, MlogNullLiteral
 
 # unsure if this belongs in compiler/ or mlog/
 
@@ -69,7 +69,13 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
     )
 }
 
-ENV_ATTR_MAP: Mapping[str, MlogExpr] = CONTENT_MAP | SPECIAL_BUILTIN_MAP
+MISC_ENV_ATTR_MAP = {
+    "null": MlogNullLiteral(),
+}
+
+ENV_ATTR_MAP: Mapping[str, MlogExpr] = (
+    CONTENT_MAP | SPECIAL_BUILTIN_MAP | MISC_ENV_ATTR_MAP
+)
 
 
 # ----------------------------------------
@@ -119,6 +125,7 @@ MLOG_BUILTIN_NAMESPACES = (
         "UnitType",
         "Unit",
         "Align",  # for draw print alignments (see mimex-alignments.txt)
+        "Mem",
     }
     | EXTRA_BUILTIN_FUNCS
     | {k for k, v in ALIAS_NAMESPACES.items() if v}

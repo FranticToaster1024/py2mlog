@@ -190,7 +190,7 @@ Screen.flush()  # default is 'display1'
 All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric. This namespace includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc.
 
 
-Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.read()` and `Mem.write()`:
+Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.read()` and `Mem.write()`.
 
 
 ## Things to note

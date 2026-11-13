@@ -1,4 +1,11 @@
+"""
+Internal modules: compiler, mlog, mimex_data, intrinsics.
+Avoid importing them for regular use.
+"""
+
 from typing import Self
+
+from py2mlog._gen import *  # noqa: F403
 
 # i dunno maybe we can even generate these from the maps too instead
 # ima just manually write these for now
