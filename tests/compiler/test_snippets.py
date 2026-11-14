@@ -1455,6 +1455,7 @@ _test_snippet_testcases = [
         x = y = Mem.cell1[1]
         Mem.cell2[10] = x = 123
         x = Mem.cell2[10] = 123
+        Mem.cell1[1] += 1
         """,
         (
             "read __p2m_tmp0 cell1 1",
@@ -1464,6 +1465,8 @@ _test_snippet_testcases = [
             "read __p2m_tmp2 cell2 10",
             "write __p2m_tmp2 cell1 1",
             "read y cell1 1",
+            # this write call wastes a tmp
+            # func call generates tmp even when unneeded
             "write y cell2 10",
             "read x cell1 1",
             "set y x",
@@ -1471,6 +1474,10 @@ _test_snippet_testcases = [
             "set x 123",
             "set x 123",
             "write x cell2 10",
+            "read __p2m_tmp5 cell1 1",
+            # the tmp for the op is generated first
+            "op add __p2m_tmp4 __p2m_tmp5 1",
+            "write __p2m_tmp4 cell1 1",
         ),
         id="mem-operations-and-subscript-access",
     ),

@@ -455,7 +455,7 @@ class Compiler:
             case ast.Subscript(value=value, slice=slice):
                 output_expr = self._get_output_expr(output_expr)
 
-                if (val := self._is_mem_expr(expr)) is not None:
+                if (val := self._get_mem_expr(expr)) is not None:
                     self.emitter.emit_instruction(
                         Instruction(
                             InstructionType.READ,
@@ -838,13 +838,11 @@ class Compiler:
             case ast.Subscript(slice=slice):
                 if input_expr is None:
                     raise CompilerError(
-                        CompilerErrorType.INTERNAL,
+                        CompilerErrorType.INTERNAL_COMP_TGT_NEED_INPUT_EXPR,
                         self._get_src_loc_from_node(expr),
-                        err="Called 'compile_target' with 'None' as 'input_expr' "
-                        f"when expr was of type '{ast.Subscript.__name__}'",
                     )
 
-                if (val := self._is_mem_expr(expr)) is not None:
+                if (val := self._get_mem_expr(expr)) is not None:
                     self.emitter.emit_instruction(
                         Instruction(
                             InstructionType.WRITE,
@@ -985,18 +983,23 @@ class Compiler:
                         )
 
                 else:
-                    # i don't even want to think about this
-                    if self._is_mem_expr(targets[0]) is not None:
-                        value_expr = self.compile_expr(value)
-                        self.compile_target(targets[0], value_expr)
-                    else:
+                    try:
                         value_expr = self.compile_expr(
                             value, self.compile_target(targets[0])
                         )
+                    except CompilerError as e:
+                        if (
+                            e.error
+                            != CompilerErrorType.INTERNAL_COMP_TGT_NEED_INPUT_EXPR
+                        ):
+                            raise e from None
+
+                        value_expr = self.compile_expr(value)
+                        self.compile_target(targets[0], value_expr)
 
                     for target in targets[1:]:
                         t = self.compile_target(target, value_expr)
-                        if self._is_mem_expr(target) is not None:
+                        if self._get_mem_expr(target) is not None:
                             continue
 
                         self.emitter.emit_instruction(
@@ -1013,18 +1016,35 @@ class Compiler:
                         stmt, f" with operation {op_subop}"
                     )
 
-                self.emitter.emit_instruction(
-                    Instruction(
-                        InstructionType.OPERATION,
-                        op_subop,
-                        (),
-                        (
-                            self.compile_target(target),
-                            self.compile_expr(target, suppress_ctx_check=True),
-                            self.compile_expr(value),
-                        ),
+                def _emit_op(t: MlogExpr) -> None:
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.OPERATION,
+                            op_subop,
+                            (),
+                            (
+                                t,
+                                self.compile_expr(
+                                    target, suppress_ctx_check=True
+                                ),
+                                self.compile_expr(value),
+                            ),
+                        )
                     )
-                )
+
+                try:
+                    t = self.compile_target(target)
+                    _emit_op(t)
+                except CompilerError as e:
+                    if (
+                        e.error
+                        != CompilerErrorType.INTERNAL_COMP_TGT_NEED_INPUT_EXPR
+                    ):
+                        raise e from None
+
+                    t = self.emitter.new_tmp()
+                    _emit_op(t)
+                    self.compile_target(target, input_expr=t)
 
             case ast.If(test=test, body=body, orelse=orelse):
                 else_label, else_label_ref = self.emitter.new_label()
@@ -1411,7 +1431,7 @@ class Compiler:
             case _:
                 raise self._unsupported_stmt_error(stmt)
 
-    def _is_mem_expr(self, expr: ast.expr) -> ast.Attribute | None:
+    def _get_mem_expr(self, expr: ast.expr) -> ast.Attribute | None:
         """
         Returns the ast.Attribute if criteria is met.
         """
