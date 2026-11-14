@@ -6,9 +6,14 @@ from string import hexdigits
 from typing import cast
 
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
+from py2mlog.compiler.mimex_utils import camel_to_snake
 from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
+    IntrinsicFunc,
     IntrinsicFuncMap,
+    IntrinsicFuncRevMap,
+    emit_subop_func_factory,
+    get_func_names,
 )
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
@@ -18,32 +23,37 @@ from py2mlog.mlog.mlog_expressions import (
     MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
+    MlogVar,
 )
 from py2mlog.mlog.suboperations import OperationSuboperation
 
 logger = logging.getLogger(__name__)
 
 
+def _single_arg_op_builtin_factory(
+    subop: OperationSuboperation,
+) -> IntrinsicFunc:
+    """
+    Param and return type hints are MlogNumberLiteral.
+    """
+
+    def _single_arg_op_builtin(
+        call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, /
+    ) -> MlogNumberLiteral:
+        _validate_arg_type(MlogNumberLiteral, _single_arg_op_builtin, x)
+        _emit_operation_subop(call_ctx, subop, call_ctx.output_expr[0], x)
+        # type hints are lies (for the sake of stub generation) and unenforced anyway
+        return cast("MlogNumberLiteral", call_ctx.output_expr[0])
+
+    return _single_arg_op_builtin
+
+
 # ----------------------------------------
 # inline builtins
 # ----------------------------------------
-def _inline_abs(
-    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, /
-) -> MlogExpr:
-    call_ctx.emitter.emit_instruction(
-        Instruction(
-            InstructionType.OPERATION,
-            OperationSuboperation.ABS,
-            (),
-            (call_ctx.output_expr[0], x),
-        ),
-    )
-    return call_ctx.output_expr[0]
-
-
 def _inline_ord(
     call_ctx: IntrinsicCallCtx, character: MlogStringLiteral, /
-) -> MlogExpr:
+) -> MlogNumberLiteral:
     call_ctx.emitter.emit_instruction(
         Instruction(
             InstructionType.READ,
@@ -52,7 +62,7 @@ def _inline_ord(
             (call_ctx.output_expr[0], character, MlogNumberLiteral(0)),
         ),
     )
-    return call_ctx.output_expr[0]
+    return cast("MlogNumberLiteral", call_ctx.output_expr[0])
 
 
 def _inline_min(
@@ -62,7 +72,7 @@ def _inline_min(
     # *args: MlogExpr,
     # default: MlogExpr,
     # key: MlogExpr ,
-) -> MlogExpr:
+) -> MlogNumberLiteral:
 
     # TODO: support *args or something
 
@@ -96,7 +106,7 @@ def _inline_min(
         )
     )
 
-    return call_ctx.output_expr[0]
+    return cast("MlogNumberLiteral", call_ctx.output_expr[0])
 
 
 def _inline_Color(  # noqa: N802
@@ -168,7 +178,6 @@ def _inline_sleep(
 
 
 FUNC_MAP: IntrinsicFuncMap = {
-    "abs": _inline_abs,
     "ord": _inline_ord,
     "min": _inline_min,
     "Color": _inline_Color,
@@ -176,8 +185,64 @@ FUNC_MAP: IntrinsicFuncMap = {
     "wait": _inline_sleep,
     "exec": None,
     "eval": None,
+} | {
+    "flip": _single_arg_op_builtin_factory(OperationSuboperation.BITWISE_NOT),
+    **{
+        camel_to_snake(subop.value): _single_arg_op_builtin_factory(subop)
+        for subop in (
+            OperationSuboperation.ABS,
+            OperationSuboperation.SIGN,
+            OperationSuboperation.LOG,
+            OperationSuboperation.LOG10,
+            OperationSuboperation.FLOOR,
+            OperationSuboperation.CEIL,
+            OperationSuboperation.ROUND,
+            OperationSuboperation.SQRT,
+            OperationSuboperation.RAND,
+            OperationSuboperation.SIN,
+            OperationSuboperation.COS,
+            OperationSuboperation.TAN,
+            OperationSuboperation.ASIN,
+            OperationSuboperation.ACOS,
+            OperationSuboperation.ATAN,
+        )
+    },
 }
+
+_rev_map: IntrinsicFuncRevMap = {}
+for k, v in FUNC_MAP.items():
+    _rev_map.setdefault(v, []).append(k)
+
+_REV_MAP = _rev_map
 
 
 # ¯\_(ツ)_/¯
 builtin_color = _inline_Color
+
+
+# TODO: DRY
+def _validate_arg_type(
+    type_: type[MlogExpr] | tuple[type[MlogExpr], ...],
+    func: IntrinsicFunc,
+    *args: MlogExpr,
+) -> None:
+    """Accepts MlogVar along with given type(s)."""
+    if not type_:
+        logger.warning(
+            "(Internal) Called _validate_control_or_method_arg_type "
+            "with empty tuple as type."
+        )
+    types = type_ if isinstance(type_, tuple) else (type_,)
+
+    for arg in args:
+        if not isinstance(arg, (*types, MlogVar)):
+            logger.warning(
+                "Called '%s' with arg '%s'. Expected type(s): %s%s.",
+                get_func_names("", _REV_MAP, func).replace(".", ""),
+                arg,
+                ", ".join(type(t).__name__ for t in types),
+                ", 'MlogVar'" if MlogVar not in types else "",
+            )
+
+
+_emit_operation_subop = emit_subop_func_factory(InstructionType.OPERATION)

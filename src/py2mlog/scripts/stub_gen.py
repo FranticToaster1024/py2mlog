@@ -3,8 +3,9 @@ import subprocess
 import sys
 import typing
 from functools import reduce
-from inspect import Parameter, signature
+from inspect import Parameter, getdoc, signature
 from pathlib import Path
+from textwrap import indent
 from types import NoneType
 from typing import Any
 
@@ -114,7 +115,17 @@ def _stubs_from_func_map(
 
         if is_method:
             s.append(f"{INDENT}@staticmethod")
-        s.append(f"{INDENT if is_method else ''}def {k}{new_sig!s}: ...")
+
+        base_indent = INDENT if is_method else ""
+        s.append(f"{base_indent}def {k}{new_sig!s}:")
+
+        docstring = getdoc(f)
+        if docstring is None:
+            s.append(f"{base_indent}{INDENT}...")
+        else:
+            s.append(f'{base_indent}{INDENT}"""')
+            s.append(f"{base_indent}{INDENT}{indent(docstring, INDENT)}")
+            s.append(f'{base_indent}{INDENT}"""')
 
     return "\n".join(s)
 

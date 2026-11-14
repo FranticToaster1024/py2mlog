@@ -116,6 +116,15 @@ y = ord("!")
 z = max(a, b)  # only 2 args for now unfortunately
 ```
 
+A few operation instructions (WIP). Note that some python builtins may be shadowed.
+```py
+x = sin(67)
+x = rand(10)
+x = sqrt(16)
+
+...
+```
+
 Non-recursive custom function definitions.
 > **Note**: these functions **do not** use a call stack.
 ```py

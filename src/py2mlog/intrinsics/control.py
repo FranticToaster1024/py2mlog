@@ -34,7 +34,7 @@ NAMESPACE_NAME = "Control"
 def _control_enabled(
     call_ctx: IntrinsicCallCtx, building: MlogExpr, enabled: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_control_or_method_arg_type(
+    _validate_arg_type(
         (MlogBoolLiteral, MlogNumberLiteral), _control_enabled, enabled
     )
     _emit_control_subop(
@@ -71,10 +71,8 @@ def _control_shoot(
     y: MlogExpr,
     shoot: MlogExpr = _MlogBoolLiteral_True,
 ) -> MlogNullLiteral:
-    _validate_control_or_method_arg_type(
-        MlogNumberLiteral, _control_shoot, x, y
-    )
-    _validate_control_or_method_arg_type(
+    _validate_arg_type(MlogNumberLiteral, _control_shoot, x, y)
+    _validate_arg_type(
         (MlogBoolLiteral, MlogNumberLiteral), _control_shoot, shoot
     )
     _emit_control_subop(
@@ -103,7 +101,7 @@ def _control_shootp(
     unit: MlogExpr,
     shoot: MlogExpr = _MlogBoolLiteral_True,
 ) -> MlogNullLiteral:
-    _validate_control_or_method_arg_type(
+    _validate_arg_type(
         (MlogNumberLiteral, MlogBoolLiteral), _control_shootp, shoot
     )
     _emit_control_subop(
@@ -115,9 +113,7 @@ def _control_shootp(
 def _control_color(
     call_ctx: IntrinsicCallCtx, building: MlogExpr, color: MlogExpr
 ) -> MlogNullLiteral:
-    _validate_control_or_method_arg_type(
-        MlogColorLiteral, _control_color, color
-    )
+    _validate_arg_type(MlogColorLiteral, _control_color, color)
     _emit_control_subop(call_ctx, ControlSuboperation.COLOR, building, color)
     return MlogNullLiteral()
 
@@ -149,7 +145,7 @@ for k, v in FUNC_MAP.items():
 _REV_MAP = _rev_map
 
 
-def _validate_control_or_method_arg_type(
+def _validate_arg_type(
     type_: type[MlogExpr] | tuple[type[MlogExpr], ...],
     func: IntrinsicFunc,
     *args: MlogExpr,
@@ -157,21 +153,19 @@ def _validate_control_or_method_arg_type(
     """Accepts MlogVar along with given type(s)."""
     if not type_:
         logger.warning(
-            "(Internal) Called _validate_control_or_method_arg_type "
-            "with empty tuple as type."
+            "(Internal) Called _validate_arg_type with empty tuple as type."
         )
     types = type_ if isinstance(type_, tuple) else (type_,)
 
     for arg in args:
         if not isinstance(arg, (*types, MlogVar)):
-            names = get_func_names(NAMESPACE_NAME, _REV_MAP, func)
             logger.warning(
                 "Called '%s' or their method equivalents "
                 "with arg '%s'. Expected type(s): %s%s.",
-                names,
+                get_func_names(NAMESPACE_NAME, _REV_MAP, func),
                 arg,
                 ", ".join(type(t).__name__ for t in types),
-                ", 'MlogVar'" if MlogVar in types else "",
+                ", 'MlogVar'" if MlogVar not in types else "",
             )
 
 

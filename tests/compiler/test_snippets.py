@@ -758,23 +758,56 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-        a = abs(a)
-        b = ord('a')
-        c = min(a, 2)
-        # d = min(1, 2, a, b)
+        x = ord('a')
+        x = min(a, 2)
+        # x = min(1, 2, a, b)
         sleep(10)
-        e = wait(a)  # why would you do this though
+        x = wait(a)  # why would you do this though
+
+        # generated from subop
+        x = flip(a)
+        x = abs(a)
+        x = sign(a)
+        x = log(a)
+        x = log10(a)
+        x = floor(a)
+        x = ceil(a)
+        x = round(a)
+        x = sqrt(a)
+        x = rand(a)
+        x = sin(a)
+        x = cos(a)
+        x = tan(a)
+        x = asin(a)
+        x = acos(a)
+        x = atan(a)
         """,
         (
-            "op abs a a",
-            'read b "a" 0',
-            "op min c 2 a",
+            'read x "a" 0',
+            "op min x 2 a",
             # "op min __p2m_tmp0 b a",
             # "op min __p2m_tmp1 __p2m_tmp0 2",
-            # "op min d __p2m_tmp1 1",
+            # "op min x __p2m_tmp1 1",
             "wait 10",
             "wait a",
-            "set e null",
+            "set x null",
+            # generated from subop
+            "op not x a",
+            "op abs x a",
+            "op sign x a",
+            "op log x a",
+            "op log10 x a",
+            "op floor x a",
+            "op ceil x a",
+            "op round x a",
+            "op sqrt x a",
+            "op rand x a",
+            "op sin x a",
+            "op cos x a",
+            "op tan x a",
+            "op asin x a",
+            "op acos x a",
+            "op atan x a",
         ),
         id="supported-inline-builtin-functions",
     ),
