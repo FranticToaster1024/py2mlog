@@ -22,15 +22,13 @@ live_btn.addEventListener("click", () => {
 
 
 const MIN_DT_MS = 100;
-let last_input = 0;
+let live_compile_timeout;
 
 input_textarea.addEventListener("input", () => {
     if (live_btn.ariaPressed !== "true") return;
-    const now = performance.now();
-    if (now - last_input >= MIN_DT_MS) {
-        last_input = now;
-        compile();
-    }
+
+    clearTimeout(live_compile_timeout);
+    live_compile_timeout = setTimeout(compile, MIN_DT_MS);
 });
 
 
