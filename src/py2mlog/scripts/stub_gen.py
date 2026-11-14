@@ -159,7 +159,7 @@ class Env:
 def print(
     *args: Any,
     sep: str = " ",
-    end: str = r"\n",
+    end: str = r"\\n",
     flush: Any = ...,
 ) -> None:
     \"""

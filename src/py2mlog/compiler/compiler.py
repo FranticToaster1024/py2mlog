@@ -526,14 +526,13 @@ class Compiler:
 
                 s: list[str] = []
                 for c in val:
+                    # https://github.com/Anuken/Mindustry/blob/1a22b880576d2f8f97550280f76bfdd0d0069543/core/src/mindustry/logic/LAssembler.java#L81
                     if c == "\n":
                         s.append(r"\n")
-                    elif c == "\t":
-                        s.append(r"\t")
-                    elif c == "\r":
-                        s.append(r"\r")
                     elif c == "\\":
                         s.append(r"\\")
+                    elif c == '"':
+                        s.append(r"\"")
                     elif c.isprintable():
                         s.append(c)
                     else:

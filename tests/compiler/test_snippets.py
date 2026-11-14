@@ -12,7 +12,7 @@ _test_snippet_testcases = [
                 "integer = 123",
                 "float_ = 12.3",
                 'string = "str"',
-                r'escape_seqs = "a\n\t\r\\a"',
+                r'escape_seqs = "a\n\"\\a"',
                 "boolean = True",
                 "none = None",
                 "copy = value",
@@ -28,7 +28,7 @@ _test_snippet_testcases = [
             "set integer 123",
             "set float_ 12.3",
             'set string "str"',
-            r'set escape_seqs "a\n\t\r\\a"',
+            r'set escape_seqs "a\n\"\\a"',
             "set boolean true",
             "set none null",
             "set copy value",
@@ -817,7 +817,7 @@ _test_snippet_testcases = [
         r"""
         print("Hello World!")
         print("Hello World!", flush=message3)
-        print("A", foo, "B""C", sep="uwu", end="\u0000🐍", flush=False)
+        print("A", foo, "B""C", sep="uwu", end="\n\u0000🐍", flush=False)
         print()
         print("A", 42, 4.2, True, Color("%ffffff"), Env.copper, None)
         """,
@@ -826,7 +826,7 @@ _test_snippet_testcases = [
             "printflush message1",
             r'print "Hello World!\n"',
             "printflush message3",
-            r'print "Auwu{0}uwuBC\u0000🐍"',
+            r'print "Auwu{0}uwuBC\n\u0000🐍"',
             "format foo",
             r'print "\n"',
             "printflush message1",
