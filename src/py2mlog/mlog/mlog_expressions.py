@@ -56,6 +56,20 @@ class MlogVar(MlogExpr):
 type MlogArg = MlogExpr | LabelRef
 
 
+def get_val_str(expr: MlogExpr) -> str:
+    match expr:
+        case MlogNullLiteral():
+            return str(None)
+        case MlogColorLiteral(value=value):
+            return f'Color("%{value}")'
+        case MlogStringLiteral(value=value):
+            return repr(value)
+        case MlogBoolLiteral() | MlogNumberLiteral():
+            return str(expr.value)
+        case _:
+            return "..."
+
+
 MLOG_EXPR_TYPE_MAP = {
     MlogExpr: Any,
     MlogBuiltin: Content,

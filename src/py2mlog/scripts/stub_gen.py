@@ -3,7 +3,7 @@ import subprocess
 import sys
 import typing
 from functools import reduce
-from inspect import signature
+from inspect import Parameter, signature
 from pathlib import Path
 from types import NoneType
 from typing import Any
@@ -21,7 +21,7 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicFuncMap,
     generate_alias,
 )
-from py2mlog.mlog.mlog_expressions import MLOG_EXPR_TYPE_MAP
+from py2mlog.mlog.mlog_expressions import MLOG_EXPR_TYPE_MAP, get_val_str
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,11 @@ def _stubs_from_func_map(
                 annotation=_get_relative_name(
                     _map_intrinsic_func_annotation(p.annotation)
                 ),
-                default=_Name("..."),
+                default=(
+                    Parameter.empty
+                    if p.default is Parameter.empty
+                    else _Name(get_val_str(p.default))
+                ),
             )
             for p in list(sig.parameters.values())[1:]
         ]
