@@ -118,7 +118,15 @@ def _stubs_from_func_map(
 gen = f"""
 from typing import Any, overload
 
-from py2mlog._base import Block, Building, Content, Item, Liquid, _Color, _Unit
+from py2mlog._base import (
+    Block,
+    Building,
+    Content,
+    Item,
+    Liquid,
+    _Color,  # pyright: ignore[reportPrivateUsage]
+    _Unit,
+)
 
 class Env:
     this: Building
