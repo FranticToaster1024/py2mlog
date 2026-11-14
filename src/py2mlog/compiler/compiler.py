@@ -665,38 +665,37 @@ class Compiler:
             raise self._unsupported_expr_error(
                 func_call, " with non-identifier as target of attribute access"
             )
-        namespace = func_call.func.value.id
+        attr_target_name = func_call.func.value.id
         func_name = func_call.func.attr
 
-        namespaced_builtin_func = None
-        match namespace:
-            # TODO: DRY or something
-            case intrinsics.unit.NAMESPACE:
-                namespaced_builtin_func = intrinsics.unit.FUNC_MAP.get(
-                    func_name
+        intrinsic_namespace_func_map = (
+            intrinsics.NAMESPACES_NAME_TO_FUNC_MAP_MAP.get(attr_target_name)
+        )
+        if intrinsic_namespace_func_map is not None:
+            func = intrinsic_namespace_func_map.get(func_name)
+            if func is None:
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    self._get_src_loc_from_node(func_call),
+                    err=f"unknown namespaced builtin '{attr_target_name}.{func_name}'",
                 )
 
-            case intrinsics.screen.NAMESPACE:
-                namespaced_builtin_func = intrinsics.screen.FUNC_MAP.get(
-                    func_name
-                )
+            return func
 
-            case intrinsics.mem.NAMESPACE:
-                namespaced_builtin_func = intrinsics.mem.FUNC_MAP.get(func_name)
-
-            case _:
-                raise self._unsupported_expr_error(
-                    func_call, " with custom namespaces"
-                )
-
-        if namespaced_builtin_func is None:
+        method = intrinsics.control.FUNC_MAP.get(func_name)
+        if method is None:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
                 self._get_src_loc_from_node(func_call),
-                err=f"unknown/unsupported namespaced function {namespace}.{func_name}",
+                err=f"unknown method '.{func_name}'",
             )
 
-        return namespaced_builtin_func
+        def _func(
+            call_ctx: IntrinsicCallCtx, *args: MlogExpr
+        ) -> MlogExpr | tuple[MlogExpr, ...]:
+            return method(call_ctx, MlogVar(attr_target_name), *args)
+
+        return _func
 
     def _compile_args(
         self, pos_args: ResolvedPosArgs, kwargs: ResolvedKwargs
@@ -926,7 +925,7 @@ class Compiler:
                     len(targets) == 1
                     and isinstance(targets[0], ast.Attribute)
                     and isinstance(targets[0].value, ast.Name)
-                    and targets[0].value.id == intrinsics.unit.NAMESPACE
+                    and targets[0].value.id == intrinsics.unit.NAMESPACE_NAME
                     and targets[0].attr == "flag"
                 ):
                     self.emitter.emit_instruction(

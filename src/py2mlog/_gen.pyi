@@ -1,6 +1,14 @@
 from typing import Any, overload
 
-from py2mlog._base import Block, Building, Content, Item, Liquid, _Color, _Unit
+from py2mlog._base import (
+    Block,
+    Building,
+    Content,
+    Item,
+    Liquid,
+    _Color,  # pyright: ignore[reportPrivateUsage]
+    _Unit,
+)
 
 class Env:
     this: Building
@@ -505,7 +513,7 @@ class Unit:
         /,
         *,
         block_flag: str | Any,
-        is_enemy_building: bool | float | str,
+        is_enemy_building: bool | int | str,
     ) -> None: ...
     @overload
     @staticmethod
@@ -517,16 +525,25 @@ class Unit:
     @staticmethod
     def shoot(x: float, y: float) -> None: ...
     @staticmethod
-    # should be int i worry that return types may be inaccurate
-    def targetp(unit: Unit, shoot: bool | float) -> None: ...
+    def targetp(unit: Unit, shoot: bool | int) -> None: ...
 
     target_unit = targetp
+    targetUnit = targetp
+    targetunit = targetp
 
     @staticmethod
+    def itemdrop(to: Building, amount: float) -> None: ...
+    @staticmethod
     def item_drop(to: Building, amount: float) -> None: ...
+    @staticmethod
+    def itemDrop(to: Building, amount: float) -> None: ...
 
     store = item_drop
 
+    @staticmethod
+    def itemTake(from_: Building, item: Item, amount: float) -> None: ...
+    @staticmethod
+    def itemtake(from_: Building, item: Item, amount: float) -> None: ...
     @staticmethod
     def item_take(from_: Building, item: Item, amount: float) -> None: ...
 
@@ -556,11 +573,11 @@ class Unit:
     @staticmethod
     def pathfind(x: float = ..., y: float = ...) -> None: ...
     @staticmethod
-    def autopathfind() -> None: ...
-    @staticmethod
     def auto_pathfind() -> None: ...
     @staticmethod
     def autoPathfind() -> None: ...
+    @staticmethod
+    def autopathfind() -> None: ...
     @staticmethod
     def boost(enabled: bool | float = ...) -> None: ...
     @staticmethod
@@ -570,9 +587,9 @@ class Unit:
     @staticmethod
     def ceasefire() -> None: ...
     @staticmethod
-    def payDrop() -> None: ...
-    @staticmethod
     def pay_drop() -> None: ...
+    @staticmethod
+    def payDrop() -> None: ...
     @staticmethod
     def paydrop() -> None: ...
     @staticmethod
@@ -580,19 +597,19 @@ class Unit:
     @staticmethod
     def pay_take(take_units: bool | float = ...) -> None: ...
     @staticmethod
-    def payTake(take_units: bool | float = ...) -> None: ...
-    @staticmethod
     def paytake(take_units: bool | float = ...) -> None: ...
+    @staticmethod
+    def payTake(take_units: bool | float = ...) -> None: ...
     @staticmethod
     def lift() -> None: ...
     @staticmethod
     def carry() -> None: ...
     @staticmethod
-    def payenter() -> None: ...
-    @staticmethod
     def pay_enter() -> None: ...
     @staticmethod
     def payEnter() -> None: ...
+    @staticmethod
+    def payenter() -> None: ...
     @staticmethod
     def mine(x: float = ..., y: float = ...) -> None: ...
     @staticmethod
@@ -608,11 +625,11 @@ class Unit:
     @staticmethod
     def deconstruct(x: float = ..., y: float = ...) -> None: ...
     @staticmethod
+    def getblock(x: float = ..., y: float = ...) -> Any: ...
+    @staticmethod
     def getBlock(x: float = ..., y: float = ...) -> Any: ...
     @staticmethod
     def get_block(x: float = ..., y: float = ...) -> Any: ...
-    @staticmethod
-    def getblock(x: float = ..., y: float = ...) -> Any: ...
     @staticmethod
     def within(x: float = ..., y: float = ..., radius: float = ...) -> Any: ...
     @staticmethod
@@ -670,15 +687,15 @@ class Screen:
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
+    def fill_rect(
+        x: float = ..., y: float = ..., width: float = ..., height: float = ...
+    ) -> None: ...
+    @staticmethod
     def fillRect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
     def fillrect(
-        x: float = ..., y: float = ..., width: float = ..., height: float = ...
-    ) -> None: ...
-    @staticmethod
-    def fill_rect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
@@ -694,11 +711,11 @@ class Screen:
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
-    def hollowrect(
+    def hollow_rect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
-    def hollow_rect(
+    def hollowrect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
@@ -707,14 +724,6 @@ class Screen:
     ) -> None: ...
     @staticmethod
     def poly(
-        x: float = ...,
-        y: float = ...,
-        sides: float = ...,
-        radius: float = ...,
-        rotation: float = ...,
-    ) -> None: ...
-    @staticmethod
-    def fillPoly(
         x: float = ...,
         y: float = ...,
         sides: float = ...,
@@ -738,6 +747,14 @@ class Screen:
         rotation: float = ...,
     ) -> None: ...
     @staticmethod
+    def fillPoly(
+        x: float = ...,
+        y: float = ...,
+        sides: float = ...,
+        radius: float = ...,
+        rotation: float = ...,
+    ) -> None: ...
+    @staticmethod
     def line_poly(
         x: float = ...,
         y: float = ...,
@@ -746,7 +763,7 @@ class Screen:
         rotation: float = ...,
     ) -> None: ...
     @staticmethod
-    def linePoly(
+    def linepoly(
         x: float = ...,
         y: float = ...,
         sides: float = ...,
@@ -754,7 +771,7 @@ class Screen:
         rotation: float = ...,
     ) -> None: ...
     @staticmethod
-    def linepoly(
+    def linePoly(
         x: float = ...,
         y: float = ...,
         sides: float = ...,
@@ -815,6 +832,29 @@ class Screen:
     @staticmethod
     def reset() -> None: ...
 
+class Control:
+    # something something DRY
+    @staticmethod
+    def enabled(building: Building, enabled: bool | int) -> None: ...
+    @staticmethod
+    def enable(building: Building) -> None: ...
+    @staticmethod
+    def disable(building: Building) -> None: ...
+    @staticmethod
+    def shoot(
+        building: Building, x: float, y: float, shoot: bool | int = True
+    ) -> None: ...
+    @staticmethod
+    def ceasefire(building: Building) -> None: ...
+    @staticmethod
+    def shootp(
+        building: Building, unit: _Unit, shoot: bool | int = True
+    ) -> None: ...
+    @staticmethod
+    def color(building: Building, color: _Color) -> None: ...
+    @staticmethod
+    def config(building: Building, config: Any) -> None: ...
+
 class Links:
     def __getitem__(self, index: int) -> Building: ...
 
@@ -860,15 +900,15 @@ class Mem:
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
+    def fill_rect(
+        x: float = ..., y: float = ..., width: float = ..., height: float = ...
+    ) -> None: ...
+    @staticmethod
     def fillRect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
     def fillrect(
-        x: float = ..., y: float = ..., width: float = ..., height: float = ...
-    ) -> None: ...
-    @staticmethod
-    def fill_rect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
@@ -884,11 +924,11 @@ class Mem:
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
-    def hollowrect(
+    def hollow_rect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
-    def hollow_rect(
+    def hollowrect(
         x: float = ..., y: float = ..., width: float = ..., height: float = ...
     ) -> None: ...
     @staticmethod
@@ -897,14 +937,6 @@ class Mem:
     ) -> None: ...
     @staticmethod
     def poly(
-        x: float = ...,
-        y: float = ...,
-        sides: float = ...,
-        radius: float = ...,
-        rotation: float = ...,
-    ) -> None: ...
-    @staticmethod
-    def fillPoly(
         x: float = ...,
         y: float = ...,
         sides: float = ...,
@@ -928,6 +960,14 @@ class Mem:
         rotation: float = ...,
     ) -> None: ...
     @staticmethod
+    def fillPoly(
+        x: float = ...,
+        y: float = ...,
+        sides: float = ...,
+        radius: float = ...,
+        rotation: float = ...,
+    ) -> None: ...
+    @staticmethod
     def line_poly(
         x: float = ...,
         y: float = ...,
@@ -936,7 +976,7 @@ class Mem:
         rotation: float = ...,
     ) -> None: ...
     @staticmethod
-    def linePoly(
+    def linepoly(
         x: float = ...,
         y: float = ...,
         sides: float = ...,
@@ -944,7 +984,7 @@ class Mem:
         rotation: float = ...,
     ) -> None: ...
     @staticmethod
-    def linepoly(
+    def linePoly(
         x: float = ...,
         y: float = ...,
         sides: float = ...,

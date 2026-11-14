@@ -144,7 +144,7 @@ class Unit:
         /,
         *,
         block_flag: str | Any,
-        is_enemy_building: bool | float | str,
+        is_enemy_building: bool | int | str,
     ) -> None: ...
 
     @overload
@@ -160,18 +160,34 @@ class Unit:
     def shoot(x: float, y: float) -> None: ...
 
     @staticmethod
-    # should be int i worry that return types may be inaccurate
-    def targetp(unit: Unit, shoot: bool | float) -> None: ...
+    def targetp(unit: Unit, shoot: bool | int) -> None: ...
 
-    target_unit = targetp
+{
+    "\n".join(
+        f"{INDENT}{func_name} = targetp"
+        for func_name in generate_alias("target_unit")
+    )
+}
 
-    @staticmethod
-    def item_drop(to: Building, amount: float) -> None: ...
+
+{
+    "\n".join(
+        f"{INDENT}@staticmethod\n"
+        f"{INDENT}def {func_name}(to: Building, amount: float) -> None: ..."
+        for func_name in generate_alias("item_drop")
+    )
+}
 
     store = item_drop
 
-    @staticmethod
-    def item_take(from_: Building, item: Item, amount: float) -> None: ...
+
+{
+    "\n".join(
+        f"{INDENT}@staticmethod\n"
+        f"{INDENT}def {func_name}(from_: Building, item: Item, amount: float) -> None: ..."
+        for func_name in generate_alias("item_take")
+    )
+}
 
     fetch = item_take
 {
@@ -202,6 +218,31 @@ class Screen:
     @staticmethod
     def flush(target: Building) -> None: ...
 {_stubs_from_func_map(intrinsics.screen.FUNC_MAP, exclude=("flush",))}
+
+
+
+class Control:
+    # something something DRY
+    @staticmethod
+    def enabled(building: Building, enabled: bool | int) -> None: ...
+    @staticmethod
+    def enable(building: Building) -> None: ...
+    @staticmethod
+    def disable(building: Building) -> None: ...
+    @staticmethod
+    def shoot(
+        building: Building, x: float, y: float, shoot: bool | int = True
+    ) -> None: ...
+    @staticmethod
+    def ceasefire(building: Building) -> None: ...
+    @staticmethod
+    def shootp(
+        building: Building, unit: _Unit, shoot: bool | int = True
+    ) -> None: ...
+    @staticmethod
+    def color(building: Building, color: _Color) -> None: ...
+    @staticmethod
+    def config(building: Building, config: Any) -> None: ...
 
 
 

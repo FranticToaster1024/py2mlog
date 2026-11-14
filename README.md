@@ -190,6 +190,21 @@ Screen.flush()  # default is 'display1'
 All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric. This namespace includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc.
 
 
+All control operations, through the `Control.*` namespace or through method calls (just like pyndustric):
+```py
+Control.enabled(reactor1, True)
+Control.enable(reactor1)  # equivalent to above
+Control.disable(reactor1)  # equivalent to 'Control.enabled(reactor1, False)
+reactor1.disable()  # equivalent to above
+
+Control.shoot(foo, 100, 100, True)
+Control.shoot(foo, 100, 100)  # default is True
+foo.shoot(100, 100)  # equivalent to above
+
+...
+```
+
+
 Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.read()` and `Mem.write()`.
 
 
@@ -198,8 +213,10 @@ Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.
 Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types. The compiler does not currently check and enforce the mlog 1000 line limit.
 
 ## Future goals/To-do list
+- subscript as sensor
+- attribute access as sensor
+- for ... Env.links()
 - **Better errors**
-- Optimization
 - Inline mlog
 - Config file?
 - CLI upgrade?

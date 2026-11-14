@@ -1,3 +1,7 @@
+__all__ = ["FUNC_MAP"]
+
+import logging
+
 from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
     IntrinsicFuncMap,
@@ -14,7 +18,10 @@ from py2mlog.mlog.mlog_expressions import (
     MlogVar,
 )
 
-NAMESPACE = "Mem"
+logger = logging.getLogger(__name__)
+
+
+NAMESPACE_NAME = "Mem"
 
 
 def _mem_read(
@@ -61,4 +68,4 @@ for k, v in FUNC_MAP.items():
 _REV_MAP = _rev_map
 
 
-_validate_arg_type = validate_arg_type_factory(NAMESPACE, _REV_MAP)
+_validate_arg_type = validate_arg_type_factory(NAMESPACE_NAME, _REV_MAP, logger)

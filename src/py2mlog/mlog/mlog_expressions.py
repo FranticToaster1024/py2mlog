@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from types import NoneType
 from typing import Any
 
-from py2mlog._base import Content, _Color
+from py2mlog._types import Content, _Color  # pyright: ignore[reportPrivateUsage]
 
 
 @dataclass(frozen=True)

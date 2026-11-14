@@ -29,11 +29,11 @@ type IntrinsicFuncRevMap = dict[IntrinsicFunc | None, list[str]]
 
 
 def get_func_names(
-    namespace: str, rev_map: IntrinsicFuncRevMap, func: IntrinsicFunc
+    namespace_name: str, rev_map: IntrinsicFuncRevMap, func: IntrinsicFunc
 ) -> str:
     func_names = "/".join(rev_map.get(func, ("[func not in _rev_map]",)))
 
-    return f"{namespace}.{func_names}"
+    return f"{namespace_name}.{func_names}"
 
 
 class _EmitSubopFunc(Protocol):
@@ -73,7 +73,7 @@ class _ValidateArgTypeFunc(Protocol):
 # they are just used for stub generation
 # so this is needed for runtime
 def validate_arg_type_factory(
-    namespace: str, rev_map: IntrinsicFuncRevMap
+    namespace_name: str, rev_map: IntrinsicFuncRevMap, _logger: logging.Logger
 ) -> _ValidateArgTypeFunc:
     # this might like mess up the logger location but ¯\_(ツ)_/¯
     def _validate_arg_type(
@@ -83,16 +83,16 @@ def validate_arg_type_factory(
     ) -> None:
         """Accepts MlogVar along with given type(s)."""
         if not type_:
-            logger.warning(
+            _logger.warning(
                 "(Internal) Called _validate_arg_type with empty tuple as type."
             )
         types = type_ if isinstance(type_, tuple) else (type_,)
 
         for arg in args:
             if not isinstance(arg, (*types, MlogVar)):
-                logger.warning(
+                _logger.warning(
                     "Called '%s' with arg '%s'. Expected type(s): %s%s.",
-                    get_func_names(namespace, rev_map, func),
+                    get_func_names(namespace_name, rev_map, func),
                     arg,
                     ", ".join(type(t).__name__ for t in types),
                     ", 'MlogVar'" if MlogVar in types else "",

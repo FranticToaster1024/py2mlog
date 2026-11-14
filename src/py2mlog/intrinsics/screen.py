@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # ----------------------------------------
 # Screen namespace (Screen.*)
 # ----------------------------------------
-NAMESPACE = "Screen"
+NAMESPACE_NAME = "Screen"
 
 # param types are not enforced, hence the casts
 
@@ -46,12 +46,12 @@ def _screen_clear(
     b: MlogNumberLiteral | MlogVar,
 ) -> MlogNullLiteral:
     for arg in (r, g, b):
-        arg = cast("MlogExpr", arg)  # see comment below 'NAMESPACE = ...'
+        arg = cast("MlogExpr", arg)  # see comment below above
 
         if not isinstance(arg, (MlogNumberLiteral, MlogVar)):
             logger.warning(
                 "Called '%s' with non-number literal: '%s'.",
-                get_func_names(NAMESPACE, _REV_MAP, _screen_clear),
+                get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_clear),
                 arg,
             )
 
@@ -59,7 +59,7 @@ def _screen_clear(
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
                 "with value outside bounds.",
-                get_func_names(NAMESPACE, _REV_MAP, _screen_clear),
+                get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_clear),
                 arg,
             )
 
@@ -83,7 +83,7 @@ def _screen_color(
         if not isinstance(arg, (MlogNumberLiteral, MlogVar)):
             logger.warning(
                 "Called '%s' with non-number literal: '%s'.",
-                get_func_names(NAMESPACE, _REV_MAP, _screen_color),
+                get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_color),
                 arg,
             )
 
@@ -91,7 +91,7 @@ def _screen_color(
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
                 "with value outside bounds.",
-                get_func_names(NAMESPACE, _REV_MAP, _screen_color),
+                get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_color),
                 arg,
             )
 
@@ -171,7 +171,7 @@ def _screen_poly(
     ):
         logger.warning(
             "Called '%s' with float literal for arg 'sides': '%s'.",
-            get_func_names(NAMESPACE, _REV_MAP, _screen_poly),
+            get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_poly),
             sides_,
         )
 
@@ -199,7 +199,7 @@ def _screen_line_poly(
     ):
         logger.warning(
             "Called '%s' with float literal for arg 'sides': '%s'.",
-            get_func_names(NAMESPACE, _REV_MAP, _screen_line_poly),
+            get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_line_poly),
             sides_,
         )
 
@@ -266,7 +266,7 @@ def _screen_print(
     elif not isinstance(alignment_, (MlogBuiltin, MlogVar)):
         logger.warning(
             "Called '%s' with literal of type '%s'.",
-            get_func_names(NAMESPACE, _REV_MAP, _screen_print),
+            get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_print),
             type(alignment_).__name__,
         )
 
@@ -351,4 +351,4 @@ _REV_MAP = _rev_map
 
 
 _emit_draw_subop = emit_subop_func_factory(InstructionType.DRAW)
-_validate_arg_type = validate_arg_type_factory(NAMESPACE, _REV_MAP)
+_validate_arg_type = validate_arg_type_factory(NAMESPACE_NAME, _REV_MAP, logger)

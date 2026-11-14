@@ -1,3 +1,5 @@
+__all__ = ["FUNC_MAP"]
+
 import logging
 from collections.abc import Callable
 from typing import cast
@@ -46,7 +48,7 @@ logger = logging.getLogger(__name__)
 # ----------------------------------------
 # Unit namespace (Unit.*)
 # ----------------------------------------
-NAMESPACE = "Unit"
+NAMESPACE_NAME = "Unit"
 
 
 def _unit_bind(
@@ -79,7 +81,7 @@ def _unit_bind(
         if not isinstance(type_, MlogVar):
             logger.warning(
                 "Called '%s' with literal of type '%s'.",
-                get_func_names(NAMESPACE, _REV_MAP, _unit_bind),
+                get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_bind),
                 type_.__class__.__name__,  # oops i shadowed 'type()'
             )
 
@@ -130,7 +132,7 @@ def _unit_radar(
     order_ = cast("MlogExpr", order)
     key_ = cast("MlogExpr", key)
 
-    this_func_name = get_func_names(NAMESPACE, _REV_MAP, _unit_radar)
+    this_func_name = get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_radar)
 
     filter_sel_params: list[RadarTargetSelectableParam] = []
     for arg in (filter1, filter2, filter3):
@@ -241,7 +243,7 @@ def _unit_locate(
     is_enemy_building: MlogExpr = _MlogFillerExpr,
     ore_type: MlogExpr = _MlogFillerExpr,
 ) -> tuple[MlogExpr, ...]:
-    this_func_name = get_func_names(NAMESPACE, _REV_MAP, _unit_locate)
+    this_func_name = get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_locate)
 
     if not isinstance(subop, (MlogStringLiteral, MlogVar)):
         raise CompilerError(
@@ -331,7 +333,9 @@ def _unit_locate(
                     logger.warning(
                         "Called '%s' with %s with value other than %s "
                         "for param 'is_enemy_building': '%s'. ",
-                        get_func_names(NAMESPACE, _REV_MAP, _unit_item_drop),
+                        get_func_names(
+                            NAMESPACE_NAME, _REV_MAP, _unit_item_drop
+                        ),
                         MlogStringLiteral.__name__,
                         "/".join(_IS_ENEMY_STR_MAP),
                         is_enemy_building,
@@ -456,7 +460,7 @@ def _unit_shoot(
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
             call_ctx.src_loc,
-            err=f"Called {get_func_names(NAMESPACE, _REV_MAP, _unit_shoot)} "
+            err=f"Called {get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_shoot)} "
             "with one arg. Expected exactly zero or two.",
         )
 
@@ -516,7 +520,7 @@ def _unit_item_drop(
         # error message kinda sucks
         logger.warning(
             "Called '%s' with non-'air' %s for param 'to': '%s'. ",
-            get_func_names(NAMESPACE, _REV_MAP, _unit_item_drop),
+            get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_item_drop),
             MlogBuiltin.__name__,
             to,
         )
@@ -692,4 +696,4 @@ _REV_MAP = _rev_map
 
 
 _emit_ucontrol_subop = emit_subop_func_factory(InstructionType.UNIT_CONTROL)
-_validate_arg_type = validate_arg_type_factory(NAMESPACE, _REV_MAP)
+_validate_arg_type = validate_arg_type_factory(NAMESPACE_NAME, _REV_MAP, logger)

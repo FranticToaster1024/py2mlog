@@ -1422,6 +1422,56 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
+        Control.enabled(turret1, True)
+        Control.enable(turret1)
+        Control.disable(turret1)
+        Control.shoot(foo, 100, 100, True)
+        Control.shoot(foo, 100, 100)
+        Control.ceasefire(foo)
+        Control.shootp(foo, Env.this, True)
+        Control.shootp(foo, Env.this)
+        Control.color(foo, Color("008080"))
+        Control.config(sorter1, Env.copper)
+
+        turret1.enabled(True)
+        turret1.enable()
+        turret1.disable()
+        foo.shoot(100, 100, True)
+        foo.shoot(100, 100)
+        foo.ceasefire()
+        foo.shootp(Env.this, True)
+        foo.shootp(Env.this)
+        foo.color(Color("008080"))
+        sorter1.config(Env.copper)
+        """,
+        (
+            # Control.*
+            "control enabled turret1 true",
+            "control enabled turret1 true",
+            "control enabled turret1 false",
+            "control shoot foo 100 100 true",
+            "control shoot foo 100 100 true",
+            "control shoot foo 0 0 false",
+            "control shootp foo @this true",
+            "control shootp foo @this true",
+            "control color foo %008080",
+            "control config sorter1 @copper",
+            # methods
+            "control enabled turret1 true",
+            "control enabled turret1 true",
+            "control enabled turret1 false",
+            "control shoot foo 100 100 true",
+            "control shoot foo 100 100 true",
+            "control shoot foo 0 0 false",
+            "control shootp foo @this true",
+            "control shootp foo @this true",
+            "control color foo %008080",
+            "control config sorter1 @copper",
+        ),
+        id="control-operations-and-methods",
+    ),
+    pytest.param(
+        """
         a = Links[0]
         b = Links[1 + 2 * 3]
         c = Links[i]
