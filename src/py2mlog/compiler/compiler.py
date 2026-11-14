@@ -112,19 +112,6 @@ class Compiler:
 
         self._emit_funcs()
 
-        # kinda dumb but it works
-        while self.emitter.instructions:
-            last_instr = self.emitter.instructions[-1]
-
-            if (
-                isinstance(last_instr, Instruction)
-                and last_instr.type == InstructionType.END
-            ):
-                self.emitter.instructions.pop()
-
-            else:
-                break
-
     def compile_expr(
         self,
         expr: ast.expr,
@@ -783,6 +770,7 @@ class Compiler:
                 ConditionOpSuboperation.ALWAYS,
                 (),
                 (compiled_func.location,),
+                is_func_call_jump=True,
             )
         )
 
@@ -1474,7 +1462,6 @@ class Compiler:
             return
 
         with self._func_context(func_def):
-            # TODO: function inlining
             # TODO: LEGB, global & nonlocal keywords
             # TODO: use line numbers over labels so they can be passed around
             call_label, call_label_ref = self.emitter.new_label()

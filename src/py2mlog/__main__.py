@@ -1,5 +1,4 @@
 import argparse
-import ast
 import logging
 import sys
 from collections.abc import Callable, Generator
@@ -11,10 +10,8 @@ from textwrap import indent
 from time import perf_counter
 from traceback import print_exception
 
-from py2mlog.compiler.compiler import Compiler
-from py2mlog.compiler.emitter import Emitter
+from py2mlog.api import compile_src_to_mlog
 from py2mlog.compiler.error import CompilerError
-from py2mlog.mlog.codegen import generate_mlog
 
 try:
     _version = version("py2mlog")
@@ -163,10 +160,8 @@ def _compile_file(
             f"An OS error occurred while reading from '{target.resolve()}': {e}"
         )
 
-    emitter = Emitter()
     try:
-        Compiler(src, ast.parse(src), emitter).compile()
-        mlog = generate_mlog(emitter.instructions)
+        mlog = compile_src_to_mlog(src)
 
     except SyntaxError as e:
         logger.error(  # noqa: TRY400

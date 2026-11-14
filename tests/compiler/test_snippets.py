@@ -1,11 +1,8 @@
-import ast
 from textwrap import dedent
 
 import pytest
 
-from py2mlog.compiler.compiler import Compiler
-from py2mlog.compiler.emitter import Emitter
-from py2mlog.mlog.codegen import generate_mlog
+from py2mlog.api import compile_src_to_mlog
 
 _test_snippet_testcases = [
     pytest.param("pass", ("",), id="pass"),
@@ -184,9 +181,9 @@ _test_snippet_testcases = [
             result = first
         """,
         (
+            "__p2m_label0:",
             "jump __p2m_label0 equal condition false",
             "set result first",
-            "__p2m_label0:",
         ),
         id="if-with-name-condition",
     ),
@@ -196,9 +193,9 @@ _test_snippet_testcases = [
             x = x + 1
         """,
         (
+            "__p2m_label0:",
             "jump __p2m_label0 greaterThanEq x 5",
             "op add x x 1",
-            "__p2m_label0:",
         ),
         id="if-with-comparison-condition",
     ),
@@ -210,12 +207,12 @@ _test_snippet_testcases = [
             result = second
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label0 equal condition false",
             "set result first",
             "jump __p2m_label1 always",
             "__p2m_label0:",
             "set result second",
-            "__p2m_label1:",
         ),
         id="if-else",
     ),
@@ -229,6 +226,8 @@ _test_snippet_testcases = [
             result = fallback
         """,
         (
+            "__p2m_label3:",
+            "__p2m_label1:",
             "jump __p2m_label0 equal first_condition false",
             "set result first",
             "jump __p2m_label1 always",
@@ -238,8 +237,6 @@ _test_snippet_testcases = [
             "jump __p2m_label3 always",
             "__p2m_label2:",
             "set result fallback",
-            "__p2m_label3:",
-            "__p2m_label1:",
         ),
         id="if-elif-else",
     ),
@@ -253,6 +250,9 @@ _test_snippet_testcases = [
             result = third
         """,
         (
+            "__p2m_label4:",
+            "__p2m_label3:",
+            "__p2m_label1:",
             "jump __p2m_label0 equal first_condition false",
             "set result first",
             "jump __p2m_label1 always",
@@ -263,9 +263,6 @@ _test_snippet_testcases = [
             "__p2m_label2:",
             "jump __p2m_label4 equal third_condition false",
             "set result third",
-            "__p2m_label4:",
-            "__p2m_label3:",
-            "__p2m_label1:",
         ),
         id="if-multiple-elif-without-else",
     ),
@@ -275,11 +272,11 @@ _test_snippet_testcases = [
             result = value
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
             "set result value",
             "jump __p2m_label0 equal condition true",
-            "__p2m_label1:",
         ),
         id="while-with-name-condition",
     ),
@@ -289,11 +286,11 @@ _test_snippet_testcases = [
             count = count + 1
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label1 greaterThanEq count limit",
             "__p2m_label0:",
             "op add count count 1",
             "jump __p2m_label0 lessThan count limit",
-            "__p2m_label1:",
         ),
         id="while-with-comparison-condition",
     ),
@@ -304,6 +301,7 @@ _test_snippet_testcases = [
                 result = value
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label1 equal outer_condition false",
             "__p2m_label0:",
             "jump __p2m_label3 equal inner_condition false",
@@ -312,7 +310,6 @@ _test_snippet_testcases = [
             "jump __p2m_label2 equal inner_condition true",
             "__p2m_label3:",
             "jump __p2m_label0 equal outer_condition true",
-            "__p2m_label1:",
         ),
         id="nested-while-loops",
     ),
@@ -322,11 +319,12 @@ _test_snippet_testcases = [
             break
         """,
         (
-            "jump __p2m_label1 equal condition false",
-            "__p2m_label0:",
-            "jump __p2m_label1 always",
-            "jump __p2m_label0 equal condition true",
             "__p2m_label1:",
+            "jump __p2m_label1 equal condition false",
+            # "__p2m_label0:",
+            "jump __p2m_label1 always",
+            # optimized away
+            # "jump __p2m_label0 equal condition true",
         ),
         id="while-break",
     ),
@@ -340,16 +338,17 @@ _test_snippet_testcases = [
             break
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label1 equal condition1 false",
-            "__p2m_label0:",
+            # "__p2m_label0:",
             # could use optimization here as well
             "jump __p2m_label2 equal condition2 false",
             "jump __p2m_label1 always",
             "__p2m_label2:",
             "op add x x 10",
             "jump __p2m_label1 always",
-            "jump __p2m_label0 equal condition1 true",
-            "__p2m_label1:",
+            # optimized away
+            # "jump __p2m_label0 equal condition1 true",
         ),
         id="while-multiple-break",
     ),
@@ -359,13 +358,13 @@ _test_snippet_testcases = [
             continue
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
-            # could use some optimization when condition jump is 1 instruction like here
-            "jump __p2m_label2 always",
-            "__p2m_label2:",
+            # optimized away!
+            # "jump __p2m_label2 always",
+            # "__p2m_label2:",
             "jump __p2m_label0 equal condition true",
-            "__p2m_label1:",
         ),
         id="while-continue",
     ),
@@ -395,14 +394,15 @@ _test_snippet_testcases = [
             result = True
         """,
         (
+            "__p2m_label2:",
             "jump __p2m_label1 equal condition false",
-            "__p2m_label0:",
+            # "__p2m_label0:",
             "set result false",
             "jump __p2m_label2 always",
-            "jump __p2m_label0 equal condition true",
+            # optimized away
+            # "jump __p2m_label0 equal condition true",
             "__p2m_label1:",
             "set result true",
-            "__p2m_label2:",
         ),
         id="while-else-with-break",
     ),
@@ -414,17 +414,18 @@ _test_snippet_testcases = [
             continue
         """,
         (
+            "__p2m_label1:",
             "jump __p2m_label1 equal outer_condition false",
             "__p2m_label0:",
-            "jump __p2m_label3 equal inner_condition false",
-            "__p2m_label2:",
-            "jump __p2m_label3 always",
-            "jump __p2m_label2 equal inner_condition true",
-            "__p2m_label3:",
-            "jump __p2m_label4 always",
-            "__p2m_label4:",
+            # optimized away!!
+            # "jump __p2m_label3 equal inner_condition false",
+            # "__p2m_label2:",
+            # "jump __p2m_label3 always",
+            # "jump __p2m_label2 equal inner_condition true",
+            # "__p2m_label3:",
+            # "jump __p2m_label4 always",
+            # "__p2m_label4:",
             "jump __p2m_label0 equal outer_condition true",
-            "__p2m_label1:",
         ),
         id="nested-while-break-continue",
     ),
@@ -434,6 +435,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index 0",
             "op sub __p2m_tmp0 index 5",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -444,7 +446,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index 1",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-one-literal",
     ),
@@ -454,6 +455,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index 2",
             "op sub __p2m_tmp0 index 8",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -464,7 +466,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index 1",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-start-stop-literals",
     ),
@@ -474,6 +475,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index 1",
             "op sub __p2m_tmp0 index 10",
             "op idiv __p2m_tmp0 __p2m_tmp0 2",
@@ -484,7 +486,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index 2",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-start-stop-step-literals",
     ),
@@ -494,6 +495,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index 0",
             "op sub __p2m_tmp0 index stop",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -504,7 +506,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index 1",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-identifier",
     ),
@@ -514,6 +515,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index start",
             "op sub __p2m_tmp0 index stop",
             "op idiv __p2m_tmp0 __p2m_tmp0 step",
@@ -524,7 +526,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index step",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-identifiers",
     ),
@@ -534,6 +535,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "op add index start offset",
             "op mul __p2m_tmp0 limit 2",
             "op add __p2m_tmp1 step 1",
@@ -546,7 +548,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index __p2m_tmp1",
             "jump __p2m_label0 notEqual index __p2m_tmp2",
-            "__p2m_label1:",
         ),
         id="for-range-binary-expressions",
     ),
@@ -557,6 +558,7 @@ _test_snippet_testcases = [
                 result = outer + inner
         """,
         (
+            "__p2m_label1:",
             "set outer 0",
             "op sub __p2m_tmp0 outer 3",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -577,7 +579,6 @@ _test_snippet_testcases = [
             "__p2m_label3:",
             "op add outer outer 1",
             "jump __p2m_label0 notEqual outer __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="nested-for-range",
     ),
@@ -589,6 +590,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index 0",
             "op sub __p2m_tmp0 index 10",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -603,7 +605,6 @@ _test_snippet_testcases = [
             "set result index",
             "op add index index 1",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-break",
     ),
@@ -615,6 +616,7 @@ _test_snippet_testcases = [
             result = index
         """,
         (
+            "__p2m_label1:",
             "set index 0",
             "op sub __p2m_tmp0 index 10",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -630,7 +632,6 @@ _test_snippet_testcases = [
             "__p2m_label3:",
             "op add index index 1",
             "jump __p2m_label0 notEqual index __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="for-range-continue",
     ),
@@ -666,6 +667,7 @@ _test_snippet_testcases = [
             completed = True
         """,
         (
+            "__p2m_label3:",
             "set index 0",
             "op sub __p2m_tmp0 index 5",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -680,7 +682,6 @@ _test_snippet_testcases = [
             "jump __p2m_label0 notEqual index __p2m_tmp0",
             "__p2m_label1:",
             "set completed true",
-            "__p2m_label3:",
         ),
         id="for-range-else-with-break",
     ),
@@ -695,6 +696,7 @@ _test_snippet_testcases = [
                 result = outer + inner
         """,
         (
+            "__p2m_label1:",
             "set outer 0",
             "op sub __p2m_tmp0 outer 3",
             "op idiv __p2m_tmp0 __p2m_tmp0 1",
@@ -722,7 +724,6 @@ _test_snippet_testcases = [
             "__p2m_label3:",
             "op add outer outer 1",
             "jump __p2m_label0 notEqual outer __p2m_tmp0",
-            "__p2m_label1:",
         ),
         id="nested-for-range-break-continue",
     ),
@@ -800,6 +801,7 @@ _test_snippet_testcases = [
     pytest.param(
         "a = abs(b) + c + d if e >= f else g * h - i * j",
         (
+            "__p2m_label1:",
             "jump __p2m_label0 lessThan e f",
             "op abs __p2m_tmp1 b",
             "op add __p2m_tmp0 __p2m_tmp1 c",
@@ -809,7 +811,6 @@ _test_snippet_testcases = [
             "op mul __p2m_tmp2 g h",
             "op mul __p2m_tmp3 i j",
             "op sub a __p2m_tmp2 __p2m_tmp3",
-            "__p2m_label1:",
         ),
         id="ifexp-to-branches",
     ),
@@ -1229,12 +1230,12 @@ _test_snippet_testcases = [
     pytest.param(
         "a = b if condition1 else (c if condition2 else d)",
         (
+            "__p2m_label1:",
             "jump __p2m_label0 equal condition1 false",
             "set a b",
             "jump __p2m_label1 always",
             "__p2m_label0:",
             "select a equal condition2 true c d",
-            "__p2m_label1:",
         ),
         id="nested-ifexp",
     ),
@@ -1497,7 +1498,4 @@ def test_snippet(src: str, expected: tuple[str]):
     src = dedent(src).strip()
     expected_str = "\n".join(expected)
 
-    emitter = Emitter()
-    Compiler(src, ast.parse(src), emitter).compile()
-
-    assert generate_mlog(emitter.instructions) == expected_str
+    assert compile_src_to_mlog(src) == expected_str

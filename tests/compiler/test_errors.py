@@ -9,10 +9,8 @@ from py2mlog.compiler.error import CompilerError, CompilerErrorType
 
 
 def _test_error(src: str, error_type: CompilerErrorType):
-    emitter = Emitter()
-
     with pytest.raises(CompilerError) as exc_info:
-        Compiler(src, ast.parse(src), emitter).compile()
+        Compiler(src, ast.parse(src), Emitter()).compile()
 
     assert exc_info.value.error == error_type
 

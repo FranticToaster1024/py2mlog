@@ -203,13 +203,13 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 - Inline mlog
 - Config file?
 - CLI upgrade?
-- Passing functions (representing functions as numbers instead of labels)
+- Passing functions (representing functions as line numbers instead of labels)
 - Recursive functions (stack frames)
 
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
 Additionally, AI assistance was used for configuration files (such as .github/workflows/ci.yml, pyproject.toml).
-AI assistance was also used in some parts of the source code, including [`func_utils.py`](src/py2mlog/compiler/func_utils.py) and [`script.js`](web/script.js). All source code was handwritten though.
+AI assistance was also used in some parts of the source code, such as [`func_utils.py`](src/py2mlog/compiler/func_utils.py) and [`script.js`](web/script.js). All source code was handwritten though.
 
 ## Credits
 [mimex-data](https://github.com/cardillan/mimex-data) is the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably messed up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
@@ -217,7 +217,8 @@ AI assistance was also used in some parts of the source code, including [`func_u
 [pyodide](https://github.com/pyodide/pyodide) is used to run the py2mlog python package in a browser.
 
 [pyndustric](https://codeberg.org/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
-[minpiler](https://github.com/neumond/minpiler) is also really cool!
+
+[minpiler](https://github.com/neumond/minpiler) is really cool too!
 
 Also, thank you to all contributors, users, and members of the mindustry community for your guidance and support!
 

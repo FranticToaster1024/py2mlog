@@ -6,7 +6,7 @@ from py2mlog.mlog.selectable_params import SelectableParam
 from py2mlog.mlog.suboperations import Suboperation
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Instruction:
     """
     Represent a single mlog instruction (including arguments).
@@ -17,8 +17,11 @@ class Instruction:
     selectable_args: tuple[SelectableParam, ...]
     args: tuple[MlogArg, ...]
 
+    # metadata
+    is_func_call_jump: bool = False
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, eq=False)
 class Label:
     name: str
 
