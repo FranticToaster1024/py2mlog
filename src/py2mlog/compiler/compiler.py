@@ -67,6 +67,7 @@ from py2mlog.mlog.suboperations import (
     OperationSuboperation,
     UnitControlSuboperation,
 )
+from py2mlog.optimizer.optimizer import _remove_useless_end  # pyright: ignore[reportPrivateUsage]
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,13 @@ class Compiler:
             self._emit_assert_err()
 
         self._emit_funcs()
+
+        # its actually kinda a correctness issue
+        # because labels on last line aren't properly processed
+        # and also im just too lazy to add 'end' to every testcase
+        self.emitter.instructions = list(
+            _remove_useless_end(tuple(self.emitter.instructions))
+        )
 
     def compile_expr(
         self,

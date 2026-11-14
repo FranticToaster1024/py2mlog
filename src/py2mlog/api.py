@@ -10,7 +10,7 @@ from py2mlog.optimizer.optimizer import optimize
 
 
 def compile_src_to_mlog(
-    src: str, /, *, optimization_iterations: int | None = None
+    src: str, /, *, optimizer_iterations: int | None = None
 ) -> str:
     emitter = Emitter()
     Compiler(src, ast.parse(src), emitter).compile()
@@ -18,8 +18,8 @@ def compile_src_to_mlog(
     instrs = emitter.instructions
 
     if config.OPTIMIZER:
-        if optimization_iterations is not None:
-            instrs = optimize(instrs, iterations=optimization_iterations)
+        if optimizer_iterations is not None:
+            instrs = optimize(instrs, iterations=optimizer_iterations)
         else:
             instrs = optimize(instrs)
 

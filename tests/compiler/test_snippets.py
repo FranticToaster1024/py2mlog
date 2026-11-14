@@ -321,10 +321,9 @@ _test_snippet_testcases = [
         (
             "__p2m_label1:",
             "jump __p2m_label1 equal condition false",
-            # "__p2m_label0:",
+            "__p2m_label0:",
             "jump __p2m_label1 always",
-            # optimized away
-            # "jump __p2m_label0 equal condition true",
+            "jump __p2m_label0 equal condition true",
         ),
         id="while-break",
     ),
@@ -340,15 +339,14 @@ _test_snippet_testcases = [
         (
             "__p2m_label1:",
             "jump __p2m_label1 equal condition1 false",
-            # "__p2m_label0:",
+            "__p2m_label0:",
             # could use optimization here as well
             "jump __p2m_label2 equal condition2 false",
             "jump __p2m_label1 always",
             "__p2m_label2:",
             "op add x x 10",
             "jump __p2m_label1 always",
-            # optimized away
-            # "jump __p2m_label0 equal condition1 true",
+            "jump __p2m_label0 equal condition1 true",
         ),
         id="while-multiple-break",
     ),
@@ -361,9 +359,8 @@ _test_snippet_testcases = [
             "__p2m_label1:",
             "jump __p2m_label1 equal condition false",
             "__p2m_label0:",
-            # optimized away!
-            # "jump __p2m_label2 always",
-            # "__p2m_label2:",
+            "jump __p2m_label2 always",
+            "__p2m_label2:",
             "jump __p2m_label0 equal condition true",
         ),
         id="while-continue",
@@ -396,11 +393,10 @@ _test_snippet_testcases = [
         (
             "__p2m_label2:",
             "jump __p2m_label1 equal condition false",
-            # "__p2m_label0:",
+            "__p2m_label0:",
             "set result false",
             "jump __p2m_label2 always",
-            # optimized away
-            # "jump __p2m_label0 equal condition true",
+            "jump __p2m_label0 equal condition true",
             "__p2m_label1:",
             "set result true",
         ),
@@ -417,14 +413,13 @@ _test_snippet_testcases = [
             "__p2m_label1:",
             "jump __p2m_label1 equal outer_condition false",
             "__p2m_label0:",
-            # optimized away!!
-            # "jump __p2m_label3 equal inner_condition false",
-            # "__p2m_label2:",
-            # "jump __p2m_label3 always",
-            # "jump __p2m_label2 equal inner_condition true",
-            # "__p2m_label3:",
-            # "jump __p2m_label4 always",
-            # "__p2m_label4:",
+            "jump __p2m_label3 equal inner_condition false",
+            "__p2m_label2:",
+            "jump __p2m_label3 always",
+            "jump __p2m_label2 equal inner_condition true",
+            "__p2m_label3:",
+            "jump __p2m_label4 always",
+            "__p2m_label4:",
             "jump __p2m_label0 equal outer_condition true",
         ),
         id="nested-while-break-continue",
@@ -1498,4 +1493,4 @@ def test_snippet(src: str, expected: tuple[str]):
     src = dedent(src).strip()
     expected_str = "\n".join(expected)
 
-    assert compile_src_to_mlog(src) == expected_str
+    assert compile_src_to_mlog(src, optimizer_iterations=0) == expected_str
