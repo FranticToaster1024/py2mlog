@@ -8,3 +8,7 @@ STRING_LITERAL_AS_COLOR = True
 # namespaces or something?
 class ALIAS:
     LINK = True
+
+
+# idk toggle this if optimizer is buggy or something
+OPTIMIZER = True

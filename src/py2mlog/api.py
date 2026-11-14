@@ -2,6 +2,7 @@ __all__ = ["compile_src_to_mlog"]
 
 import ast
 
+from py2mlog.compiler import config
 from py2mlog.compiler.compiler import Compiler
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.mlog.codegen import generate_mlog
@@ -14,11 +15,12 @@ def compile_src_to_mlog(
     emitter = Emitter()
     Compiler(src, ast.parse(src), emitter).compile()
 
-    if optimization_iterations is not None:
-        instrs = optimize(
-            emitter.instructions, iterations=optimization_iterations
-        )
-    else:
-        instrs = optimize(emitter.instructions)
+    instrs = emitter.instructions
+
+    if config.OPTIMIZER:
+        if optimization_iterations is not None:
+            instrs = optimize(instrs, iterations=optimization_iterations)
+        else:
+            instrs = optimize(instrs)
 
     return generate_mlog(instrs)
