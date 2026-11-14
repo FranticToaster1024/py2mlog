@@ -22,7 +22,10 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicFuncMap,
     generate_alias,
 )
-from py2mlog.mlog.mlog_expressions import MLOG_EXPR_TYPE_MAP, get_val_str
+from py2mlog.mlog.mlog_expressions import (
+    MLOG_EXPR_TYPE_MAP,
+    get_mlog_expr_as_py_val_str,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +103,7 @@ def _stubs_from_func_map(
                 default=(
                     Parameter.empty
                     if p.default is Parameter.empty
-                    else _Name(get_val_str(p.default))
+                    else _Name(get_mlog_expr_as_py_val_str(p.default))
                 ),
             )
             for p in list(sig.parameters.values())[1:]
@@ -131,7 +134,7 @@ def _stubs_from_func_map(
 
 
 gen = f"""
-from typing import Any, overload
+from typing import Any, Literal, overload
 
 from py2mlog._base import (
     Block,
@@ -153,19 +156,28 @@ class Env:
 {"\n".join(f"{INDENT}{s}: Block" for s in BLOCK_MAP)}
 
 
+def print(
+    *args: Any,
+    sep: str = " ",
+    end: str = r"\n",
+    flush: Any = ...,
+) -> None:
+    \"""
+    Param 'flush' defaults to 'message1'. Set 'flush' to False to omit 'printflush'.
+    \"""
 {_stubs_from_func_map(intrinsics.builtins.FUNC_MAP, is_method=False)}
 
 
 class Unit:
     @overload
     @staticmethod
-    def locate(subop: str, /, *, ore_type: Item) -> None: ...
+    # Any here for var name as subop name (e.g. subop=ore instead of subop="ore")
+    def locate(subop: Literal["ore"] | Any, /, *, ore_type: Item) -> None: ...
 
     @overload
     @staticmethod
-    # Any here for var name as subop name (e.g. subop=ore instead of subop="ore")
     def locate(
-        subop: str | Any,
+        subop: Literal["building"] | Any,
         /,
         *,
         block_flag: str | Any,
@@ -174,7 +186,7 @@ class Unit:
 
     @overload
     @staticmethod
-    def locate(subop: str, /) -> None: ...
+    def locate(subop: Literal["spawn", "damaged"] | Any, /) -> None: ...
 
 
     @staticmethod

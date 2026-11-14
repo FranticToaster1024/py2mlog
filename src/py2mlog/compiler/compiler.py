@@ -49,12 +49,14 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
     IntrinsicFunc,
 )
+from py2mlog.mlog import codegen
 from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
     LabelRef,
     MlogBoolLiteral,
     MlogBuiltin,
+    MlogColorLiteral,
     MlogExpr,
     MlogFillerExpr,
     MlogNullLiteral,
@@ -522,7 +524,22 @@ class Compiler:
                         MlogStringLiteral(val),
                     )
 
-                return MlogStringLiteral(val)
+                s: list[str] = []
+                for c in val:
+                    if c == "\n":
+                        s.append(r"\n")
+                    elif c == "\t":
+                        s.append(r"\t")
+                    elif c == "\r":
+                        s.append(r"\r")
+                    elif c == "\\":
+                        s.append(r"\\")
+                    elif c.isprintable():
+                        s.append(c)
+                    else:
+                        s.append(f"\\u{ord(c):04x}")
+
+                return MlogStringLiteral("".join(s))
 
             case _:
                 raise self._unsupported_expr_error(const)
@@ -610,6 +627,9 @@ class Compiler:
             return self._compile_inline_func_call(
                 func_call, inline_func_def, output_expr[0]
             )
+
+        if func_name == "print":
+            return self._compile_print_call(func_call)
 
         # TODO: non-inline builtins
         inline_builtin = intrinsics.builtins.FUNC_MAP.get(func_name, ...)
@@ -782,6 +802,88 @@ class Compiler:
         )
 
         return compiled_func.scoped_ret_val
+
+    def _compile_print_call(self, func_call: ast.Call) -> MlogNullLiteral:
+        src_loc = self._get_src_loc_from_node(func_call)
+
+        # TODO: so many things
+
+        sep = MlogStringLiteral(" ")
+        end = MlogStringLiteral(r"\n")
+        flush = MlogVar("message1")
+        for kw in func_call.keywords:
+            if kw.arg == "sep":
+                if (
+                    not isinstance(kw.value, ast.Constant)
+                    and len(func_call.args) > 3  # noqa: PLR2004
+                ):
+                    logger.warning(
+                        "Calling 'print()' with non-string-literal for param 'sep'. "
+                        "This may incur high performance costs",
+                    )
+
+                sep = self.compile_expr(kw.value)
+
+            elif kw.arg == "end":
+                end = self.compile_expr(kw.value)
+
+            elif kw.arg == "flush":
+                flush = self.compile_expr(kw.value)
+
+            else:
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    src_loc,
+                    err=f"Unexpected kwarg '{kw.arg}' for 'print()'",
+                )
+
+        # idk i heard repeated string concat was slow
+        s: list[str] = []
+        instrs: list[Instruction] = []
+
+        def _format_mlog_expr(e: MlogExpr) -> None:
+            # TODO: do something about the color literals
+            if isinstance(e, (MlogVar, MlogColorLiteral)):
+                s.append("{0}")
+                instrs.append(
+                    Instruction(InstructionType.FORMAT, None, (), (e,))
+                )
+            elif isinstance(e, MlogBoolLiteral):
+                s.append(str(int(e.value)))
+            elif isinstance(e, MlogBuiltin):
+                s.append(e.name)
+            # generate str instead of 'str'
+            elif isinstance(e, MlogStringLiteral):
+                s.append(e.value)
+            else:
+                s.append(codegen.arg_to_str(e))
+
+        # TODO: fstrings
+        for i, arg in enumerate(func_call.args):
+            compiled_arg = self.compile_expr(arg)
+
+            _format_mlog_expr(compiled_arg)
+            if i < len(func_call.args) - 1:
+                _format_mlog_expr(sep)
+
+        _format_mlog_expr(end)
+
+        self.emitter.emit_items(
+            (
+                Instruction(
+                    InstructionType.PRINT,
+                    None,
+                    (),
+                    (MlogStringLiteral("".join(s)),),
+                ),
+                *instrs,
+            )
+        )
+        if not isinstance(flush, MlogBoolLiteral) or flush.value:
+            self.emitter.emit_instruction(
+                Instruction(InstructionType.PRINT_FLUSH, None, (), (flush,))
+            )
+        return MlogNullLiteral()
 
     def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:
         return (

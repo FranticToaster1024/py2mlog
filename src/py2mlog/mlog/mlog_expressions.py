@@ -56,7 +56,7 @@ class MlogVar(MlogExpr):
 type MlogArg = MlogExpr | LabelRef
 
 
-def get_val_str(expr: MlogExpr) -> str:
+def get_mlog_expr_as_py_val_str(expr: MlogExpr) -> str:
     match expr:
         case MlogNullLiteral():
             return str(None)

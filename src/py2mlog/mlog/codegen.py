@@ -44,7 +44,7 @@ def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
     return None
 
 
-def _arg_to_str(arg: MlogArg) -> str:
+def arg_to_str(arg: MlogArg) -> str:
     match arg:
         case LabelRef(name):
             return name
@@ -91,7 +91,7 @@ def _build_arg_list(
                 case ParamType.SELECTABLE:
                     yield next(selectables).value
                 case ParamType.VAR:
-                    yield _arg_to_str(next(args))
+                    yield arg_to_str(next(args))
                 case ParamType.FILLER:
                     yield "_"
 
@@ -112,7 +112,7 @@ def _generate_mlog_from_instruction(instr: Instruction) -> str:
     arg_list = [
         instr.type.value,
         *(a.value for a in instr.selectable_args),
-        *map(_arg_to_str, instr.args),
+        *map(arg_to_str, instr.args),
     ]
 
     if instr.suboperation is not None:
