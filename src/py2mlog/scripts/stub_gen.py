@@ -128,6 +128,7 @@ from py2mlog._base import (
     Content,
     Item,
     Liquid,
+    UnitType,
     _Color,  # pyright: ignore[reportPrivateUsage]
     _Unit,
 )
@@ -135,6 +136,7 @@ from py2mlog._base import (
 class Env:
     this: Building
     unit: _Unit
+
 {"\n".join(f"{INDENT}{s}: Item" for s in ITEM_MAP)}
 {"\n".join(f"{INDENT}{s}: Liquid" for s in LIQUID_MAP)}
 {"\n".join(f"{INDENT}{s}: Block" for s in BLOCK_MAP)}
@@ -162,6 +164,11 @@ class Unit:
     @overload
     @staticmethod
     def locate(subop: str, /) -> None: ...
+
+
+    @staticmethod
+    def bind(type: str | UnitType, /) -> None: ...
+
 
     @overload
     @staticmethod
@@ -202,11 +209,22 @@ class Unit:
 }
 
     fetch = item_take
+
+
+    @staticmethod
+    def build(
+        x: float,
+        y: float,
+        block: Block,
+        rotation: float = 0,
+        config: Any = None,
+    ) -> None: ...
 {
     _stubs_from_func_map(
         intrinsics.unit.FUNC_MAP,
         exclude=(
             "locate",
+            "bind",
             "shoot",
             "targetp",
             "target_unit",
@@ -214,6 +232,7 @@ class Unit:
             "store",
             "item_take",
             "fetch",
+            "build",
         ),
     )
 }
@@ -229,7 +248,9 @@ class Align:
 class Screen:
     @staticmethod
     def flush(target: Building) -> None: ...
-{_stubs_from_func_map(intrinsics.screen.FUNC_MAP, exclude=("flush",))}
+    @staticmethod
+    def print(x: float, y: float, alignment: Alignment) -> None: ...
+{_stubs_from_func_map(intrinsics.screen.FUNC_MAP, exclude=("flush", "print"))}
 
 
 
@@ -277,7 +298,7 @@ class Mem:
     def read(cell: MemBuilding, index: int) -> Any: ...
     @staticmethod
     def write(value: int, cell: MemBuilding, index: int) -> Any: ...
-{_stubs_from_func_map(intrinsics.screen.FUNC_MAP, exclude=("read", "write"))}
+{_stubs_from_func_map(intrinsics.mem.FUNC_MAP, exclude=("read", "write"))}
 
 """
 

@@ -3,6 +3,7 @@ __all__ = ["FUNC_MAP", "builtin_color"]
 
 import logging
 from string import hexdigits
+from typing import cast
 
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.intrinsics.intrinsic_func_utils import (
@@ -26,7 +27,9 @@ logger = logging.getLogger(__name__)
 # ----------------------------------------
 # inline builtins
 # ----------------------------------------
-def _inline_abs(call_ctx: IntrinsicCallCtx, x: MlogExpr, /) -> MlogExpr:
+def _inline_abs(
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, /
+) -> MlogExpr:
     call_ctx.emitter.emit_instruction(
         Instruction(
             InstructionType.OPERATION,
@@ -38,7 +41,9 @@ def _inline_abs(call_ctx: IntrinsicCallCtx, x: MlogExpr, /) -> MlogExpr:
     return call_ctx.output_expr[0]
 
 
-def _inline_ord(call_ctx: IntrinsicCallCtx, character: MlogExpr, /) -> MlogExpr:
+def _inline_ord(
+    call_ctx: IntrinsicCallCtx, character: MlogStringLiteral, /
+) -> MlogExpr:
     call_ctx.emitter.emit_instruction(
         Instruction(
             InstructionType.READ,
@@ -52,8 +57,8 @@ def _inline_ord(call_ctx: IntrinsicCallCtx, character: MlogExpr, /) -> MlogExpr:
 
 def _inline_min(
     call_ctx: IntrinsicCallCtx,
-    arg1: MlogExpr,
-    arg2: MlogExpr,
+    arg1: MlogNumberLiteral,
+    arg2: MlogNumberLiteral,
     # *args: MlogExpr,
     # default: MlogExpr,
     # key: MlogExpr ,
@@ -95,10 +100,13 @@ def _inline_min(
 
 
 def _inline_Color(  # noqa: N802
-    call_ctx: IntrinsicCallCtx, x: MlogExpr, /
+    call_ctx: IntrinsicCallCtx,
+    x: MlogNumberLiteral | MlogColorLiteral | MlogStringLiteral,
+    /,
 ) -> MlogColorLiteral:
     if not isinstance(
-        x, (MlogNumberLiteral, MlogStringLiteral, MlogColorLiteral)
+        cast("MlogExpr", x),
+        (MlogNumberLiteral, MlogStringLiteral, MlogColorLiteral),
     ):
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
@@ -151,7 +159,7 @@ def _inline_Color(  # noqa: N802
 
 
 def _inline_sleep(
-    call_ctx: IntrinsicCallCtx, t: MlogExpr, /
+    call_ctx: IntrinsicCallCtx, t: MlogNumberLiteral, /
 ) -> MlogNullLiteral:
     call_ctx.emitter.emit_instruction(
         Instruction(InstructionType.WAIT, None, (), (t,))

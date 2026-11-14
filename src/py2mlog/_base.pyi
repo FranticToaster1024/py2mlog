@@ -25,6 +25,8 @@ class Block(Content):
     Includes terrain blocks, not just building types.
     """
 
+class UnitType(Content): ...
+
 class Senseable(ABC):
     # TODO: attributes or something
     ...
