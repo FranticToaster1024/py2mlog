@@ -2,7 +2,12 @@ const input_textarea = document.getElementById("input");
 input_textarea.addEventListener("keydown", e => {
     if (e.key === "Tab") {
         e.preventDefault();
-        textarea.setRangeText("    ", textarea.selectionStart, textarea.selectionEnd, "end");
+        input_textarea.setRangeText(
+            "    ",
+            input_textarea.selectionStart,
+            input_textarea.selectionEnd,
+            "end",
+        );
     } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         compile();
