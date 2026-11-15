@@ -148,6 +148,14 @@ _test_error_list_testcases = [
         CompilerErrorType.BAD_ASSIGN,
         id="bad-iterable-unpack-assignments",
     ),
+    pytest.param(
+        (
+            "from foobarbaz import x",
+            "from .py2mlog import x",
+        ),
+        CompilerErrorType.BAD_IMPORT,
+        id="bad-imports",
+    ),
 ]
 
 

@@ -191,9 +191,20 @@ y = func(42)
 > **Note**: **Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
 
 
-Imports from `py2mlog`, which don't actually do anything except please your type checker.
+Imports from `py2mlog`, which don't actually do anything except please your type checker. Only the name of the module (i.e. `py2mlog`) is checked.
 ```py
 from py2mlog import Env, Links, sin
+from py2mlog import *
+
+# type checker will complain but compiler doesn't care
+from py2mlog import foobarbaz
+
+# compiler will raise error here
+from foobar import baz
+
+# unsupported
+import py2mlog
+from py2mlog.Screen import flush
 ```
 On a related note, please do let me know if i forgot to include something in the stub, or if it doesn't work properly.
 

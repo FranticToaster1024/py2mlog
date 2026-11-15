@@ -1732,6 +1732,7 @@ _test_snippet_testcases = [
             Units,
             cos,
             sleep,
+            foobarbaz,
         )
         from py2mlog import *
         """,

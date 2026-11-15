@@ -39,7 +39,6 @@ from py2mlog.compiler.names import (
     PREFIX_LABEL,
     VAR_ERR_MSG,
 )
-from py2mlog.compiler.namespace_names import ALL_NAMESPACE_NAMES
 from py2mlog.compiler.operation_maps import (
     BIN_OP_MAP,
     CMP_OP_MAP,
@@ -1664,26 +1663,12 @@ class Compiler:
                         stmt, " with non-range()/Env.Links iterable"
                     )
 
-            case ast.ImportFrom(module=module, names=names, level=level):
+            case ast.ImportFrom(module=module, level=level):
                 if module != "py2mlog" or level != 0:
-                    raise self._unsupported_stmt_error(
-                        stmt, " with non 'py2mlog' import"
-                    )
-
-                if any(n.asname is not None for n in names):
-                    raise self._unsupported_stmt_error(
-                        stmt, " with aliases (from ... import ... as ...)"
-                    )
-
-                if any(
-                    n.name != "*"  # star import
-                    and n.name not in ALL_NAMESPACE_NAMES
-                    for n in names
-                ):
                     raise CompilerError(
                         CompilerErrorType.BAD_IMPORT,
                         self._get_src_loc_from_node(stmt),
-                        err="unrecognised namespace import",
+                        err="non 'py2mlog' import",
                     )
 
             case _:
