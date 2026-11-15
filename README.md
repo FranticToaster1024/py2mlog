@@ -7,9 +7,9 @@ Don't want to deal with all the annoying cli stuff? Try py2mlog out in your brow
 
 
 ## Install
-Since it's a CLI tool, you can use `pipx` or `uv` or something to install it. It's probably the better method, if available. Unless you plan to use the modules in your python file for some reason?
+Since it's a CLI tool, you can use `pipx` or `uv` or something to install it. It's probably the better method, if available. Unless you plan to use the internal modules for some reason?
 
-Or just install it with regular pip:
+You can also install it with regular pip:
 ```sh
 # create and activate a venv
 # i guess you could skip this if you wanted to
@@ -83,7 +83,7 @@ else:
     x *= 2
 ```
 
-`while` loops, `break`, `continue` and loop/`else` (these are also supported in for loops.):
+`while` loops, `break`, `continue` and loop/`else` (these are also supported in `for` loops.):
 ```py
 while True:
     if y > 0:
@@ -110,11 +110,6 @@ for i in range(5):
 ```py
 for l in Env.links():
     l.disable()
-```
-
-`assert` statements for some reason:
-```py
-assert False, "Oopsie!"
 ```
 
 `print()` with fstring support:
@@ -198,7 +193,7 @@ y = func(42)
 
 Imports from `py2mlog`, which don't actually do anything except please your type checker.
 ```py
-from py2mlog import Env, Links
+from py2mlog import Env, Links, sin
 ```
 On a related note, please do let me know if i forgot to include something in the stub, or if it doesn't work properly.
 
@@ -241,7 +236,7 @@ l = Link[0]
 l = Links[0]
 ```
 
-Color literals (through either the `Color()` builtin or a string literal in the form "%ffffff" for compatibility with pyndustric):
+Color literals through either the `Color()` builtin or a string literal in the form "%ffffff" (for compatibility with pyndustric):
 ```py
 red = "%FF0000"
 green = Color("%00FF00")
@@ -289,14 +284,31 @@ foo.shoot(100, 100)  # equivalent to above
 
 
 Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.read()` and `Mem.write()`.
+```py
+Mem.cell1[0] = Mem.cell1[1] = 1
+
+for i in range(2, 64):
+    Mem.cell1[i] = Mem.cell1[i - 1] + Mem.cell1[i - 2]
+    i += 1
+
+print(Mem.cell1[63])
+```
+
+
+`assert` statements for some reason:
+```py
+assert False, "Oopsie!"
+```
 
 
 ## Things to note
-**Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
-Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types. The compiler does not currently check and enforce the mlog 1000 line limit.
+- **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
+- Error messages can sometimes be inaccurate or misleading.
+- The compiler does not currently check and enforce the 1000 instruction mlog limit.
 
 
 ## WIP/To-do list
+- more optimization
 - world instructions
 - **Better errors**
 - Inline mlog
