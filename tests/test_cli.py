@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pytest
@@ -118,6 +119,7 @@ def test_output_file_exists(
     input_files: list[str],
     output_files: list[str],
     tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
 ):
     for file in input_files:
         path = tmp_path / file
@@ -133,3 +135,5 @@ def test_output_file_exists(
     for file in output_files:
         path = tmp_path / file
         assert path.exists()
+
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]

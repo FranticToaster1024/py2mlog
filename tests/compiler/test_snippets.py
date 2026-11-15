@@ -1,3 +1,4 @@
+import logging
 from textwrap import dedent
 
 import pytest
@@ -1741,8 +1742,11 @@ _test_snippet_testcases = [
 
 
 @pytest.mark.parametrize(("src", "expected"), _test_snippet_testcases)
-def test_snippet(src: str, expected: tuple[str]):
+def test_snippet(
+    src: str, expected: tuple[str], caplog: pytest.LogCaptureFixture
+) -> None:
     src = dedent(src).strip()
     expected_str = "\n".join(expected)
 
     assert compile_src_to_mlog(src, optimizer_iterations=0) == expected_str
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
