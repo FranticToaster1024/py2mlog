@@ -1684,6 +1684,24 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
+        x = nucleus1["copper"]
+        x = foo[Env.copper]
+        x = foo[bar]
+        x = "foobarbaz"["size"]
+        x = Links[0][Env.copper]
+        """,
+        (
+            "sensor x nucleus1 @copper",
+            "sensor x foo @copper",
+            "sensor x foo bar",
+            'sensor x "foobarbaz" @size',
+            "getlink __p2m_tmp0 0",
+            "sensor x __p2m_tmp0 @copper",
+        ),
+        id="arbitrary-subscript-access",
+    ),
+    pytest.param(
+        """
         from py2mlog_api import Env, Links
         from py2mlog_api import *
         """,

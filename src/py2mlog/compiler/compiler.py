@@ -467,34 +467,38 @@ class Compiler:
                     )
                     return output_expr
 
-                if not isinstance(value, ast.Name):
-                    raise CompilerError(
-                        CompilerErrorType.UNSUPPORTED,
-                        self._get_src_loc_from_node(expr),
-                        feature="Complex subscript target",
+                if isinstance(value, ast.Name) and (
+                    value.id == "Links"
+                    or (config.ALIAS.LINK and value.id == "Link")
+                ):
+                    index = self.compile_expr(slice)
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.GET_LINK,
+                            None,
+                            (),
+                            (output_expr, index),
+                        )
                     )
+                    return output_expr
 
-                match value.id:
-                    # slightly silly snippet
-                    case "Link" | "Links" as name if (
-                        name == "Links" or config.ALIAS.LINK
-                    ):
-                        index = self.compile_expr(slice)
-                        self.emitter.emit_instruction(
-                            Instruction(
-                                InstructionType.GET_LINK,
-                                None,
-                                (),
-                                (output_expr, index),
-                            )
-                        )
+                # building[res_as_expr]
+                # building['res_name']
+                compiled_value = self.compile_expr(value)
+                compiled_slice = self.compile_expr(slice)
 
-                    case _:
-                        raise CompilerError(
-                            CompilerErrorType.UNSUPPORTED,
-                            self._get_src_loc_from_node(expr),
-                            feature="Unknown subscript target",
-                        )
+                if isinstance(compiled_slice, MlogStringLiteral):
+                    # TODO: validate sensor property
+                    compiled_slice = MlogBuiltin(compiled_slice.value)
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.SENSOR,
+                        None,
+                        (),
+                        (output_expr, compiled_value, compiled_slice),
+                    )
+                )
 
                 return output_expr
 

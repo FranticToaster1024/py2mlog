@@ -200,12 +200,23 @@ Imports from `py2mlog`, which don't actually do anything except please your type
 ```py
 from py2mlog import Env, Links
 ```
-Please let me know if i forgot to include something in the stub, or if it doesn't work properly.
+Please do let me know if i forgot to include something in the stub, or if it doesn't work properly.
 
 Access to some mlog builtins via `Env.*`, just like pyndustric.
 ```py
 c = Env.copper
 w = Env.water
+```
+
+Subscript access on arbitrary objects:
+```py
+x = nucleus1[Env.copper]  # sensor x nucleus1 @copper
+x = nucleus1["copper"]  # sensor x nucleus1 @copper
+
+x = "foobarbaz"["size"]  # sensor x "foobarbaz" @size
+x = Mem.read("foobarbaz", 3)  # read x "foobarbaz" 3
+
+x =
 ```
 
 `Links` (`Link` is supported for compatibility with pyndustric):
@@ -270,9 +281,8 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 
 
 ## WIP/To-do list
-- subscript as sensor
 - attribute access as sensor
-- for ... Env.links()
+- world instructions
 - **Better errors**
 - Inline mlog
 - Config file?
