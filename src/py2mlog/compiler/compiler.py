@@ -712,7 +712,15 @@ class Compiler:
         def _func(
             call_ctx: IntrinsicCallCtx, *args: MlogExpr
         ) -> MlogExpr | tuple[MlogExpr, ...]:
-            return method(call_ctx, MlogVar(attr_target_name), *args)
+            try:
+                return method(call_ctx, MlogVar(attr_target_name), *args)
+
+            except TypeError as e:
+                raise CompilerError(
+                    CompilerErrorType.BAD_CALL,
+                    self._get_src_loc_from_node(func_call),
+                    err=e,
+                ) from None
 
         return _func
 

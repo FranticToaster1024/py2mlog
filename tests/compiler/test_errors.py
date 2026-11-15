@@ -56,6 +56,9 @@ _test_error_list_testcases = [
                     'Unit.locate("damaged", block_flag="turret")',
                 )
             ),
+            "Unit.foo_bar_baz()",
+            "foo_bar.enabled(True, baz)",
+            "foo_bar.baz()",
         ),
         CompilerErrorType.BAD_CALL,
         id="bad-builtin-calls",
