@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.compiler.mimex_utils import MIMEX_DATA_DIR, select_col
-from py2mlog.compiler.names import PREFIX_LABEL, PREFIX_TMP
+from py2mlog.compiler.names import PREFIX_LABEL, PREFIX_LOOP_ITER, PREFIX_TMP
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mimex_arg_types import (
@@ -83,6 +83,7 @@ class Emitter:
 
         self._tmp_counter = 0
         self._label_counter = 0
+        self._loop_iter_counter = 0
 
     def new_tmp(self) -> MlogVar:
         tmp = MlogVar(f"{PREFIX_TMP}{self._tmp_counter}")
@@ -96,6 +97,11 @@ class Emitter:
         self._label_counter += 1
 
         return (label, label_ref)
+
+    def new_loop_iter(self) -> MlogVar:
+        loop_iter = MlogVar(f"{PREFIX_LOOP_ITER}{self._loop_iter_counter}")
+        self._loop_iter_counter += 1
+        return loop_iter
 
     def emit_items(self, items: Iterable[MlogItem]) -> None:
         for item in items:

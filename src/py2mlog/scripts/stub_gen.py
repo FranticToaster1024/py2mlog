@@ -134,6 +134,7 @@ def _stubs_from_func_map(
 
 
 gen = f"""
+from collections.abc import Iterator
 from typing import Any, Literal, overload
 
 from py2mlog._base import (
@@ -154,6 +155,12 @@ class Env:
 {"\n".join(f"{INDENT}{s}: Item" for s in ITEM_MAP)}
 {"\n".join(f"{INDENT}{s}: Liquid" for s in LIQUID_MAP)}
 {"\n".join(f"{INDENT}{s}: Block" for s in BLOCK_MAP)}
+
+    @staticmethod
+    def links() -> Iterator[Building]:
+        \"""
+        Only available as iterable target in for loops.
+        \"""
 
 
 def print(

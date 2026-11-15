@@ -2,6 +2,7 @@ from py2mlog.mlog.mlog_expressions import MlogVar
 
 PREFIX_TMP = "__p2m_tmp"
 PREFIX_LABEL = "__p2m_label"
+PREFIX_LOOP_ITER = "__p2m_loop_iter"
 PREFIX_FUNC_ARG = "__p2m_func_arg_"  # scoped
 
 

@@ -726,6 +726,63 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
+        for l in Env.links():
+            l.disable()
+        """,
+        (
+            "__p2m_label1:",
+            "set __p2m_loop_iter0 0",
+            "jump __p2m_label1 equal @links 0",
+            "__p2m_label0:",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "jump __p2m_label0 lessThan __p2m_loop_iter0 @links",
+        ),
+        id="for-env-links",
+    ),
+    pytest.param(
+        """
+        for l in Env.links():
+            # literally why would you ever do this tho
+            for l2 in Env.links():
+                if foo:
+                    break
+                continue
+
+            else:
+                e = True
+
+            l.disable()
+        """,
+        (
+            "__p2m_label1:",
+            "set __p2m_loop_iter0 0",
+            "jump __p2m_label1 equal @links 0",
+            "__p2m_label0:",
+            "getlink l __p2m_loop_iter0",
+            "set __p2m_loop_iter1 0",
+            "jump __p2m_label3 equal @links 0",
+            "__p2m_label2:",
+            "getlink l2 __p2m_loop_iter1",
+            "jump __p2m_label4 equal foo false",
+            "jump __p2m_label5 always",
+            "__p2m_label4:",
+            "jump __p2m_label6 always",
+            "__p2m_label6:",
+            "op add __p2m_loop_iter1 __p2m_loop_iter1 1",
+            "jump __p2m_label2 lessThan __p2m_loop_iter1 @links",
+            "__p2m_label3:",
+            "set e true",
+            "__p2m_label5:",
+            "control enabled l false",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "jump __p2m_label0 lessThan __p2m_loop_iter0 @links",
+        ),
+        id="for-env-links-nested-break-continue-else",
+    ),
+    pytest.param(
+        """
         assert False, "abc"
         x = 123
         """,

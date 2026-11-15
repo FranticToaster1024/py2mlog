@@ -1418,7 +1418,7 @@ class Compiler:
                     else:
                         raise CompilerError(
                             CompilerErrorType.BAD_CALL,
-                            self._get_src_loc_from_node(target),
+                            self._get_src_loc_from_node(iter_),
                             err="Too many arguments for range()",
                         )
 
@@ -1536,9 +1536,95 @@ class Compiler:
                     if orelse and this_loop_break is not None:
                         self.emitter.emit_label(this_loop_break)
 
+                elif (
+                    isinstance(iter_, ast.Call)
+                    and isinstance(iter_.func, ast.Attribute)
+                    and isinstance(iter_.func.value, ast.Name)
+                    and iter_.func.value.id == "Env"
+                    and iter_.func.attr == "links"
+                ):
+                    if len(iter_.args) > 0 or len(iter_.keywords) > 0:
+                        raise CompilerError(
+                            CompilerErrorType.BAD_CALL,
+                            self._get_src_loc_from_node(iter_),
+                            err="Env.links() does not take any arguments.",
+                        )
+
+                    loop_label, loop_label_ref = self.emitter.new_label()
+                    else_label, else_label_ref = self.emitter.new_label()
+                    break_label = None if orelse else else_label
+                    break_label_ref = None if orelse else else_label_ref
+
+                    loop_iter = self.emitter.new_loop_iter()
+
+                    self.emitter.emit_items(
+                        (
+                            Instruction(
+                                InstructionType.SET,
+                                None,
+                                (),
+                                (loop_iter, MlogNumberLiteral(0)),
+                            ),
+                            Instruction(
+                                InstructionType.JUMP,
+                                ConditionOpSuboperation.EQUAL,
+                                (),
+                                (
+                                    else_label_ref,
+                                    MlogBuiltin("links"),
+                                    MlogNumberLiteral(0),
+                                ),
+                            ),
+                            loop_label,
+                            Instruction(
+                                InstructionType.GET_LINK,
+                                None,
+                                (),
+                                (compiled_target, loop_iter),
+                            ),
+                        )
+                    )
+
+                    with self._loop_context(break_label, break_label_ref):
+                        for stmt_ in body:
+                            self.compile_stmt(stmt_)
+
+                        this_loop_break = self._current_loop_break
+
+                        if self._current_loop_continue:
+                            self.emitter.emit_label(self._current_loop_continue)
+
+                    self.emitter.emit_items(
+                        (
+                            Instruction(
+                                InstructionType.OPERATION,
+                                OperationSuboperation.ADD,
+                                (),
+                                (loop_iter, loop_iter, MlogNumberLiteral(1)),
+                            ),
+                            Instruction(
+                                InstructionType.JUMP,
+                                ConditionOpSuboperation.LESS_THAN,
+                                (),
+                                (
+                                    loop_label_ref,
+                                    loop_iter,
+                                    MlogBuiltin("links"),
+                                ),
+                            ),
+                            else_label,
+                        )
+                    )
+
+                    for stmt_ in orelse:
+                        self.compile_stmt(stmt_)
+
+                    if orelse and this_loop_break is not None:
+                        self.emitter.emit_label(this_loop_break)
+
                 else:
                     raise self._unsupported_stmt_error(
-                        stmt, " with non-range() iterable"
+                        stmt, " with non-range()/Env.Links iterable"
                     )
 
             case ast.ImportFrom(module=module, names=names, level=level):

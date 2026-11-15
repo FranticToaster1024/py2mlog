@@ -83,7 +83,7 @@ else:
     x *= 2
 ```
 
-`while` loops, `break`, `continue` and loop/else:
+`while` loops, `break`, `continue` and loop/`else` (these are also supported in for loops.):
 ```py
 while True:
     if y > 0:
@@ -104,6 +104,12 @@ result = 0
 for i in range(5):
     for j in range(i, 10 * 2, 3):
         result += j
+```
+
+`for ... Env.links()`:
+```py
+for l in Env.links():
+    l.disable()
 ```
 
 `assert` statements for some reason:
