@@ -1412,11 +1412,11 @@ _test_snippet_testcases = [
     ),
     pytest.param(
         """
-        a = UnitType.flare
-        b = UnitType.quell_missile
+        a = Units.flare
+        b = Units.quell_missile
 
         Unit.bind(a)
-        Unit.bind(UnitType.flare)
+        Unit.bind(Units.flare)
         Unit.bind("flare")
         Unit.bind("@flare")
 
@@ -1685,6 +1685,7 @@ _test_snippet_testcases = [
     pytest.param(
         """
         x = nucleus1["copper"]
+        x = nucleus1["fissile_matter"]
         x = foo[Env.copper]
         x = foo[bar]
         x = "foobarbaz"["size"]
@@ -1692,8 +1693,25 @@ _test_snippet_testcases = [
         """,
         (
             "sensor x nucleus1 @copper",
+            "sensor x nucleus1 @fissile-matter",
             "sensor x foo @copper",
             "sensor x foo bar",
+            'sensor x "foobarbaz" @size',
+            "getlink __p2m_tmp0 0",
+            "sensor x __p2m_tmp0 @copper",
+        ),
+        id="arbitrary-subscript-access",
+    ),
+    pytest.param(
+        """
+        x = nucleus1.copper
+        x = nucleus1.fissile_matter
+        x = "foobarbaz".size
+        x = Links[0].copper
+        """,
+        (
+            "sensor x nucleus1 @copper",
+            "sensor x nucleus1 @fissile-matter",
             'sensor x "foobarbaz" @size',
             "getlink __p2m_tmp0 0",
             "sensor x __p2m_tmp0 @copper",
@@ -1710,7 +1728,7 @@ _test_snippet_testcases = [
             Mem,
             Screen,
             Unit,
-            UnitType,
+            Units,
             cos,
             sleep,
         )

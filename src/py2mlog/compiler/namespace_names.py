@@ -9,19 +9,17 @@ ALIAS_NAMESPACE_NAMES = {
 }
 
 
-BUILTIN_FUNC_NAMES = set(intrinsics.builtins.FUNC_MAP.keys())
+BUILTIN_FUNC_NAMES = set(intrinsics.builtins.FUNC_MAP)
 
 
-INTRINSIC_NAMESPACE_NAMES = set(
-    intrinsics.NAMESPACES_NAME_TO_FUNC_MAP_MAP.keys()
-)
+INTRINSIC_NAMESPACE_NAMES = set(intrinsics.NAMESPACES_NAME_TO_FUNC_MAP_MAP)
 
 
 ALL_NAMESPACE_NAMES = (
     {
         "Env",
         "Links",
-        "UnitType",
+        "Units",
         "Align",  # for draw print alignments (see mimex-alignments.txt)
     }
     | BUILTIN_FUNC_NAMES

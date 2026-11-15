@@ -200,7 +200,7 @@ Imports from `py2mlog`, which don't actually do anything except please your type
 ```py
 from py2mlog import Env, Links
 ```
-Please do let me know if i forgot to include something in the stub, or if it doesn't work properly.
+On a related note, please do let me know if i forgot to include something in the stub, or if it doesn't work properly.
 
 Access to some mlog builtins via `Env.*`, just like pyndustric.
 ```py
@@ -214,9 +214,25 @@ x = nucleus1[Env.copper]  # sensor x nucleus1 @copper
 x = nucleus1["copper"]  # sensor x nucleus1 @copper
 
 x = "foobarbaz"["size"]  # sensor x "foobarbaz" @size
-x = Mem.read("foobarbaz", 3)  # read x "foobarbaz" 3
 
-x =
+# Note:
+# ❌
+x = "foobarbaz"[3]  # sensor x "foobarbaz" 3
+# ✅
+x = Mem.read("foobarbaz", 3)  # read x "foobarbaz" 3
+```
+
+Attribute access on arbitrary objects:
+```py
+x = nucleus1.copper  # sensor x nucleus1 @copper
+x = reactor1.heat  # sensor x reactor1 @heat
+
+# Note:
+# ❌
+x = foo.bar  # sensor x foo @bar
+#                           ^
+# ✅
+x = foo[bar]  # sensor x foo bar
 ```
 
 `Links` (`Link` is supported for compatibility with pyndustric):
@@ -254,7 +270,7 @@ Screen.flush()  # default is 'display1'
 ```
 
 
-All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric. This namespace includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc.
+All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric. This namespace includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc. You can access unit types through the `Units.*` namespace.
 
 
 All control operations, through the `Control.*` namespace or through method calls (just like pyndustric):
@@ -281,7 +297,6 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 
 
 ## WIP/To-do list
-- attribute access as sensor
 - world instructions
 - **Better errors**
 - Inline mlog

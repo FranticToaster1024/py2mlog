@@ -17,6 +17,7 @@ class CompilerErrorType(Enum):
     BAD_CALL = auto()
     BAD_ASSIGN = auto()
     BAD_IMPORT = auto()
+    UNKNOWN_ATTRIBUTE = auto()
     INTERNAL = auto()
     INTERNAL_COMP_TGT_NEED_INPUT_EXPR = auto()
 
@@ -27,6 +28,7 @@ _ERR_DESCRIPTIONS = {
     CompilerErrorType.BAD_CALL: "Invalid function call: {err}.",
     CompilerErrorType.BAD_ASSIGN: "Invalid assignment: {err}",
     CompilerErrorType.BAD_IMPORT: "Invalid import: {err}.",
+    CompilerErrorType.UNKNOWN_ATTRIBUTE: "Attempted to access an unknown attribute: {attr}.",
     CompilerErrorType.INTERNAL: "An internal error occurred: {err}.",
     CompilerErrorType.INTERNAL_COMP_TGT_NEED_INPUT_EXPR: (
         "Used internally to declare that 'compile_target' "

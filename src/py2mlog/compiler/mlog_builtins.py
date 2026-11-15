@@ -21,11 +21,50 @@ def _build_builtin_map(file_name: str) -> dict[str, MlogBuiltin]:
 
 
 # ----------------------------------------
-# Env namespace (Env.*)
+# Units namespace (Units.*)
+# ----------------------------------------
+UNIT_MAP = _build_builtin_map("mimex-units.txt")
+
+
+# ----------------------------------------
+# Content (not in a specific namespace)
 # ----------------------------------------
 ITEM_MAP = _build_builtin_map("mimex-items.txt")
 LIQUID_MAP = _build_builtin_map("mimex-liquids.txt")
 BLOCK_MAP = _build_builtin_map("mimex-blocks.txt")
+
+# TODO: cleanup
+_block_data = (MIMEX_DATA_DIR / "mimex-blocks.txt").read_text(encoding="utf-8")
+BUILDING_TYPES = {
+    kebab_to_snake(s)
+    for s, c in zip(
+        select_col(_block_data, "name"),
+        select_col(_block_data, "visibility"),
+        strict=True,
+    )
+    if c == "shown"  # close enough ig
+}
+PAYLOADS = BUILDING_TYPES | set(UNIT_MAP)
+
+_laccess_data = (MIMEX_DATA_DIR / "mimex-laccess.txt").read_text(
+    encoding="utf-8"
+)
+LACCESS_SENSOR = {
+    kebab_to_snake(s)
+    for s, c in zip(
+        select_col(_laccess_data, "name"),
+        select_col(_laccess_data, "sensor"),
+        strict=True,
+    )
+    if c == "true"
+}
+
+SENSOR_PROPERTIES = set(ITEM_MAP | LIQUID_MAP) | PAYLOADS | LACCESS_SENSOR
+
+# ----------------------------------------
+# Env namespace (Env.*)
+# ----------------------------------------
+
 
 CONTENT_MAP: Mapping[str, MlogBuiltin] = ITEM_MAP | LIQUID_MAP | BLOCK_MAP
 
@@ -84,11 +123,6 @@ MISC_ENV_ATTR_MAP = {
 ENV_ATTR_MAP: Mapping[str, MlogExpr] = (
     CONTENT_MAP | SPECIAL_BUILTIN_MAP | MISC_ENV_ATTR_MAP
 )
-
-# ----------------------------------------
-# UnitType namespace (UnitType.*)
-# ----------------------------------------
-UNIT_TYPE_MAP = _build_builtin_map("mimex-units.txt")
 
 
 # ----------------------------------------

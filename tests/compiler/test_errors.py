@@ -140,7 +140,7 @@ _test_error_list_testcases = [
     ),
     pytest.param(
         (
-            "a, b = Unit.bind(UnitType.flare)",
+            "a, b = Unit.bind(Units.flare)",
             'a, b, c, bad = Unit.locate("ore", ore_type=Env.copper)',
             "a, b = Unit.within(150, 150, 10)",
             "a, b = Unit.get_block(150, 150)",

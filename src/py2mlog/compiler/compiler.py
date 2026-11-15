@@ -27,7 +27,8 @@ from py2mlog.compiler.mimex_utils import snake_to_kebab
 from py2mlog.compiler.mlog_builtins import (
     ALIGN_MAP,
     ENV_ATTR_MAP,
-    UNIT_TYPE_MAP,
+    SENSOR_PROPERTIES,
+    UNIT_MAP,
 )
 from py2mlog.compiler.names import (
     GLOBAL_SCOPE,
@@ -429,13 +430,13 @@ class Compiler:
                             return builtin
 
                         # this is literally almost identical to the other cases ;-;
-                        case "UnitType":
-                            unit_type = UNIT_TYPE_MAP.get(attr)
+                        case "Units":
+                            unit_type = UNIT_MAP.get(attr)
                             if unit_type is None:
                                 raise CompilerError(
                                     CompilerErrorType.UNSUPPORTED,
                                     self._get_src_loc_from_node(expr),
-                                    feature=f"Unknown UnitType attribute '{attr}'",
+                                    feature=f"Unknown Units attribute '{attr}'",
                                 )
 
                             return unit_type
@@ -445,9 +446,32 @@ class Compiler:
                         case _:
                             pass
 
-                raise self._unsupported_expr_error(
-                    expr, " on non-special values"
+                output_expr = self._get_output_expr(output_expr)
+
+                compiled_value = self.compile_expr(value)
+                if attr not in SENSOR_PROPERTIES:
+                    raise CompilerError(
+                        CompilerErrorType.UNKNOWN_ATTRIBUTE,
+                        self._get_src_loc_from_node(expr),
+                        attr=f"sensor property '{attr}'. ",
+                    )
+
+                sensor_property = MlogBuiltin(snake_to_kebab(attr))
+
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.SENSOR,
+                        None,
+                        (),
+                        (
+                            output_expr,
+                            compiled_value,
+                            sensor_property,
+                        ),
+                    )
                 )
+
+                return output_expr
 
             case ast.Subscript(value=value, slice=slice):
                 output_expr = self._get_output_expr(output_expr)
@@ -488,8 +512,17 @@ class Compiler:
                 compiled_slice = self.compile_expr(slice)
 
                 if isinstance(compiled_slice, MlogStringLiteral):
-                    # TODO: validate sensor property
-                    compiled_slice = MlogBuiltin(compiled_slice.value)
+                    if compiled_slice.value not in SENSOR_PROPERTIES:
+                        logger.warning(
+                            "Unknown sensor property '%s'. "
+                            "Using '@%s' as fallback.",
+                            compiled_slice.value,
+                            compiled_slice.value,
+                        )
+
+                    compiled_slice = MlogBuiltin(
+                        snake_to_kebab(compiled_slice.value)
+                    )
 
                 self.emitter.emit_instruction(
                     Instruction(

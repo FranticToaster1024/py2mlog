@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from types import NoneType
 from typing import Any
 
-from py2mlog._types import Content, _Color  # pyright: ignore[reportPrivateUsage]
+from py2mlog._types import ColorType, Content
 
 
 @dataclass(frozen=True)
@@ -76,7 +76,7 @@ MLOG_EXPR_TYPE_MAP = {
     MlogStringLiteral: str,
     MlogNumberLiteral: float,  # linter yells if i use int | float
     MlogBoolLiteral: bool,
-    MlogColorLiteral: _Color,
+    MlogColorLiteral: ColorType,
     MlogNullLiteral: NoneType,
     MlogVar: Any,
 }

@@ -16,7 +16,10 @@ from py2mlog.compiler.mlog_builtins import (
     ALIGN_MAP,
     BLOCK_MAP,
     ITEM_MAP,
+    LACCESS_SENSOR,
     LIQUID_MAP,
+    PAYLOADS,
+    UNIT_MAP,
 )
 from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicFuncMap,
@@ -138,7 +141,7 @@ from abc import ABC
 from collections.abc import Iterator
 from typing import Any, Literal, overload
 
-from py2mlog._types import Content, _Color  # pyright: ignore[reportPrivateUsage]
+from py2mlog._types import ColorType, Content
 
 class Item(Content): ...
 class Liquid(Content): ...
@@ -151,10 +154,11 @@ class Block(Content):
 class UnitType(Content): ...
 
 class Senseable(ABC):
-    # TODO: attributes or something
-    ...
+    def __getitem__(self, i: Item | Liquid | str | Any) -> Any: ...
+{"\n".join(f"{INDENT}{s}: int" for s in set(ITEM_MAP | LIQUID_MAP) | PAYLOADS)}
+    # TODO: manually type these attributes or something
+{"\n".join(f"{INDENT}{s}: Any" for s in LACCESS_SENSOR)}
 
-class _Unit(Senseable): ...
 
 class Controllable(ABC):
     def enabled(self, enabled: bool | int) -> None: ...
@@ -162,11 +166,14 @@ class Controllable(ABC):
     def disable(self) -> None: ...
     def shoot(self, x: float, y: float, shoot: bool | int = True) -> None: ...
     def ceasefire(self) -> None: ...
-    def shootp(self, unit: _Unit, shoot: bool | int = True) -> None: ...
-    def color(self, color: _Color) -> None: ...
+    def shootp(self, unit: UnitObj, shoot: bool | int = True) -> None: ...
+    def color(self, color: ColorType) -> None: ...
     def config(self, config: Any) -> None: ...
 
+
 class Building(Senseable, Controllable): ...
+class UnitObj(Senseable): ...
+
 
 class Env:
     # Processor
@@ -211,7 +218,7 @@ class Env:
 
     # Misc
     counter: int
-    unit: _Unit
+    unit: UnitObj
 
     # Special (manually defined)
     x: float
@@ -228,6 +235,10 @@ class Env:
         \"""
         Only available as iterable target in for loops.
         \"""
+
+
+class Units:
+{"\n".join(f"{INDENT}{s}: UnitObj" for s in UNIT_MAP)}
 
 
 def print(
@@ -367,10 +378,10 @@ class Control:
     def ceasefire(building: Building) -> None: ...
     @staticmethod
     def shootp(
-        building: Building, unit: _Unit, shoot: bool | int = True
+        building: Building, unit: UnitObj, shoot: bool | int = True
     ) -> None: ...
     @staticmethod
-    def color(building: Building, color: _Color) -> None: ...
+    def color(building: Building, color: ColorType) -> None: ...
     @staticmethod
     def config(building: Building, config: Any) -> None: ...
 
@@ -384,7 +395,11 @@ class Links:
 
 
 class MemBuilding(Building):
-    def __getitem__(self, index: int) -> Any: ...
+    # in compiler.py, Mem.foo[etc] gets its own branch
+    def __getitem__(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        index: int,
+    ) -> Any: ...
     def __setitem__(self, index: int, value: Any) -> None: ...
 
 class Mem:

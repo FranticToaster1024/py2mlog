@@ -9,7 +9,7 @@ from py2mlog.compiler.error import (
     CompilerErrorType,
 )
 from py2mlog.compiler.mimex_utils import camel_to_snake
-from py2mlog.compiler.mlog_builtins import UNIT_TYPE_MAP
+from py2mlog.compiler.mlog_builtins import UNIT_MAP
 from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
     IntrinsicFuncMap,
@@ -65,7 +65,7 @@ def _unit_bind(
             else type_.name
         )
 
-        mlog_builtin = UNIT_TYPE_MAP.get(type_str)
+        mlog_builtin = UNIT_MAP.get(type_str)
         if mlog_builtin is None:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
