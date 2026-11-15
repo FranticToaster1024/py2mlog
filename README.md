@@ -1,8 +1,10 @@
 # py2mlog
 A python to mindustry logic (mlog) compiler. https://xkcd.com/927/
 
+
 ## Website
 Don't want to deal with all the annoying cli stuff? Try py2mlog out in your browser, at https://frantictoaster1024.github.io/py2mlog/.
+
 
 ## Install
 Since it's a CLI tool, you can use `pipx` or `uv` or something to install it. It's probably the better method, if available. Unless you plan to use the modules in your python file for some reason?
@@ -16,6 +18,7 @@ python -m venv .venv
 
 pip install "git+https://github.com/FranticToaster1024/py2mlog.git"
 ```
+
 
 ## Usage
 Basic usage:
@@ -60,9 +63,8 @@ You can use `--no-file` to disable the file output. This must be used with `-s` 
 
 Information, warnings, and other diagnostics are printed to stderr.
 
-## Supported features
-Im NoT a CoPyCaT iTs AlL fOr CoMpAtIbIlItY rEaSoNs!
 
+## Supported features
 Assignment and operators:
 ```py
 x = 42
@@ -109,7 +111,46 @@ for i in range(5):
 assert False, "Oopsie!"
 ```
 
-Very basic python builtins (`print` not supported yet), more coming soon<sup>TM</sup>.
+`print()` with fstring support:
+```py
+print("Hello World!")
+# compiled:
+# print "Hello World!\n"
+# printflush message1
+
+print("Hello", "World", sep=" !!", end="\n\n", flush=False)
+# flush is 'message1' by default
+# flush=True isn't a thing though,
+# you have to pass a flush target like 'message2'
+# notify, toast, etc. aren't supported yet
+
+foo = 42
+bar = 67
+print(f"{foo} + {bar} = {foo + bar}")
+# compiled:
+# op add __p2m_tmp0 foo bar
+# print "{0} + {0} = {0}\n"
+# format foo
+# format bar
+# format __p2m_tmp0
+# printflush message1
+
+print("You", "can", "chain", "any", "number", "of", "pos", "args!")
+# compiled:
+# print "You can chain any number of pos args!\n"
+# printflush message1
+
+foo = "\n"
+print("Non-literal", "separators", "are", "allowed!", sep=foo)
+# but they can get expensive quick!
+# print "Non-literal{0}separators{0}are{0}allowed!\n"
+# format foo
+# format foo
+# format foo
+# printflush message1
+```
+
+Very basic python builtins, more coming soon<sup>TM</sup>.
 ```py
 x = abs(-5)
 y = ord("!")
@@ -146,7 +187,7 @@ y = func(42)
 ```
 <!--these work quite beautifully but i have no idea why it works atp-->
 
-**Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
+> **Note**: **Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
 
 
 Imports from `py2mlog`, which don't actually do anything except please your type checker.
@@ -221,7 +262,8 @@ Reading and writing to `Mem.cell[i]` (i.e. same as pyndustric), as well as `Mem.
 **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
 Error messages can sometimes be inaccurate or misleading. I should probably make more specific error types. The compiler does not currently check and enforce the mlog 1000 line limit.
 
-## Future goals/To-do list
+
+## WIP/To-do list
 - subscript as sensor
 - attribute access as sensor
 - for ... Env.links()
@@ -232,21 +274,24 @@ Error messages can sometimes be inaccurate or misleading. I should probably make
 - Passing functions (representing functions as line numbers instead of labels)
 - Recursive functions (stack frames)
 
+
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
 Additionally, AI assistance was used for configuration files (such as .github/workflows/ci.yml, pyproject.toml).
 AI assistance was also used in some parts of the source code, such as [`func_utils.py`](src/py2mlog/compiler/func_utils.py) and [`script.js`](web/script.js). All source code was handwritten though.
+
 
 ## Credits
 [mimex-data](https://github.com/cardillan/mimex-data) is the main source of data for stuff like mlog builtins, included in this repo as a submodule. I probably messed up here considering it has no license, so hey uh Cardillan if you want me to get rid of this I'm so sorry and feel free to let me know.
 
 [pyodide](https://github.com/pyodide/pyodide) is used to run the py2mlog python package in a browser.
 
-[pyndustric](https://codeberg.org/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out!
+[pyndustric](https://codeberg.org/Lonami/pyndustric) was the main inspiration for this project. It's really cool, you should check it out! Also much of the user-facing api is identical to pyndustric fOr CoMpAtIbIlItY rEaSoNs!
 
 [minpiler](https://github.com/neumond/minpiler) is really cool too!
 
 Also, thank you to all contributors, users, and members of the mindustry community for your guidance and support!
+
 
 ## Contributing
 All contributions are more than welcome!

@@ -857,11 +857,42 @@ class Compiler:
             else:
                 s.append(codegen.arg_to_str(e))
 
-        # TODO: fstrings
         for i, arg in enumerate(func_call.args):
-            compiled_arg = self.compile_expr(arg)
+            # handling general case first which is a little silly
+            # but the other case is a big block of code
+            if not isinstance(arg, ast.JoinedStr):
+                compiled_arg = self.compile_expr(arg)
+                _format_mlog_expr(compiled_arg)
 
-            _format_mlog_expr(compiled_arg)
+            else:
+                for value in arg.values:
+                    if isinstance(value, ast.Constant):
+                        _format_mlog_expr(self._compile_const(value))
+                    elif isinstance(value, ast.FormattedValue):
+                        if value.conversion != -1:
+                            raise CompilerError(
+                                CompilerErrorType.UNSUPPORTED,
+                                src_loc,
+                                feature='conversion in fstring (e.g. f"{x!s}", f"{x!r}")',
+                            )
+
+                        if value.format_spec is not None:
+                            raise CompilerError(
+                                CompilerErrorType.UNSUPPORTED,
+                                src_loc,
+                                feature="format spec in fstring"
+                                '(e.g. f"{x:2f}", f"{x:05}")',
+                            )
+
+                        _format_mlog_expr(self.compile_expr(value.value))
+                    else:
+                        raise CompilerError(
+                            CompilerErrorType.SYNTAX,
+                            src_loc,
+                            err="Somehow generated node of type "
+                            f"'{type(value).__name__}' inside fstring.",
+                        )
+
             if i < len(func_call.args) - 1:
                 _format_mlog_expr(sep)
 

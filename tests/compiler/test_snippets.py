@@ -818,6 +818,7 @@ _test_snippet_testcases = [
         print("Hello World!")
         print("Hello World!", flush=message3)
         print("A", foo, "B""C", sep="uwu", end="\n\u0000🐍", flush=False)
+        print("A", foo, "B", sep=bar)
         print()
         print("A", 42, 4.2, True, Color("%ffffff"), Env.copper, None)
         """,
@@ -828,6 +829,11 @@ _test_snippet_testcases = [
             "printflush message3",
             r'print "Auwu{0}uwuBC\n\u0000🐍"',
             "format foo",
+            r'print "A{0}{0}{0}B\n"',
+            "format bar",
+            "format foo",
+            "format bar",
+            "printflush message1",
             r'print "\n"',
             "printflush message1",
             r'print "A 42 4.2 1 {0} copper null\n"',
@@ -835,6 +841,40 @@ _test_snippet_testcases = [
             "printflush message1",
         ),
         id="print",
+    ),
+    pytest.param(
+        r"""
+        print(f"Hello {name}", "abc", f"xyz {1 + 2}")
+        print("abc", f"xyz{foo}", "abc")
+        print(f"{left} + {right} = {left + right}")
+        print(f"A{foo}BC", end="\n\u0000🐍")
+        """,
+        (
+            # func calls always generate a tmp
+            # __p2m_tmp0 is wasted
+            "op add __p2m_tmp1 1 2",
+            r'print "Hello {0} abc xyz {0}\n"',
+            "format name",
+            "format __p2m_tmp1",
+            "printflush message1",
+            # __p2m_tmp1 is wasted
+            r'print "abc xyz{0} abc\n"',
+            "format foo",
+            "printflush message1",
+            # __p2m_tmp2 is wasted on the func call
+            # before this addition is compiled
+            # idk where __p2m_tmp3 went
+            "op add __p2m_tmp4 left right",
+            r'print "{0} + {0} = {0}\n"',
+            "format left",
+            "format right",
+            "format __p2m_tmp4",
+            "printflush message1",
+            r'print "A{0}BC\n\u0000🐍"',
+            "format foo",
+            "printflush message1",
+        ),
+        id="print-fstring",
     ),
     pytest.param(
         "\n".join(
