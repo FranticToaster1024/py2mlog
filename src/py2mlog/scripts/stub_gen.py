@@ -149,8 +149,54 @@ from py2mlog._base import (
 )
 
 class Env:
+    # Processor
     this: Building
+    thisx: float
+    thisy: float
+    ipt: float
+
+    # General
+    pi: float
+    e: float
+    deg_to_rad: float
+    rad_to_deg: float
+
+    # Map
+    time: float
+    tick: float
+    second: float
+    minute: float
+    wave_number: int
+    wave_time: float
+    mapw: float
+    maph: float
+
+    # Network/clientside (wproc only)
+    # TODO: properly type these
+    server: Any
+    client: Any
+    client_locale: Any
+    client_unit: Any
+    client_name: Any
+    client_team: Any
+    client_mobile: Any
+    client_music_playing: Any
+    client_current_music: Any
+
+    # Lookup
+    block_count: int
+    unit_count: int
+    item_count: int
+    liquid_count: int
+
+    # Misc
+    counter: int
     unit: _Unit
+
+    # Special (manually defined)
+    x: float
+    y: float
+    link_count: int
 
 {"\n".join(f"{INDENT}{s}: Item" for s in ITEM_MAP)}
 {"\n".join(f"{INDENT}{s}: Liquid" for s in LIQUID_MAP)}

@@ -13,8 +13,54 @@ from py2mlog._base import (
 )
 
 class Env:
+    # Processor
     this: Building
+    thisx: float
+    thisy: float
+    ipt: float
+
+    # General
+    pi: float
+    e: float
+    deg_to_rad: float
+    rad_to_deg: float
+
+    # Map
+    time: float
+    tick: float
+    second: float
+    minute: float
+    wave_number: int
+    wave_time: float
+    mapw: float
+    maph: float
+
+    # Network/clientside (wproc only)
+    # TODO: properly type these
+    server: Any
+    client: Any
+    client_locale: Any
+    client_unit: Any
+    client_name: Any
+    client_team: Any
+    client_mobile: Any
+    client_music_playing: Any
+    client_current_music: Any
+
+    # Lookup
+    block_count: int
+    unit_count: int
+    item_count: int
+    liquid_count: int
+
+    # Misc
+    counter: int
     unit: _Unit
+
+    # Special (manually defined)
+    x: float
+    y: float
+    link_count: int
 
     copper: Item
     lead: Item
@@ -563,25 +609,25 @@ class Unit:
     @staticmethod
     def targetp(unit: Unit, shoot: bool | int) -> None: ...
 
-    target_unit = targetp
     targetunit = targetp
+    target_unit = targetp
     targetUnit = targetp
 
+    @staticmethod
+    def itemdrop(to: Building, amount: float) -> None: ...
     @staticmethod
     def item_drop(to: Building, amount: float) -> None: ...
     @staticmethod
     def itemDrop(to: Building, amount: float) -> None: ...
-    @staticmethod
-    def itemdrop(to: Building, amount: float) -> None: ...
 
     store = item_drop
 
     @staticmethod
-    def item_take(from_: Building, item: Item, amount: float) -> None: ...
+    def itemTake(from_: Building, item: Item, amount: float) -> None: ...
     @staticmethod
     def itemtake(from_: Building, item: Item, amount: float) -> None: ...
     @staticmethod
-    def itemTake(from_: Building, item: Item, amount: float) -> None: ...
+    def item_take(from_: Building, item: Item, amount: float) -> None: ...
 
     fetch = item_take
 
@@ -614,9 +660,9 @@ class Unit:
     @staticmethod
     def pathfind(x: float, y: float) -> None: ...
     @staticmethod
-    def autoPathfind() -> None: ...
-    @staticmethod
     def auto_pathfind() -> None: ...
+    @staticmethod
+    def autoPathfind() -> None: ...
     @staticmethod
     def autopathfind() -> None: ...
     @staticmethod
@@ -626,9 +672,9 @@ class Unit:
     @staticmethod
     def ceasefire() -> None: ...
     @staticmethod
-    def paydrop() -> None: ...
-    @staticmethod
     def payDrop() -> None: ...
+    @staticmethod
+    def paydrop() -> None: ...
     @staticmethod
     def pay_drop() -> None: ...
     @staticmethod
@@ -644,9 +690,9 @@ class Unit:
     @staticmethod
     def carry() -> None: ...
     @staticmethod
-    def payenter() -> None: ...
-    @staticmethod
     def pay_enter() -> None: ...
+    @staticmethod
+    def payenter() -> None: ...
     @staticmethod
     def payEnter() -> None: ...
     @staticmethod
@@ -656,11 +702,11 @@ class Unit:
     @staticmethod
     def deconstruct(x: float, y: float) -> None: ...
     @staticmethod
-    def get_block(x: float, y: float) -> Any: ...
-    @staticmethod
     def getBlock(x: float, y: float) -> Any: ...
     @staticmethod
     def getblock(x: float, y: float) -> Any: ...
+    @staticmethod
+    def get_block(x: float, y: float) -> Any: ...
     @staticmethod
     def within(x: float, y: float, radius: float) -> Any: ...
     @staticmethod
@@ -709,11 +755,11 @@ class Screen:
     @staticmethod
     def rect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
-    def fill_rect(x: float, y: float, width: float, height: float) -> None: ...
-    @staticmethod
     def fillRect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
     def fillrect(x: float, y: float, width: float, height: float) -> None: ...
+    @staticmethod
+    def fill_rect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
     def line_rect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
@@ -721,13 +767,13 @@ class Screen:
     @staticmethod
     def lineRect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
-    def hollow_rect(
-        x: float, y: float, width: float, height: float
-    ) -> None: ...
-    @staticmethod
     def hollowRect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
     def hollowrect(x: float, y: float, width: float, height: float) -> None: ...
+    @staticmethod
+    def hollow_rect(
+        x: float, y: float, width: float, height: float
+    ) -> None: ...
     @staticmethod
     def poly(
         x: float, y: float, sides: float, radius: float, rotation: float
@@ -737,11 +783,11 @@ class Screen:
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def fill_poly(
+    def fillPoly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def fillPoly(
+    def fill_poly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
@@ -749,11 +795,11 @@ class Screen:
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def linepoly(
+    def linePoly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def linePoly(
+    def linepoly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
@@ -761,11 +807,11 @@ class Screen:
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def hollow_poly(
+    def hollowpoly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def hollowpoly(
+    def hollow_poly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod

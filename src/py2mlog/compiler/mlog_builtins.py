@@ -37,7 +37,8 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
         "this",
         "thisx",
         "thisy",
-        "links",
+        # clashes with Env.links()
+        # "links",
         "ipt",
         # General
         "pi",
@@ -71,6 +72,10 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
         # Misc
         "counter",
     )
+} | {
+    "x": MlogBuiltin("thisx"),
+    "y": MlogBuiltin("thisy"),
+    "link_count": MlogBuiltin("links"),
 }
 
 MISC_ENV_ATTR_MAP = {
