@@ -136,6 +136,8 @@ def _stubs_from_func_map(
     return "\n".join(s)
 
 
+# if the class has a dunder method that needs an instance
+# remember to 'create' the instance
 gen = f"""
 from abc import ABC
 from collections.abc import Iterator
@@ -387,10 +389,11 @@ class Control:
 
 
 
-class Links:
+class _Links:
     def __getitem__(self, index: int) -> Building: ...
 
-{"Link = Links" if config.ALIAS.LINK else ""}
+Links: _Links
+{"Link: _Links" if config.ALIAS.LINK else ""}
 
 
 
@@ -402,7 +405,7 @@ class MemBuilding(Building):
     ) -> Any: ...
     def __setitem__(self, index: int, value: Any) -> None: ...
 
-class Mem:
+class _Mem:
     def __getattr__(self, name: str) -> MemBuilding: ...
 
     # can't really generate MemBuilding
@@ -411,6 +414,10 @@ class Mem:
     @staticmethod
     def write(value: int, cell: MemBuilding, index: int) -> Any: ...
 {_stubs_from_func_map(intrinsics.mem.FUNC_MAP, exclude=("read", "write"))}
+
+# so that the __getattr__ actually works
+# you can still access staticmethods from an instance
+Mem: _Mem
 
 """
 
