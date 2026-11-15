@@ -27,7 +27,6 @@ from py2mlog.compiler.mimex_utils import snake_to_kebab
 from py2mlog.compiler.mlog_builtins import (
     ALIGN_MAP,
     ENV_ATTR_MAP,
-    MLOG_BUILTIN_NAMESPACES,
     UNIT_TYPE_MAP,
 )
 from py2mlog.compiler.names import (
@@ -39,6 +38,7 @@ from py2mlog.compiler.names import (
     PREFIX_LABEL,
     VAR_ERR_MSG,
 )
+from py2mlog.compiler.namespace_names import ALL_NAMESPACE_NAMES
 from py2mlog.compiler.operation_maps import (
     BIN_OP_MAP,
     CMP_OP_MAP,
@@ -1632,7 +1632,7 @@ class Compiler:
                     )
 
             case ast.ImportFrom(module=module, names=names, level=level):
-                if module != "py2mlog_api" or level != 0:
+                if module != "py2mlog" or level != 0:
                     raise self._unsupported_stmt_error(
                         stmt, " with non 'py2mlog' import"
                     )
@@ -1644,7 +1644,7 @@ class Compiler:
 
                 if any(
                     n.name != "*"  # star import
-                    and n.name not in MLOG_BUILTIN_NAMESPACES
+                    and n.name not in ALL_NAMESPACE_NAMES
                     for n in names
                 ):
                     raise CompilerError(

@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 
-from py2mlog.compiler.config import ALIAS
 from py2mlog.compiler.mimex_utils import (
     MIMEX_DATA_DIR,
     camel_to_snake,
@@ -71,14 +70,14 @@ SPECIAL_BUILTIN_MAP: Mapping[str, MlogBuiltin] = {
         "liquidCount",
         # Misc
         "counter",
+        "unit",
     )
-} | {
-    "x": MlogBuiltin("thisx"),
-    "y": MlogBuiltin("thisy"),
-    "link_count": MlogBuiltin("links"),
 }
 
 MISC_ENV_ATTR_MAP = {
+    "x": MlogBuiltin("thisx"),
+    "y": MlogBuiltin("thisy"),
+    "link_count": MlogBuiltin("links"),
     "null": MlogNullLiteral(),
 }
 
@@ -86,16 +85,12 @@ ENV_ATTR_MAP: Mapping[str, MlogExpr] = (
     CONTENT_MAP | SPECIAL_BUILTIN_MAP | MISC_ENV_ATTR_MAP
 )
 
-
 # ----------------------------------------
 # UnitType namespace (UnitType.*)
 # ----------------------------------------
-UNIT_TYPE_MAP = {
-    kebab_to_snake(s): MlogBuiltin(s)
-    for s in select_col(
-        (MIMEX_DATA_DIR / "mimex-units.txt").read_text(encoding="utf-8"), "name"
-    )
-}
+UNIT_TYPE_MAP = _build_builtin_map("mimex-units.txt")
+
+
 # ----------------------------------------
 # Align namespace (Align.*)
 # ----------------------------------------
@@ -109,33 +104,3 @@ ALIGN_MAP = {
     # accept 'topLeft', 'top_left', 'topleft'
     for s in (raw_str, camel_to_snake(raw_str), raw_str.lower())
 }
-
-
-# ----------------------------------------
-# allowed namespaces or whatever
-# ----------------------------------------
-ALIAS_NAMESPACES = {
-    "Link": ALIAS.LINK,
-}
-
-
-# TODO: extract from builtin_funcs.py
-EXTRA_BUILTIN_FUNCS = {
-    "sleep",
-    "wait",
-}
-
-MLOG_BUILTIN_NAMESPACES = (
-    {
-        "Env",
-        "Links",
-        "Color",
-        "Screen",
-        "UnitType",
-        "Unit",
-        "Align",  # for draw print alignments (see mimex-alignments.txt)
-        "Mem",
-    }
-    | EXTRA_BUILTIN_FUNCS
-    | {k for k, v in ALIAS_NAMESPACES.items() if v}
-)

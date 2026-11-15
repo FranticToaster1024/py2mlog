@@ -134,19 +134,39 @@ def _stubs_from_func_map(
 
 
 gen = f"""
+from abc import ABC
 from collections.abc import Iterator
 from typing import Any, Literal, overload
 
-from py2mlog._base import (
-    Block,
-    Building,
-    Content,
-    Item,
-    Liquid,
-    UnitType,
-    _Color,  # pyright: ignore[reportPrivateUsage]
-    _Unit,
-)
+from py2mlog._types import Content, _Color  # pyright: ignore[reportPrivateUsage]
+
+class Item(Content): ...
+class Liquid(Content): ...
+
+class Block(Content):
+    \"""
+    Includes terrain blocks, not just building types.
+    \"""
+
+class UnitType(Content): ...
+
+class Senseable(ABC):
+    # TODO: attributes or something
+    ...
+
+class _Unit(Senseable): ...
+
+class Controllable(ABC):
+    def enabled(self, enabled: bool | int) -> None: ...
+    def enable(self) -> None: ...
+    def disable(self) -> None: ...
+    def shoot(self, x: float, y: float, shoot: bool | int = True) -> None: ...
+    def ceasefire(self) -> None: ...
+    def shootp(self, unit: _Unit, shoot: bool | int = True) -> None: ...
+    def color(self, color: _Color) -> None: ...
+    def config(self, config: Any) -> None: ...
+
+class Building(Senseable, Controllable): ...
 
 class Env:
     # Processor
@@ -197,6 +217,7 @@ class Env:
     x: float
     y: float
     link_count: int
+    null: None
 
 {"\n".join(f"{INDENT}{s}: Item" for s in ITEM_MAP)}
 {"\n".join(f"{INDENT}{s}: Liquid" for s in LIQUID_MAP)}
