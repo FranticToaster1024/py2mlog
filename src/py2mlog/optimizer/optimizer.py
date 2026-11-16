@@ -176,7 +176,13 @@ def _generate_jump_label_map(
         ):
             label_name = _get_jump_target_name(instr)
 
-            jump_label_map[label_name].append(instr)
+            jump_label_map_entry = jump_label_map.get(label_name)
+            if jump_label_map_entry is None:
+                logger.warning(
+                    "Jump to '%s' with no matching label.", label_name
+                )
+            else:
+                jump_label_map_entry.append(instr)
 
     return jump_label_map
 
