@@ -6,7 +6,6 @@ from py2mlog.mlog.selectable_params import (
     RadarSortSelectableParam,
     RadarTargetSelectableParam,
     SelectableParam,
-    TileLayerSelectableParam,
     UnitLocateBuildingSelectableParam,
 )
 from py2mlog.mlog.suboperations import (
@@ -34,7 +33,6 @@ MIMEX_SELECTABLE_PARAM_ARG_TYPE_MAP: Mapping[str, type[SelectableParam]] = {
     "ContentType": LookupSelectableParam,
     "BlockFlag": UnitLocateBuildingSelectableParam,
     "QueryType": QuerySelectableParam,
-    "TileLayer": TileLayerSelectableParam,
 }
 MIMEX_SUBOP_ARG_TYPE_MAP: Mapping[
     str, type[Suboperation] | tuple[type[Suboperation], ...]

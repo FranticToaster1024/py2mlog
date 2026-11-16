@@ -5,7 +5,10 @@ import logging
 from string import hexdigits
 from typing import cast
 
-from py2mlog.compiler.error import CompilerError, CompilerErrorType
+from py2mlog.compiler.error import (
+    CompilerError,
+    CompilerErrorType,
+)
 from py2mlog.compiler.mimex_utils import camel_to_snake
 from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
@@ -49,7 +52,7 @@ def _single_arg_op_builtin_factory(
 
 
 # ----------------------------------------
-# inline builtins
+# inline python builtins
 # ----------------------------------------
 def _inline_ord(
     call_ctx: IntrinsicCallCtx, character: MlogStringLiteral, /
@@ -109,6 +112,9 @@ def _inline_min(
     return cast("MlogNumberLiteral", call_ctx.output_expr[0])
 
 
+# ----------------------------------------
+# inline non-python builtins
+# ----------------------------------------
 def _inline_Color(  # noqa: N802
     call_ctx: IntrinsicCallCtx,
     x: MlogNumberLiteral | MlogColorLiteral | MlogStringLiteral,
@@ -177,12 +183,18 @@ def _inline_sleep(
     return MlogNullLiteral()
 
 
+# ----------------------------------------
+# func map
+# ----------------------------------------
 FUNC_MAP: IntrinsicFuncMap = {
+    # inline python builtins
     "ord": _inline_ord,
     "min": _inline_min,
+    # inline non-python builtins
     "Color": _inline_Color,
     "sleep": _inline_sleep,
     "wait": _inline_sleep,
+    # unsupported python builtins
     "exec": None,
     "eval": None,
 } | {

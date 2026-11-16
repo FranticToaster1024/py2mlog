@@ -1,7 +1,7 @@
 import ast
 import logging
 from collections import deque
-from collections.abc import Generator, Mapping
+from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from inspect import signature
 
@@ -64,6 +64,7 @@ from py2mlog.mlog.mlog_expressions import (
     MlogStringLiteral,
     MlogVar,
 )
+from py2mlog.mlog.parser import parse_mlog
 from py2mlog.mlog.suboperations import (
     ConditionOpSuboperation,
     OperationSuboperation,
@@ -101,6 +102,11 @@ class Compiler:
         self._has_assert = False
         self._assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
         self._assert_error_label_ref = LabelRef(self._assert_error_label.name)
+
+        self._SPECIAL_BUILTINS: dict[str, Callable[[ast.Call], MlogExpr]] = {
+            "print": self._compile_print_call,
+            "mlog_raw": self._compile_mlog_raw_call,
+        }
 
     def compile(self):
         for node in self._ast.body:
@@ -663,8 +669,9 @@ class Compiler:
                 func_call, inline_func_def, output_expr[0]
             )
 
-        if func_name == "print":
-            return self._compile_print_call(func_call)
+        _compile_special_builtin = self._SPECIAL_BUILTINS.get(func_name)
+        if _compile_special_builtin is not None:
+            return _compile_special_builtin(func_call)
 
         # TODO: non-inline builtins
         inline_builtin = intrinsics.builtins.FUNC_MAP.get(func_name, ...)
@@ -957,6 +964,59 @@ class Compiler:
             self.emitter.emit_instruction(
                 Instruction(InstructionType.PRINT_FLUSH, None, (), (flush,))
             )
+        return MlogNullLiteral()
+
+    def _compile_mlog_raw_call(self, func_call: ast.Call) -> MlogNullLiteral:
+        # intercept at ast level instead of as builtin
+        # because compiling string literals messes up newlines and such
+        src_loc = self._get_src_loc_from_node(func_call)
+        if func_call.keywords:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err="'mlog_raw' takes 0 kwargs",
+            )
+
+        if len(func_call.args) != 1:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err="Pos arg count mismatch for 'mlog_raw': "
+                f"Expected 1, got {len(func_call.args)}",
+            )
+
+        if not isinstance(func_call.args[0], ast.Constant) or not isinstance(
+            func_call.args[0].value, str
+        ):
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err="Called 'mlog_raw' with non string-literal.",
+            )
+
+        try:
+            parsed_mlog = parse_mlog(func_call.args[0].value, src_loc)
+        except CompilerError as e:
+            if e.error is not CompilerErrorType.SYNTAX:
+                raise e from None
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                None,
+                err=f"While compiling 'mlog_raw' call:\n{e!s}",
+            ) from None
+
+        # something something DRY
+        try:
+            self.emitter.emit_items(parsed_mlog)
+        except CompilerError as e:
+            if e.error is not CompilerErrorType.INTERNAL:
+                raise e from None
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                None,
+                err=f"While compiling 'mlog_raw' call:\n{e!s}",
+            ) from None
+
         return MlogNullLiteral()
 
     def _get_output_expr(self, output_expr: MlogExpr | None) -> MlogExpr:

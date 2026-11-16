@@ -1739,6 +1739,149 @@ _test_snippet_testcases = [
         (),
         id="py2mlog-namespace-imports",
     ),
+    pytest.param(
+        """
+        mlog_raw(r\"""
+
+            # comment
+        read result1 cell1 0
+        write result2 cell2 1
+        draw clear 255 255 255
+
+                    # comment
+        draw lineRect 10 20 40 50
+        print "frog"
+        printchar 65
+        format frog2
+        drawflush display1
+        printflush message1
+        getlink result 0
+        control enabled block1 enabled
+        radar enemy attacker flying maxHealth turret1 1 enemy
+        sensor count block2 @copper
+        set result1 0
+        op add result2 a b
+        op land result3 a b
+        op min result4 a b
+        op cos result5 a
+        select result6 notEqual x false a b
+        select result7 always _ _ c
+        lookup item result8 0
+        lookup block result9 i
+        packcolor result10 1 g b 0
+        unpackcolor r g b a color
+        wait 0
+        wait time
+        stop
+        end
+        jump 67 equal x @copper
+        jump someLabel always
+        someLabel:
+        setrate 10
+        ubind unitType
+        ucontrol idle
+        ucontrol boost true
+        ucontrol itemTake nucleus1 itemType 99
+        uradar flying enemy any armor _ 1 enemy
+        ulocate ore _ _ @lead oreX oreY oreFound
+        ulocate building core true _ coreX coreY coreFound core
+        query circle unit @sharded 67 42 5
+        setblock ore @air 6 7
+        getblock floor result1 0 0
+        spawn @dagger 42 67 90 @sharded result2 true
+        bullet result3 @nova 1 @thisx @thisy 359 @crux null 150 1 1 -1 -1
+        status false @status-wet @unit 67
+        weathersense result4 @rain
+        weatherset @snowing true
+        spawnwave 67 42 false
+        setrule currentWaveTime 67
+        setrule mapArea _ 67 42 width height
+        message notify _ @wait
+        message toast 6 @wait
+        cutscene stop
+        effect sparkBig sparkX sparkY _ %008888
+        explosion @crux 50 50 radius 100 true false isPierce effect
+        fetch unit result5 @malis index null
+        sync var
+        getflag result6 "flag"
+        setflag "flag" true
+        setprop @titanium nucleus1 9999
+        playsound false @sfx-shoot 1 1 0 _ _ true
+        playmusic "game1" true
+        setmarker pos 0 0 0 0
+        makemarker shape 0 0 0 true
+        localeprint "name"
+        \""")
+        """,
+        (
+            "read result1 cell1 0",
+            "write result2 cell2 1",
+            "draw clear 255 255 255",
+            "draw lineRect 10 20 40 50",
+            'print "frog"',
+            "printchar 65",
+            "format frog2",
+            "drawflush display1",
+            "printflush message1",
+            "getlink result 0",
+            "control enabled block1 enabled",
+            "radar enemy attacker flying maxHealth turret1 1 enemy",
+            "sensor count block2 @copper",
+            "set result1 0",
+            "op add result2 a b",
+            "op land result3 a b",
+            "op min result4 a b",
+            "op cos result5 a",
+            "select result6 notEqual x false a b",
+            "select result7 always _ _ c",
+            "lookup item result8 0",
+            "lookup block result9 i",
+            "packcolor result10 1 g b 0",
+            "unpackcolor r g b a color",
+            "wait 0",
+            "wait time",
+            "stop",
+            "end",
+            "jump 67 equal x @copper",
+            "jump someLabel always",
+            "someLabel:",
+            "setrate 10",
+            "ubind unitType",
+            "ucontrol idle",
+            "ucontrol boost true",
+            "ucontrol itemTake nucleus1 itemType 99",
+            "uradar flying enemy any armor _ 1 enemy",
+            "ulocate ore _ _ @lead oreX oreY oreFound",
+            "ulocate building core true _ coreX coreY coreFound core",
+            "query circle unit @sharded 67 42 5",
+            "setblock ore @air 6 7",
+            "getblock floor result1 0 0",
+            "spawn @dagger 42 67 90 @sharded result2 true",
+            "bullet result3 @nova 1 @thisx @thisy 359 @crux null 150 1 1 -1 -1",
+            "status false @status-wet @unit 67",
+            "weathersense result4 @rain",
+            "weatherset @snowing true",
+            "spawnwave 67 42 false",
+            "setrule currentWaveTime 67",
+            "setrule mapArea _ 67 42 width height",
+            "message notify _ @wait",
+            "message toast 6 @wait",
+            "cutscene stop",
+            "effect sparkBig sparkX sparkY _ %008888",
+            "explosion @crux 50 50 radius 100 true false isPierce effect",
+            "fetch unit result5 @malis index null",
+            "sync var",
+            'getflag result6 "flag"',
+            'setflag "flag" true',
+            "setprop @titanium nucleus1 9999",
+            "playsound false @sfx-shoot 1 1 0 _ _ true",
+            'playmusic "game1" true',
+            "setmarker pos 0 0 0 0",
+            "makemarker shape 0 0 0 true",
+            'localeprint "name"',
+        ),
+        id="mlog-raw",
+    ),
 ]
 
 

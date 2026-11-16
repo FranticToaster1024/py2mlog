@@ -61,7 +61,7 @@ class QuerySelectableParam(SelectableParam):
     BUILDING = "building"
 
 
-class TileLayerSelectableParam(SelectableParam):
+class GetblockSelectableParam(SelectableParam):
     FLOOR = "floor"
     ORE = "ore"
     BLOCK = "block"

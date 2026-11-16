@@ -14,12 +14,12 @@ from py2mlog.mlog.mlog_expressions import (
     MlogVar,
 )
 from py2mlog.mlog.selectable_params import (
+    GetblockSelectableParam,
     LookupSelectableParam,
     MakeMarkerSelectableParam,
     QuerySelectableParam,
     RadarSortSelectableParam,
     RadarTargetSelectableParam,
-    TileLayerSelectableParam,
     UnitLocateBuildingSelectableParam,
 )
 from py2mlog.mlog.suboperations import (
@@ -427,7 +427,7 @@ _test_generate_mlog_testcases = [
             Instruction(
                 InstructionType.GET_BLOCK,
                 None,
-                (TileLayerSelectableParam.FLOOR,),
+                (GetblockSelectableParam.FLOOR,),
                 (
                     MlogVar("result1"),
                     MlogNumberLiteral(0),

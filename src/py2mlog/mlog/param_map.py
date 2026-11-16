@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import (
     ConditionOpSuboperation,
@@ -184,3 +185,33 @@ PARAM_MAP: dict[
         ),
     },
 }
+
+
+def get_param_order(
+    instr_type: InstructionType, subop: Suboperation | None
+) -> tuple[ParamType, ...] | None:
+    instr_entry = PARAM_MAP.get(instr_type)
+
+    if instr_entry is None:
+        return None
+
+    if not isinstance(instr_entry, dict):
+        return instr_entry
+
+    if subop is None:
+        raise CompilerError(
+            CompilerErrorType.INTERNAL,
+            None,
+            err="Invalid param_map/instruction",
+        )
+
+    param_order = instr_entry.get(subop)
+
+    if param_order is not None:
+        return param_order
+
+    for key, val in instr_entry.items():
+        if isinstance(key, tuple) and subop in key:
+            return val
+
+    return None

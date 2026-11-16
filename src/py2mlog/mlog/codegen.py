@@ -13,35 +13,7 @@ from py2mlog.mlog.mlog_expressions import (
     MlogStringLiteral,
     MlogVar,
 )
-from py2mlog.mlog.param_map import PARAM_MAP, ParamType
-
-
-def _get_param_order(instr: Instruction) -> tuple[ParamType, ...] | None:
-    instr_entry = PARAM_MAP.get(instr.type, None)
-
-    if instr_entry is None:
-        return None
-
-    if not isinstance(instr_entry, dict):
-        return instr_entry
-
-    if instr.suboperation is None:
-        raise CompilerError(
-            CompilerErrorType.INTERNAL,
-            None,
-            err="Invalid param_map/invalid instruction",
-        )
-
-    param_order = instr_entry.get(instr.suboperation)
-
-    if param_order is not None:
-        return param_order
-
-    for key, val in instr_entry.items():
-        if isinstance(key, tuple) and instr.suboperation in key:
-            return val
-
-    return None
+from py2mlog.mlog.param_map import ParamType, get_param_order
 
 
 def arg_to_str(arg: MlogArg) -> str:
@@ -104,7 +76,7 @@ def _build_arg_list(
 
 
 def _generate_mlog_from_instruction(instr: Instruction) -> str:
-    param_order = _get_param_order(instr)
+    param_order = get_param_order(instr.type, instr.suboperation)
 
     if param_order is not None:
         return " ".join(_build_arg_list(instr, param_order))

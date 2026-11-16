@@ -12,13 +12,21 @@ from py2mlog.mlog.mimex_arg_types import (
     MIMEX_VAR_ARG_NAMES,
 )
 from py2mlog.mlog.mlog_expressions import LabelRef, MlogVar
-from py2mlog.mlog.selectable_params import SelectableParam
-from py2mlog.mlog.suboperations import Suboperation
+from py2mlog.mlog.selectable_params import (
+    GetblockSelectableParam,
+    SelectableParam,
+)
+from py2mlog.mlog.suboperations import (
+    SUBOPERATION_MAP,
+    EffectSuboperation,
+    SetBlockSuboperation,
+    Suboperation,
+)
 
 
 @dataclass(frozen=True)
-class _InstrArgShape:
-    subop: tuple[type[Suboperation], ...] | type[Suboperation] | None
+class InstrArgShape:
+    subop: type[Suboperation] | None
     sel_params: tuple[type[SelectableParam], ...]
     var_arg_count: int
 
@@ -29,8 +37,8 @@ _INSTRUCTION_DATA = (MIMEX_DATA_DIR / "mimex-logic-statements.txt").read_text(
 
 
 # stuff inside loops leaking is kinda annoying sometimes
-def _get_instr_arg_shapes() -> dict[str, _InstrArgShape]:
-    instr_arg_shapes: dict[str, _InstrArgShape] = {}
+def _get_instr_arg_shapes() -> dict[str, InstrArgShape]:
+    instr_arg_shapes: dict[str, InstrArgShape] = {}
     for opcode, arg_types in zip(
         select_col(_INSTRUCTION_DATA, "opcode"),
         select_col(_INSTRUCTION_DATA, "argumentTypes"),
@@ -45,14 +53,35 @@ def _get_instr_arg_shapes() -> dict[str, _InstrArgShape]:
                 continue
 
             sel_param = MIMEX_SELECTABLE_PARAM_ARG_TYPE_MAP.get(arg_type)
+            curr_subop = MIMEX_SUBOP_ARG_TYPE_MAP.get(arg_type)
+
+            # more special cases
+            if arg_type == "TileLayer":
+                if opcode == InstructionType.GET_BLOCK.value:
+                    sel_param = GetblockSelectableParam
+                elif opcode == InstructionType.SET_BLOCK.value:
+                    curr_subop = SetBlockSuboperation
+
             if sel_param is not None:
                 sel_params.append(sel_param)
                 continue
 
-            curr_subop = MIMEX_SUBOP_ARG_TYPE_MAP.get(arg_type)
             if curr_subop is not None:
                 if subop is None:
-                    subop = curr_subop
+                    expected_subop = SUBOPERATION_MAP[InstructionType(opcode)]
+                    if (
+                        expected_subop is not curr_subop
+                        and expected_subop not in curr_subop
+                    ):
+                        raise CompilerError(
+                            CompilerErrorType.INTERNAL,
+                            None,
+                            err="Mismatch between SUBOPERATION_MAP and mimex "
+                            f"'{expected_subop}' and '{curr_subop}'",
+                        )
+
+                    subop = expected_subop
+
                     continue
 
                 raise CompilerError(
@@ -67,14 +96,22 @@ def _get_instr_arg_shapes() -> dict[str, _InstrArgShape]:
                 err=f"Unknown arg type '{arg_type}' when parsing mimex argumentTypes",
             )
 
-        instr_arg_shapes[opcode] = _InstrArgShape(
+        instr_arg_shapes[opcode] = InstrArgShape(
             subop, tuple(sel_params), var_arg_count
         )
+
+    # manually fixing it ig ¯\_(ツ)_/¯
+    effect_instr_arg_shape = instr_arg_shapes[InstructionType.EFFECT.value]
+    instr_arg_shapes[InstructionType.EFFECT.value] = InstrArgShape(
+        EffectSuboperation,
+        effect_instr_arg_shape.sel_params,
+        effect_instr_arg_shape.var_arg_count - 1,
+    )
 
     return instr_arg_shapes
 
 
-_INSTRUCTION_ARG_SHAPES = _get_instr_arg_shapes()
+INSTRUCTION_ARG_SHAPES = _get_instr_arg_shapes()
 
 
 class Emitter:
@@ -119,22 +156,19 @@ class Emitter:
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
                 None,
-                # 'effect' might be one false positive?
-                # i don't really feel like manually tracking though
-                err=f"Attempted to create invalid mlog instruction:\n{instr!r}.\n"
+                err=f"Attempted to create invalid mlog instruction:\n'{instr!r}'\n"
                 "False positives may happen; if you think this is one, "
                 "you can file a bug report at "
                 "https://github.com/FranticToaster1024/py2mlog/issues",
             )
 
     def _check_instruction_validity(self, instr: Instruction) -> bool:
-        # TODO: instruction validation
         # this isn't fully rigourous but should catch most things
         # may have a few false positives here and there though
 
         # TODO: add early return for false positives
 
-        expected_arg_shape = _INSTRUCTION_ARG_SHAPES.get(instr.type.value)
+        expected_arg_shape = INSTRUCTION_ARG_SHAPES.get(instr.type.value)
         if expected_arg_shape is None:
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
@@ -183,7 +217,7 @@ class Emitter:
             raise CompilerError(
                 CompilerErrorType.INTERNAL,
                 None,
-                err=f"Attempted to emit invalid label: {label!r}",
+                err=f"Attempted to emit invalid label: '{label!r}'",
             )
 
     def _check_label_validity(self, label: Label) -> bool:
