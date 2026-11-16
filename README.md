@@ -247,13 +247,17 @@ l = Link[0]
 l = Links[0]
 ```
 
-Color literals through either the `Color()` builtin or a string literal in the form "%ffffff" (for compatibility with pyndustric):
+Color literals:
 ```py
 red = "%FF0000"
-green = Color("%00FF00")
-green = Color("00FF00")
-green_with_alpha = Color("00FF00FF")
-blue = Color(0x0000FF)
+red = Color("%FF0000")
+red = Color("FF0000")
+red = Color("FF0000FF")
+red = Color(0xFF0000)
+
+red = Colors.red
+red = Colors.Red
+red = Colors.RED
 ```
 
 All draw operations, through the `Screen.*` namespace. Any in-game operation names should work here. snake_case and whatevercasethisis variants as well as a few aliases are also available. These should be compatible with pyndustric. I'm too lazy to write an actual sample so here is a slightly modified snippet from the tests:

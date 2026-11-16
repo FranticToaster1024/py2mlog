@@ -61,10 +61,10 @@ LACCESS_SENSOR = {
 
 SENSOR_PROPERTIES = set(ITEM_MAP | LIQUID_MAP) | PAYLOADS | LACCESS_SENSOR
 
+
 # ----------------------------------------
 # Env namespace (Env.*)
 # ----------------------------------------
-
 
 CONTENT_MAP: Mapping[str, MlogBuiltin] = ITEM_MAP | LIQUID_MAP | BLOCK_MAP
 
@@ -137,4 +137,17 @@ ALIGN_MAP = {
     )
     # accept 'topLeft', 'top_left', 'topleft'
     for s in (raw_str, camel_to_snake(raw_str), raw_str.lower())
+}
+
+
+# ----------------------------------------
+# Colors namespace (Colors.*)
+# ----------------------------------------
+COLOR_MAP = {
+    s: MlogBuiltin(f"color{raw_str.capitalize()}")
+    for raw_str in select_col(
+        (MIMEX_DATA_DIR / "mimex-colors.txt").read_text(encoding="utf-8"),
+        "name",
+    )
+    for s in (raw_str, raw_str.capitalize(), raw_str.upper())
 }

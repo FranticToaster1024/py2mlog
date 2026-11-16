@@ -23,6 +23,9 @@ _test_snippet_testcases = [
                 'col_lit_from_builtin = Color("ffffffff")',
                 "col_lit_from_builtin = Color(0xffffff)",
                 "col_lit_from_builtin = Color(0xffffffff)",
+                "red = Colors.red",
+                "red = Colors.Red",
+                "red = Colors.RED",
             )
         ),
         (
@@ -39,6 +42,9 @@ _test_snippet_testcases = [
             "set col_lit_from_builtin %ffffffff",
             "set col_lit_from_builtin %ffffff",
             "set col_lit_from_builtin %ffffffff",
+            "set red @colorRed",
+            "set red @colorRed",
+            "set red @colorRed",
         ),
         id="basic-assignment-and-types",
     ),

@@ -26,6 +26,7 @@ from py2mlog.compiler.func_utils import (
 from py2mlog.compiler.mimex_utils import snake_to_kebab
 from py2mlog.compiler.mlog_builtins import (
     ALIGN_MAP,
+    COLOR_MAP,
     ENV_ATTR_MAP,
     SENSOR_PROPERTIES,
     UNIT_MAP,
@@ -409,6 +410,9 @@ class Compiler:
 
             case ast.Attribute(value=value, attr=attr):
                 if isinstance(value, ast.Name):
+                    builtin_namespace = True
+                    builtin = None
+
                     match value.id:
                         case "Env":
                             builtin = ENV_ATTR_MAP.get(attr)
@@ -425,31 +429,26 @@ class Compiler:
 
                         case "Align":
                             builtin = ALIGN_MAP.get(attr)
-                            if builtin is None:
-                                raise CompilerError(
-                                    CompilerErrorType.UNSUPPORTED,
-                                    self._get_src_loc_from_node(expr),
-                                    feature=f"Unknown Align attribute '{attr}'",
-                                )
 
-                            return builtin
-
-                        # this is literally almost identical to the other cases ;-;
                         case "Units":
-                            unit_type = UNIT_MAP.get(attr)
-                            if unit_type is None:
-                                raise CompilerError(
-                                    CompilerErrorType.UNSUPPORTED,
-                                    self._get_src_loc_from_node(expr),
-                                    feature=f"Unknown Units attribute '{attr}'",
-                                )
+                            builtin = UNIT_MAP.get(attr)
 
-                            return unit_type
+                        case "Colors":
+                            builtin = COLOR_MAP.get(attr)
 
                         # TODO: predefined colors from mimex
 
                         case _:
-                            pass
+                            builtin_namespace = False
+
+                    if builtin_namespace:
+                        if builtin is None:
+                            raise CompilerError(
+                                CompilerErrorType.UNKNOWN_ATTRIBUTE,
+                                self._get_src_loc_from_node(expr),
+                                attr=f"Unknown attribute '{value.id}.{attr}'",
+                            )
+                        return builtin
 
                 output_expr = self._get_output_expr(output_expr)
 

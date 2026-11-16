@@ -15,6 +15,7 @@ from py2mlog.compiler import config
 from py2mlog.compiler.mlog_builtins import (
     ALIGN_MAP,
     BLOCK_MAP,
+    COLOR_MAP,
     ITEM_MAP,
     LACCESS_SENSOR,
     LIQUID_MAP,
@@ -177,6 +178,9 @@ class Building(Senseable, Controllable): ...
 class UnitObj(Senseable): ...
 
 
+
+
+
 class Env:
     # Processor
     this: Building
@@ -239,8 +243,21 @@ class Env:
         \"""
 
 
+class Alignment: ...
+
+class Align:
+{"\n".join(f"{INDENT}{s}: Alignment" for s in ALIGN_MAP)}
+
+
 class Units:
 {"\n".join(f"{INDENT}{s}: UnitObj" for s in UNIT_MAP)}
+
+
+class Colors:
+{"\n".join(f"{INDENT}{s}: ColorType" for s in COLOR_MAP)}
+
+
+
 
 
 def print(
@@ -253,6 +270,9 @@ def print(
     Param 'flush' defaults to 'message1'. Set 'flush' to False to omit 'printflush'.
     \"""
 {_stubs_from_func_map(intrinsics.builtins.FUNC_MAP, is_method=False)}
+
+
+
 
 
 class Unit:
@@ -349,12 +369,6 @@ class Unit:
 
 
 
-class Alignment: ...
-
-class Align:
-{"\n".join(f"{INDENT}{s}: Alignment" for s in ALIGN_MAP)}
-
-
 class Screen:
     @staticmethod
     def flush(target: Building) -> None: ...
@@ -389,11 +403,15 @@ class Control:
 
 
 
+
+
 class _Links:
     def __getitem__(self, index: int) -> Building: ...
 
 Links: _Links
 {"Link: _Links" if config.ALIAS.LINK else ""}
+
+
 
 
 
