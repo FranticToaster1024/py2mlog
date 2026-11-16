@@ -18,6 +18,7 @@ class ParamType(Enum):
     VAR = auto()
     SELECTABLE = auto()
     SUBOPERATION = auto()
+    LABEL_REF = auto()
     FILLER = auto()
 
 
@@ -55,7 +56,7 @@ PARAM_MAP: dict[
     },
     InstructionType.JUMP: {
         ConditionOpSuboperation.ALWAYS: (
-            ParamType.VAR,
+            ParamType.LABEL_REF,
             ParamType.SUBOPERATION,
         ),
         (
@@ -67,7 +68,7 @@ PARAM_MAP: dict[
             ConditionOpSuboperation.GREATER_THAN_OR_EQ,
             ConditionOpSuboperation.STRICT_EQUAL,
         ): (
-            ParamType.VAR,
+            ParamType.LABEL_REF,
             ParamType.SUBOPERATION,
             ParamType.VAR,
             ParamType.VAR,

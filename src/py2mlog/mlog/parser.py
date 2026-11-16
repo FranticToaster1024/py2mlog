@@ -11,6 +11,8 @@ from py2mlog.compiler.error import (
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
+    LabelRef,
+    MlogArg,
     MlogBoolLiteral,
     MlogBuiltin,
     MlogColorLiteral,
@@ -235,7 +237,7 @@ def parse_mlog(src: str, _src_loc: SourceLocation) -> list[MlogItem]:
                 )
 
         sel_params: list[SelectableParam] = []
-        args: list[MlogExpr] = []
+        args: list[MlogArg] = []
 
         if param_order is None:
             subop_offset = 1 if subop is not None else 0
@@ -292,6 +294,11 @@ def parse_mlog(src: str, _src_loc: SourceLocation) -> list[MlogItem]:
 
                 elif param_type == ParamType.VAR:
                     args.append(str_to_arg(token))
+                elif param_type == ParamType.LABEL_REF:
+                    try:
+                        args.append(MlogNumberLiteral(int(token)))
+                    except ValueError:
+                        args.append(LabelRef(token))
 
         mlog_items.append(
             Instruction(instr_type, subop, tuple(sel_params), tuple(args))

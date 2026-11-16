@@ -11,7 +11,7 @@ from py2mlog.mlog.mimex_arg_types import (
     MIMEX_SUBOP_ARG_TYPE_MAP,
     MIMEX_VAR_ARG_NAMES,
 )
-from py2mlog.mlog.mlog_expressions import LabelRef, MlogVar
+from py2mlog.mlog.mlog_expressions import LabelRef, MlogNumberLiteral, MlogVar
 from py2mlog.mlog.selectable_params import (
     GetblockSelectableParam,
     SelectableParam,
@@ -36,7 +36,6 @@ _INSTRUCTION_DATA = (MIMEX_DATA_DIR / "mimex-logic-statements.txt").read_text(
 )
 
 
-# stuff inside loops leaking is kinda annoying sometimes
 def _get_instr_arg_shapes() -> dict[str, InstrArgShape]:
     instr_arg_shapes: dict[str, InstrArgShape] = {}
     for opcode, arg_types in zip(
@@ -166,6 +165,19 @@ class Emitter:
         # this isn't fully rigourous but should catch most things
         # may have a few false positives here and there though
 
+        if (
+            instr.type is InstructionType.JUMP
+            and instr.args
+            and isinstance(instr.args[0], MlogNumberLiteral)
+            and isinstance(instr.args[0].value, float)
+        ):
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err="Attempted to emit jump instruction with float lineno: "
+                f"'{instr!r}'",
+            )
+
         # TODO: add early return for false positives
 
         expected_arg_shape = INSTRUCTION_ARG_SHAPES.get(instr.type.value)
@@ -228,3 +240,37 @@ class Emitter:
             return True
         else:
             return False
+
+    def resolve_absolute_jumps(self) -> None:
+        label_insert_indexes: dict[int, tuple[Label, LabelRef]] = {}
+
+        for i, instr in enumerate(self.instructions):
+            if (
+                not isinstance(instr, Instruction)
+                or instr.type is not InstructionType.JUMP
+                or not isinstance(instr.args[0], MlogNumberLiteral)
+            ):
+                continue
+
+            tgt_lineno = int(instr.args[0].value)
+            tgt_label = label_insert_indexes.get(tgt_lineno)
+            if tgt_label is None:
+                tgt_label = self.new_label()
+                label_insert_indexes[tgt_lineno] = tgt_label
+
+            self.instructions[i] = Instruction(
+                InstructionType.JUMP,
+                instr.suboperation,
+                instr.selectable_args,
+                (tgt_label[1], *instr.args[1:]),
+            )
+
+        new_instructions: list[MlogItem] = []
+        for i, instr in enumerate(self.instructions):
+            label_to_insert = label_insert_indexes.get(i)
+            if label_to_insert is not None:
+                new_instructions.append(label_to_insert[0])
+
+            new_instructions.append(instr)
+
+        self.instructions = new_instructions

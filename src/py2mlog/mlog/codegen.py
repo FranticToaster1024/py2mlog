@@ -62,7 +62,7 @@ def _build_arg_list(
                     )
                 case ParamType.SELECTABLE:
                     yield next(selectables).value
-                case ParamType.VAR:
+                case ParamType.VAR | ParamType.LABEL_REF:
                     yield arg_to_str(next(args))
                 case ParamType.FILLER:
                     yield "_"

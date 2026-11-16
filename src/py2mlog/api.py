@@ -14,6 +14,7 @@ def compile_src_to_mlog(
 ) -> str:
     emitter = Emitter()
     Compiler(src, ast.parse(src), emitter).compile()
+    emitter.resolve_absolute_jumps()
 
     instrs = emitter.instructions
 

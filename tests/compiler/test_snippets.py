@@ -5,7 +5,7 @@ import pytest
 
 from py2mlog.api import compile_src_to_mlog
 
-_test_snippet_testcases = [
+COMPILER_SNIPPET_TESTCASES = [
     pytest.param("pass", ("",), id="pass"),
     pytest.param(
         "\n".join(
@@ -1780,7 +1780,7 @@ _test_snippet_testcases = [
         wait time
         stop
         end
-        jump 67 equal x @copper
+        jump 0 equal x @copper
         jump someLabel always
         someLabel:
         setrate 10
@@ -1820,6 +1820,7 @@ _test_snippet_testcases = [
         \""")
         """,
         (
+            "__p2m_label0:",
             "read result1 cell1 0",
             "write result2 cell2 1",
             "draw clear 255 255 255",
@@ -1848,7 +1849,7 @@ _test_snippet_testcases = [
             "wait time",
             "stop",
             "end",
-            "jump 67 equal x @copper",
+            "jump __p2m_label0 equal x @copper",
             "jump someLabel always",
             "someLabel:",
             "setrate 10",
@@ -1891,7 +1892,7 @@ _test_snippet_testcases = [
 ]
 
 
-@pytest.mark.parametrize(("src", "expected"), _test_snippet_testcases)
+@pytest.mark.parametrize(("src", "expected"), COMPILER_SNIPPET_TESTCASES)
 def test_snippet(
     src: str, expected: tuple[str], caplog: pytest.LogCaptureFixture
 ) -> None:

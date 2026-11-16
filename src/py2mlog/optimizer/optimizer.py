@@ -193,8 +193,8 @@ def _get_jump_target_name(instr: Instruction) -> str:
         raise CompilerError(
             CompilerErrorType.INTERNAL,
             None,
-            err=f"Generated invalid jump '{instr}'. "
-            f"First arg not instance of '{LabelRef.__name__}'.",
+            err=f"Unlabelled jump '{instr}'. "
+            f"First arg not instance of '{LabelRef.__name__}'",
         )
 
     return instr.args[0].name
