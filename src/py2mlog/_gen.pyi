@@ -16,416 +16,416 @@ class UnitType(Content): ...
 
 class Senseable(ABC):
     def __getitem__(self, i: Item | Liquid | str | Any) -> Any: ...
-    pyratite: int
-    oxide: int
-    collaris: int
-    duct_unloader: int
-    conveyor: int
-    impact_reactor: int
-    beam_node: int
-    copper_wall_large: int
-    phase_conduit: int
-    pulse_conduit: int
-    ship_assembler: int
-    pulsar: int
-    breach: int
-    stell: int
-    oxidation_chamber: int
-    rotary_pump: int
-    large_canvas: int
-    navanax: int
-    payload_mass_driver: int
-    large_logic_display: int
-    reinforced_vault: int
-    power_node: int
-    surge_alloy: int
-    spore_pod: int
-    gamma: int
-    armored_conveyor: int
-    plasma_bore: int
-    regen_projector: int
-    vault: int
-    battery: int
-    spectre: int
-    block: int
-    multiplicative_reconstructor: int
-    fortress: int
-    salvo: int
-    armored_duct: int
-    titanium_conveyor: int
-    mend_projector: int
-    micro_processor: int
-    build_tower: int
-    overflow_duct: int
-    eruption_drill: int
-    neoplasia_reactor: int
-    thorium: int
-    beryllium_wall_large: int
-    payload_router: int
+    additive_reconstructor: int
+    aegires: int
+    afflict: int
+    air_factory: int
+    alpha: int
+    anthicus: int
+    anthicus_missile: int
+    antumbra: int
+    arc: int
+    arkycite: int
     arkyid: int
-    carbide_crucible: int
-    cyerce: int
-    obviate: int
-    carbide_wall_large: int
-    sei: int
-    disrupt: int
-    plastanium_wall: int
-    scrap_wall_gigantic: int
-    core_bastion: int
-    mace: int
-    door_large: int
-    tile_logic_display: int
-    beta: int
-    duo: int
-    differential_generator: int
-    container: int
-    cryofluid: int
-    message: int
-    mender: int
-    overdrive_dome: int
-    prime_refabricator: int
-    reinforced_conduit: int
-    titan: int
-    naval_factory: int
-    reinforced_liquid_container: int
-    poly: int
-    bridge_conduit: int
-    meltdown: int
-    scathe_missile_surge_split: int
-    turret_unit_build_tower: int
-    mechanical_drill: int
-    mech_refabricator: int
+    armored_conveyor: int
+    armored_duct: int
+    assembly_drone: int
+    atmospheric_concentrator: int
+    atrax: int
+    avert: int
+    basic_assembler_module: int
+    battery: int
+    battery_large: int
+    beam_link: int
+    beam_node: int
+    beam_tower: int
+    beryllium: int
     beryllium_wall: int
-    chemical_combustion_chamber: int
+    beryllium_wall_large: int
+    beta: int
+    blast_compound: int
     blast_door: int
+    blast_drill: int
+    blast_mixer: int
+    block: int
+    breach: int
+    bridge_conduit: int
+    bridge_conveyor: int
+    bryde: int
+    build_tower: int
+    canvas: int
+    carbide: int
+    carbide_crucible: int
+    carbide_wall: int
+    carbide_wall_large: int
+    chemical_combustion_chamber: int
+    cleroi: int
     cliff_crusher: int
     coal: int
-    atmospheric_concentrator: int
-    slag: int
-    thorium_reactor: int
-    repair_point: int
-    elude: int
-    liquid_tank: int
-    reinforced_payload_router: int
-    titanium: int
-    core_nucleus: int
-    phase_fabric: int
-    thermal_generator: int
-    reinforced_payload_conveyor: int
-    large_constructor: int
-    basic_assembler_module: int
-    beryllium: int
-    overflow_gate: int
-    reinforced_surge_wall_large: int
-    payload_loader: int
-    carbide: int
-    turbine_condenser: int
-    scrap_wall: int
-    phase_wall: int
-    tank_refabricator: int
-    small_deconstructor: int
-    disrupt_missile: int
-    blast_mixer: int
-    payload_conveyor: int
-    tungsten_wall_large: int
-    duct_bridge: int
+    coal_centrifuge: int
+    collaris: int
+    combustion_generator: int
     conduit: int
-    liquid_router: int
-    lancer: int
-    sublimate: int
-    omura: int
-    smite: int
-    vanquish: int
-    surge_conveyor: int
+    conquer: int
+    constructor: int
+    container: int
+    conveyor: int
+    copper: int
+    copper_wall: int
+    copper_wall_large: int
+    core_acropolis: int
+    core_bastion: int
+    core_citadel: int
+    core_foundation: int
+    core_nucleus: int
+    corvus: int
+    crawler: int
+    cryofluid: int
+    cryofluid_mixer: int
+    cultivator: int
+    cyanogen: int
+    cyanogen_synthesizer: int
+    cyclone: int
+    cyerce: int
+    dagger: int
+    deconstructor: int
+    differential_generator: int
+    diffuse: int
+    diode: int
+    disassembler: int
+    disperse: int
+    disrupt: int
+    disrupt_missile: int
+    distributor: int
+    door: int
+    door_large: int
+    dormant_cyst: int
+    duct: int
+    duct_bridge: int
     duct_router: int
-    solar_panel_large: int
+    duct_unloader: int
+    dummy: int
+    duo: int
+    eclipse: int
+    electric_heater: int
+    electrolyzer: int
+    elude: int
+    emanate: int
+    eruption_drill: int
+    evoke: int
+    exponential_reconstructor: int
+    fissile_matter: int
+    flare: int
+    flux_reactor: int
+    force_projector: int
+    foreshadow: int
+    fortress: int
+    fuse: int
+    gallium: int
+    gamma: int
+    graphite: int
+    graphite_press: int
+    ground_factory: int
+    hail: int
+    heat_redirector: int
+    heat_router: int
+    horizon: int
+    hydrogen: int
+    hyper_processor: int
+    impact_drill: int
+    impact_reactor: int
+    impulse_pump: int
+    incinerator: int
+    incite: int
+    inverted_sorter: int
+    junction: int
+    kiln: int
+    lancer: int
+    large_canvas: int
+    large_cliff_crusher: int
+    large_constructor: int
+    large_logic_display: int
+    large_payload_mass_driver: int
+    large_plasma_bore: int
+    laser_drill: int
+    latum: int
+    lead: int
+    liquid_container: int
+    liquid_junction: int
+    liquid_router: int
+    liquid_tank: int
     locus: int
-    thorium_wall_large: int
-    phase_synthesizer: int
-    oil: int
-    anthicus_missile: int
-    plated_conduit: int
-    atrax: int
-    silicon_arc_furnace: int
-    minke: int
     logic_display: int
     logic_processor: int
-    shock_mine: int
-    silicon: int
-    merui: int
-    repair_turret: int
-    aegires: int
-    nova: int
-    coal_centrifuge: int
-    flare: int
-    spore_press: int
-    electric_heater: int
-    sorter: int
-    foreshadow: int
-    combustion_generator: int
-    overdrive_projector: int
-    renale: int
-    metaglass: int
-    mega: int
-    surge_crucible: int
-    zenith: int
-    rtg_generator: int
-    solar_panel: int
-    mech_fabricator: int
-    tank_fabricator: int
-    scorch: int
-    arc: int
-    constructor: int
-    conquer: int
-    beam_link: int
-    horizon: int
-    pneumatic_drill: int
-    dormant_cyst: int
-    force_projector: int
-    electrolyzer: int
-    eclipse: int
-    mass_driver: int
-    vela: int
-    switch: int
-    gallium: int
-    manifold: int
-    tecta: int
-    scathe_missile_surge: int
-    silicon_smelter: int
-    beam_tower: int
-    large_payload_mass_driver: int
-    fissile_matter: int
-    payload_unloader: int
-    deconstructor: int
-    phase_heater: int
-    duct: int
-    ship_fabricator: int
-    large_plasma_bore: int
-    alpha: int
-    incite: int
-    blast_drill: int
-    malign: int
-    evoke: int
-    bryde: int
-    titanium_wall_large: int
-    scathe_missile_phase: int
-    distributor: int
-    tsunami: int
-    quell_missile: int
-    router: int
-    emanate: int
-    slag_heater: int
-    memory_bank: int
-    mechanical_pump: int
-    scatter: int
-    mech_assembler: int
-    scrap_wall_large: int
-    assembly_drone: int
-    lead: int
-    copper_wall: int
-    dagger: int
-    scrap_wall_huge: int
-    reinforced_liquid_junction: int
-    neoplasm: int
-    liquid_container: int
-    tungsten: int
-    reinforced_message: int
-    anthicus: int
-    disassembler: int
-    carbide_wall: int
-    retusa: int
-    liquid_junction: int
-    canvas: int
-    hail: int
-    core_foundation: int
-    quell: int
-    diffuse: int
-    cyclone: int
-    copper: int
-    large_cliff_crusher: int
-    laser_drill: int
-    bridge_conveyor: int
-    phase_weaver: int
-    impact_drill: int
-    water: int
-    pyrolysis_generator: int
-    memory_cell: int
-    ozone: int
-    pyratite_mixer: int
-    separator: int
-    crawler: int
-    battery_large: int
-    surge_smelter: int
-    inverted_sorter: int
-    graphite_press: int
-    quasar: int
     lustre: int
-    ripple: int
-    underflow_gate: int
-    surge_tower: int
-    quad: int
-    antumbra: int
-    unit_cargo_loader: int
-    risso: int
-    latum: int
-    heat_redirector: int
-    underflow_duct: int
-    swarmer: int
-    core_citadel: int
-    unit_cargo_unload_point: int
-    surge_wall: int
-    air_factory: int
-    reinforced_container: int
-    phase_wall_large: int
-    afflict: int
-    thorium_wall: int
-    incinerator: int
-    diode: int
-    oil_extractor: int
-    toxopid: int
-    unloader: int
-    exponential_reconstructor: int
-    kiln: int
-    reign: int
-    flux_reactor: int
+    mace: int
+    malign: int
+    manifold: int
+    mass_driver: int
+    mech_assembler: int
+    mech_fabricator: int
+    mech_refabricator: int
+    mechanical_drill: int
+    mechanical_pump: int
+    mega: int
+    meltdown: int
     melter: int
-    corvus: int
-    plastanium_compressor: int
-    reinforced_surge_wall: int
-    junction: int
-    impulse_pump: int
-    blast_compound: int
-    multi_press: int
-    shielded_wall: int
-    shockwave_tower: int
-    water_extractor: int
-    door: int
-    tank_assembler: int
-    cyanogen: int
-    nitrogen: int
-    pulverizer: int
-    surge_router: int
-    additive_reconstructor: int
-    tetrative_reconstructor: int
-    hydrogen: int
-    graphite: int
-    disperse: int
-    tungsten_wall: int
-    power_node_large: int
-    spiroct: int
-    hyper_processor: int
-    cleroi: int
-    surge_wall_large: int
-    segment: int
-    dummy: int
-    phase_conveyor: int
-    sand: int
-    scathe_missile: int
-    cultivator: int
-    arkycite: int
-    avert: int
-    ship_refabricator: int
-    small_heat_redirector: int
-    core_acropolis: int
-    plastanium_wall_large: int
+    memory_bank: int
+    memory_cell: int
+    mend_projector: int
+    mender: int
+    merui: int
+    message: int
+    metaglass: int
+    micro_processor: int
+    minke: int
     mono: int
-    precept: int
-    ground_factory: int
-    oxynoe: int
-    titanium_wall: int
-    reinforced_liquid_tank: int
-    silicon_crucible: int
-    heat_router: int
-    reinforced_pump: int
-    plastanium: int
-    steam_generator: int
-    parallax: int
-    reinforced_liquid_router: int
-    vent_condenser: int
-    unit_repair_tower: int
-    fuse: int
-    cryofluid_mixer: int
+    multi_press: int
+    multiplicative_reconstructor: int
+    naval_factory: int
+    navanax: int
+    neoplasia_reactor: int
+    neoplasm: int
+    nitrogen: int
+    nova: int
+    obviate: int
     oct: int
-    scrap: int
-    wave: int
+    oil: int
+    oil_extractor: int
+    omura: int
+    overdrive_dome: int
+    overdrive_projector: int
+    overflow_duct: int
+    overflow_gate: int
+    oxidation_chamber: int
+    oxide: int
+    oxynoe: int
+    ozone: int
+    parallax: int
+    payload_conveyor: int
+    payload_loader: int
+    payload_mass_driver: int
+    payload_router: int
+    payload_unloader: int
+    phase_conduit: int
+    phase_conveyor: int
+    phase_fabric: int
+    phase_heater: int
+    phase_synthesizer: int
+    phase_wall: int
+    phase_wall_large: int
+    phase_weaver: int
+    plasma_bore: int
+    plastanium: int
+    plastanium_compressor: int
     plastanium_conveyor: int
-    scathe: int
-    scepter: int
-    slag_incinerator: int
-    cyanogen_synthesizer: int
+    plastanium_wall: int
+    plastanium_wall_large: int
+    plated_conduit: int
+    pneumatic_drill: int
+    poly: int
+    power_node: int
+    power_node_large: int
+    precept: int
+    prime_refabricator: int
+    pulsar: int
+    pulse_conduit: int
+    pulverizer: int
+    pyratite: int
+    pyratite_mixer: int
+    pyrolysis_generator: int
+    quad: int
+    quasar: int
+    quell: int
+    quell_missile: int
+    regen_projector: int
+    reign: int
     reinforced_bridge_conduit: int
+    reinforced_conduit: int
+    reinforced_container: int
+    reinforced_liquid_container: int
+    reinforced_liquid_junction: int
+    reinforced_liquid_router: int
+    reinforced_liquid_tank: int
+    reinforced_message: int
+    reinforced_payload_conveyor: int
+    reinforced_payload_router: int
+    reinforced_pump: int
+    reinforced_surge_wall: int
+    reinforced_surge_wall_large: int
+    reinforced_vault: int
+    renale: int
+    repair_point: int
+    repair_turret: int
+    retusa: int
+    ripple: int
+    risso: int
+    rotary_pump: int
+    router: int
+    rtg_generator: int
+    salvo: int
+    sand: int
+    scathe: int
+    scathe_missile: int
+    scathe_missile_phase: int
+    scathe_missile_surge: int
+    scathe_missile_surge_split: int
+    scatter: int
+    scepter: int
+    scorch: int
+    scrap: int
+    scrap_wall: int
+    scrap_wall_gigantic: int
+    scrap_wall_huge: int
+    scrap_wall_large: int
+    segment: int
+    sei: int
+    separator: int
+    shielded_wall: int
+    ship_assembler: int
+    ship_fabricator: int
+    ship_refabricator: int
+    shock_mine: int
+    shockwave_tower: int
+    silicon: int
+    silicon_arc_furnace: int
+    silicon_crucible: int
+    silicon_smelter: int
+    slag: int
+    slag_heater: int
+    slag_incinerator: int
+    small_deconstructor: int
+    small_heat_redirector: int
+    smite: int
+    solar_panel: int
+    solar_panel_large: int
+    sorter: int
+    spectre: int
+    spiroct: int
+    spore_pod: int
+    spore_press: int
+    steam_generator: int
+    stell: int
+    sublimate: int
+    surge_alloy: int
+    surge_conveyor: int
+    surge_crucible: int
+    surge_router: int
+    surge_smelter: int
+    surge_tower: int
+    surge_wall: int
+    surge_wall_large: int
+    swarmer: int
+    switch: int
+    tank_assembler: int
+    tank_fabricator: int
+    tank_refabricator: int
+    tecta: int
+    tetrative_reconstructor: int
+    thermal_generator: int
+    thorium: int
+    thorium_reactor: int
+    thorium_wall: int
+    thorium_wall_large: int
+    tile_logic_display: int
+    titan: int
+    titanium: int
+    titanium_conveyor: int
+    titanium_wall: int
+    titanium_wall_large: int
+    toxopid: int
+    tsunami: int
+    tungsten: int
+    tungsten_wall: int
+    tungsten_wall_large: int
+    turbine_condenser: int
+    turret_unit_build_tower: int
+    underflow_duct: int
+    underflow_gate: int
+    unit_cargo_loader: int
+    unit_cargo_unload_point: int
+    unit_repair_tower: int
+    unloader: int
+    vanquish: int
+    vault: int
+    vela: int
+    vent_condenser: int
+    water: int
+    water_extractor: int
+    wave: int
+    zenith: int
     # TODO: manually type these attributes or something
-    totalliquids: Any
-    dead: Any
-    progress: Any
-    buffersize: Any
-    buildy: Any
-    mining: Any
-    enabled: Any
-    displayheight: Any
-    maxhealth: Any
-    name: Any
-    displaywidth: Any
-    payloadtype: Any
-    totalpayload: Any
-    id: Any
-    type: Any
-    flying: Any
-    health: Any
-    team: Any
-    operations: Any
-    payloadcapacity: Any
-    speed: Any
-    shootx: Any
-    rotation: Any
-    solid: Any
-    maxunits: Any
-    liquidcapacity: Any
-    range: Any
-    efficiency: Any
-    controller: Any
-    armor: Any
-    x: Any
-    memorycapacity: Any
-    shooting: Any
-    miney: Any
-    buildx: Any
-    config: Any
-    selectedblock: Any
-    y: Any
-    shooty: Any
-    firstitem: Any
-    totalitems: Any
-    selectedrotation: Any
-    size: Any
-    pingy: Any
-    color: Any
-    payloadcount: Any
-    totalpower: Any
-    timescale: Any
+    ammo: Any
     ammocapacity: Any
-    powernetout: Any
-    powernetin: Any
-    pingx: Any
-    minex: Any
-    pingtext: Any
-    heat: Any
-    itemcapacity: Any
+    armor: Any
     boosting: Any
-    flag: Any
+    breaking: Any
+    buffersize: Any
+    building: Any
+    buildx: Any
+    buildy: Any
     bulletlifetime: Any
     bullettime: Any
-    powercapacity: Any
-    velocityx: Any
-    breaking: Any
-    ammo: Any
-    powernetstored: Any
-    powernetcapacity: Any
-    currentammotype: Any
-    velocityy: Any
+    color: Any
+    config: Any
     controlled: Any
+    controller: Any
+    currentammotype: Any
+    dead: Any
+    displayheight: Any
+    displaywidth: Any
+    efficiency: Any
+    enabled: Any
+    firstitem: Any
+    flag: Any
+    flying: Any
+    health: Any
+    heat: Any
+    id: Any
+    itemcapacity: Any
+    liquidcapacity: Any
+    maxhealth: Any
+    maxunits: Any
+    memorycapacity: Any
+    minex: Any
+    miney: Any
+    mining: Any
+    name: Any
+    operations: Any
+    payloadcapacity: Any
+    payloadcount: Any
+    payloadtype: Any
+    pingtext: Any
+    pingx: Any
+    pingy: Any
+    powercapacity: Any
+    powernetcapacity: Any
+    powernetin: Any
+    powernetout: Any
+    powernetstored: Any
+    progress: Any
+    range: Any
+    rotation: Any
+    selectedblock: Any
+    selectedrotation: Any
     shield: Any
-    building: Any
+    shooting: Any
+    shootx: Any
+    shooty: Any
+    size: Any
+    solid: Any
+    speed: Any
+    team: Any
+    timescale: Any
+    totalitems: Any
+    totalliquids: Any
+    totalpayload: Any
+    totalpower: Any
+    type: Any
+    velocityx: Any
+    velocityy: Any
+    x: Any
+    y: Any
 
 class Controllable(ABC):
     def enabled(self, enabled: bool | int) -> None: ...
@@ -1269,16 +1269,16 @@ class Unit:
     @staticmethod
     def item_drop(to: Building, amount: float) -> None: ...
     @staticmethod
-    def itemdrop(to: Building, amount: float) -> None: ...
-    @staticmethod
     def itemDrop(to: Building, amount: float) -> None: ...
+    @staticmethod
+    def itemdrop(to: Building, amount: float) -> None: ...
 
     store = item_drop
 
     @staticmethod
-    def itemTake(from_: Building, item: Item, amount: float) -> None: ...
-    @staticmethod
     def item_take(from_: Building, item: Item, amount: float) -> None: ...
+    @staticmethod
+    def itemTake(from_: Building, item: Item, amount: float) -> None: ...
     @staticmethod
     def itemtake(from_: Building, item: Item, amount: float) -> None: ...
 
@@ -1313,11 +1313,11 @@ class Unit:
     @staticmethod
     def pathfind(x: float, y: float) -> None: ...
     @staticmethod
+    def auto_pathfind() -> None: ...
+    @staticmethod
     def autoPathfind() -> None: ...
     @staticmethod
     def autopathfind() -> None: ...
-    @staticmethod
-    def auto_pathfind() -> None: ...
     @staticmethod
     def boost(enabled: bool | float) -> None: ...
     @staticmethod
@@ -1327,27 +1327,27 @@ class Unit:
     @staticmethod
     def pay_drop() -> None: ...
     @staticmethod
-    def paydrop() -> None: ...
-    @staticmethod
     def payDrop() -> None: ...
+    @staticmethod
+    def paydrop() -> None: ...
     @staticmethod
     def drop() -> None: ...
     @staticmethod
     def pay_take(take_units: bool | float) -> None: ...
     @staticmethod
-    def paytake(take_units: bool | float) -> None: ...
-    @staticmethod
     def payTake(take_units: bool | float) -> None: ...
+    @staticmethod
+    def paytake(take_units: bool | float) -> None: ...
     @staticmethod
     def lift() -> None: ...
     @staticmethod
     def carry() -> None: ...
     @staticmethod
-    def payenter() -> None: ...
-    @staticmethod
     def pay_enter() -> None: ...
     @staticmethod
     def payEnter() -> None: ...
+    @staticmethod
+    def payenter() -> None: ...
     @staticmethod
     def mine(x: float, y: float) -> None: ...
     @staticmethod
@@ -1355,9 +1355,9 @@ class Unit:
     @staticmethod
     def deconstruct(x: float, y: float) -> None: ...
     @staticmethod
-    def getBlock(x: float, y: float) -> Any: ...
-    @staticmethod
     def get_block(x: float, y: float) -> Any: ...
+    @staticmethod
+    def getBlock(x: float, y: float) -> Any: ...
     @staticmethod
     def getblock(x: float, y: float) -> Any: ...
     @staticmethod
@@ -1393,25 +1393,21 @@ class Screen:
     @staticmethod
     def fillrect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
+    def line_rect(x: float, y: float, width: float, height: float) -> None: ...
+    @staticmethod
     def lineRect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
     def linerect(x: float, y: float, width: float, height: float) -> None: ...
-    @staticmethod
-    def line_rect(x: float, y: float, width: float, height: float) -> None: ...
-    @staticmethod
-    def hollowrect(x: float, y: float, width: float, height: float) -> None: ...
-    @staticmethod
-    def hollowRect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
     def hollow_rect(
         x: float, y: float, width: float, height: float
     ) -> None: ...
     @staticmethod
-    def poly(
-        x: float, y: float, sides: float, radius: float, rotation: float
-    ) -> None: ...
+    def hollowRect(x: float, y: float, width: float, height: float) -> None: ...
     @staticmethod
-    def fillpoly(
+    def hollowrect(x: float, y: float, width: float, height: float) -> None: ...
+    @staticmethod
+    def poly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
@@ -1420,6 +1416,10 @@ class Screen:
     ) -> None: ...
     @staticmethod
     def fillPoly(
+        x: float, y: float, sides: float, radius: float, rotation: float
+    ) -> None: ...
+    @staticmethod
+    def fillpoly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
@@ -1435,11 +1435,11 @@ class Screen:
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def hollowPoly(
+    def hollow_poly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod
-    def hollow_poly(
+    def hollowPoly(
         x: float, y: float, sides: float, radius: float, rotation: float
     ) -> None: ...
     @staticmethod

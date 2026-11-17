@@ -158,9 +158,14 @@ class UnitType(Content): ...
 
 class Senseable(ABC):
     def __getitem__(self, i: Item | Liquid | str | Any) -> Any: ...
-{"\n".join(f"{INDENT}{s}: int" for s in set(ITEM_MAP | LIQUID_MAP) | PAYLOADS)}
+{
+    "\n".join(
+        f"{INDENT}{s}: int"
+        for s in sorted(set(ITEM_MAP | LIQUID_MAP) | PAYLOADS)
+    )
+}
     # TODO: manually type these attributes or something
-{"\n".join(f"{INDENT}{s}: Any" for s in LACCESS_SENSOR)}
+{"\n".join(f"{INDENT}{s}: Any" for s in sorted(LACCESS_SENSOR))}
 
 
 class Controllable(ABC):

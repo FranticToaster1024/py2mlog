@@ -101,8 +101,8 @@ def validate_arg_type_factory(
     return _validate_arg_type
 
 
-def generate_alias(s: str) -> set[str]:
-    return {s, snake_to_camel(s), s.replace("_", "").lower()}
+def generate_alias(s: str) -> tuple[str, ...]:
+    return (s, snake_to_camel(s), s.replace("_", "").lower())
 
 
 def generate_aliases(m: IntrinsicFuncMap) -> IntrinsicFuncMap:
