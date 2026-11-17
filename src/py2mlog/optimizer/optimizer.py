@@ -6,7 +6,10 @@ from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import LabelRef
-from py2mlog.mlog.suboperations import ConditionOpSuboperation
+from py2mlog.mlog.suboperations import (
+    NEGATED_COND_OP_SUBOP_MAP,
+    ConditionOpSuboperation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,36 +58,84 @@ def optimize(
 def _optimize_jumps(
     instrs: tuple[MlogItem, ...], /, jump_label_map: JumpLabelMap
 ) -> tuple[MlogItem, ...]:
-    # set to None to flag for removal
-    new_instrs: list[MlogItem | None] = list(instrs)
+    new_instrs: list[MlogItem] = []
 
-    # remove useless ones
-    for i, instr in enumerate(instrs):
+    # build new_instrs
+    i = 0
+    while i < len(instrs):
+        instr = instrs[i]
+
+        # skip useless label
+        if isinstance(instr, Label) and not jump_label_map[instr.name]:
+            i += 1
+            continue
+
         if (
             isinstance(instr, Instruction)
-            and instr.type == InstructionType.JUMP
+            and instr.type is InstructionType.JUMP
         ):
+            # mostly to please the type checker
+            if not isinstance(instr.suboperation, ConditionOpSuboperation):
+                raise CompilerError(
+                    CompilerErrorType.INTERNAL,
+                    None,
+                    err=f"Jump instruction with non-{ConditionOpSuboperation.__name__} "
+                    f"suboperation: {instr!r}",
+                )
+
             label_name = _get_jump_target_name(instr)
 
             next_i = i + 1
-            if next_i < len(instrs) - 1:
-                next_instr = instrs[i + 1]
+            if next_i < len(instrs):
+                next_instr = instrs[next_i]
 
                 # check for
-                # jump label ...
-                # label:
+                # jump label ...  # <-- skip
+                # label:  # <-- keep in case other jumps point here
                 if (
                     isinstance(next_instr, Label)
                     and next_instr.name == label_name
                 ):
-                    new_instrs[i] = None
+                    i = next_i
+                    continue
 
-    # remove useless labels
-    for i, instr in enumerate(instrs):
-        if isinstance(instr, Label) and not jump_label_map[instr.name]:
-            new_instrs[i] = None
+                # check for
+                # jump l1 ...  # <-- negate this condition and jump to l2 instead
+                # jump l2 always  # <-- skip
+                # l1:  # <-- keep
+                negated_cond_op_subop = NEGATED_COND_OP_SUBOP_MAP.get(
+                    instr.suboperation
+                )
+                if (
+                    negated_cond_op_subop is not None
+                    and isinstance(next_instr, Instruction)
+                    and next_instr.type is InstructionType.JUMP
+                    and next_instr.suboperation
+                    == ConditionOpSuboperation.ALWAYS
+                ):
+                    # wow nice naming convention
+                    next_next_i = next_i + 1
+                    if next_next_i < len(instrs):
+                        next_next_instr = instrs[next_next_i]
+                        if (
+                            isinstance(next_next_instr, Label)
+                            and next_next_instr.name == label_name
+                        ):
+                            new_instrs.append(
+                                Instruction(
+                                    InstructionType.JUMP,
+                                    negated_cond_op_subop,
+                                    (),
+                                    (next_instr.args[0], *instr.args[1:]),
+                                )
+                            )
+                            i = next_next_i
+                            continue
 
-    return tuple(e for e in new_instrs if e is not None)
+        new_instrs.append(instr)
+        i += 1
+
+    return tuple(new_instrs)
 
 
 def _dead_code_elimination(

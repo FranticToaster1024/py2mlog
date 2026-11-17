@@ -283,6 +283,18 @@ class SetMarkerSuboperation(Suboperation):
     COLORI = "colori"
 
 
+NEGATED_COND_OP_SUBOP_MAP: dict[
+    ConditionOpSuboperation, ConditionOpSuboperation
+] = {
+    ConditionOpSuboperation.EQUAL: ConditionOpSuboperation.NOT_EQUAL,
+    ConditionOpSuboperation.NOT_EQUAL: ConditionOpSuboperation.EQUAL,
+    ConditionOpSuboperation.GREATER_THAN: ConditionOpSuboperation.LESS_THAN_OR_EQ,
+    ConditionOpSuboperation.LESS_THAN_OR_EQ: ConditionOpSuboperation.GREATER_THAN,
+    ConditionOpSuboperation.LESS_THAN: ConditionOpSuboperation.GREATER_THAN_OR_EQ,
+    ConditionOpSuboperation.GREATER_THAN_OR_EQ: ConditionOpSuboperation.LESS_THAN,
+}
+
+
 SUBOPERATION_MAP: dict[InstructionType, type[Suboperation]] = {
     InstructionType.DRAW: DrawSuboperation,
     InstructionType.CONTROL: ControlSuboperation,

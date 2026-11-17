@@ -232,7 +232,7 @@ def parse_mlog(src: str, _src_loc: SourceLocation) -> list[MlogItem]:
                 raise CompilerError(
                     CompilerErrorType.SYNTAX,
                     src_loc,
-                    err=f"Instruction '{' '.join(firstword, *tokens)}' "
+                    err=f"Instruction '{' '.join((firstword, *tokens))}' "
                     "did not match any suboperation.",
                 )
 

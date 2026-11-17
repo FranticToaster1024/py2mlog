@@ -241,7 +241,9 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv, namespace=Py2mlogCLIArgs())
 
     handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(IndentFormatter("%(levelname)s: %(message)s"))
+    handler.setFormatter(
+        IndentFormatter("%(levelname)s  %(filename)s: %(message)s")
+    )
     logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     if args.outputs is None:
