@@ -1337,6 +1337,30 @@ COMPILER_SNIPPET_TESTCASES = [
     pytest.param(
         """
         @inline
+        def f():
+            return
+            result = 123
+            return result
+
+        x = f()
+        """,
+        ("set x null",),
+        id="inline-func-with-early-return",
+    ),
+    pytest.param(
+        """
+        @inline
+        def f():
+            pass
+
+        x = f()
+        """,
+        ("set x null",),
+        id="inline-func-with-implicit-return",
+    ),
+    pytest.param(
+        """
+        @inline
         def outer(value):
             @inline
             def inner():

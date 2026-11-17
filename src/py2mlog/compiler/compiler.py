@@ -808,6 +808,10 @@ class Compiler:
         with self._inline_func_context(func_call, func_def, output_expr):
             for stmt in func_def.body:
                 self.compile_stmt(stmt)
+                if isinstance(stmt, ast.Return):
+                    break
+            else:
+                self._compile_return(None)
 
         return output_expr
 
@@ -1049,7 +1053,10 @@ class Compiler:
         match expr:
             case ast.Name(id=name):
                 # indirect way of checking if we are compiling an inline func
-                if self._inline_func_ret_target is not None:
+                if (
+                    self._inline_func_ret_target is not None
+                    and name in self._arg_table
+                ):
                     # I really didn't want to do this but i tried ok
                     raise CompilerError(
                         CompilerErrorType.UNSUPPORTED,
