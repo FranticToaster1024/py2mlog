@@ -281,6 +281,10 @@ def print(
 
 
 class Unit:
+    @staticmethod
+    def bind(type: str | UnitType | UnitObj, /) -> None: ...
+
+
     @overload
     @staticmethod
     # Any here for var name as subop name (e.g. subop=ore instead of subop="ore")
@@ -299,10 +303,6 @@ class Unit:
     @overload
     @staticmethod
     def locate(subop: Literal["spawn", "damaged"] | Any, /) -> None: ...
-
-
-    @staticmethod
-    def bind(type: str | UnitType, /) -> None: ...
 
 
     @overload

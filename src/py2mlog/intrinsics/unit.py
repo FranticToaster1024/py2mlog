@@ -53,16 +53,14 @@ NAMESPACE_NAME = "Unit"
 
 def _unit_bind(
     call_ctx: IntrinsicCallCtx,
-    type: MlogStringLiteral | MlogBuiltin,  # noqa: A002
+    type: MlogExpr,  # noqa: A002
     /,
 ) -> MlogNullLiteral:
-    type_ = cast("MlogExpr", type)
-
-    if isinstance(type_, (MlogStringLiteral, MlogBuiltin)):
+    if isinstance(type, (MlogStringLiteral, MlogBuiltin)):
         type_str = (
-            type_.value.removeprefix("@")
-            if isinstance(type_, MlogStringLiteral)
-            else type_.name
+            type.value.removeprefix("@")
+            if isinstance(type, MlogStringLiteral)
+            else type.name
         )
 
         mlog_builtin = UNIT_MAP.get(type_str)
@@ -78,15 +76,15 @@ def _unit_bind(
         )
 
     else:
-        if not isinstance(type_, MlogVar):
+        if not isinstance(type, MlogVar):
             logger.warning(
                 "Called '%s' with literal of type '%s'.",
                 get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_bind),
-                type_.__class__.__name__,  # oops i shadowed 'type()'
+                type.__class__.__name__,  # oops i shadowed 'type()'
             )
 
         call_ctx.emitter.emit_instruction(
-            Instruction(InstructionType.UNIT_BIND, None, (), (type_,))
+            Instruction(InstructionType.UNIT_BIND, None, (), (type,))
         )
 
     return MlogNullLiteral()
