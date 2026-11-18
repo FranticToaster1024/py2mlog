@@ -131,7 +131,7 @@ def _stubs_from_func_map(
             s.append(f"{base_indent}{INDENT}...")
         else:
             s.append(f'{base_indent}{INDENT}"""')
-            s.append(f"{base_indent}{INDENT}{indent(docstring, INDENT)}")
+            s.append(f"{base_indent}{indent(docstring, INDENT)}")
             s.append(f'{base_indent}{INDENT}"""')
 
     return "\n".join(s)

@@ -830,7 +830,7 @@ COMPILER_SNIPPET_TESTCASES = [
         sleep(10)
         x = wait(a)  # why would you do this though
 
-        # generated from subop
+        # single arg op
         x = flip(a)
         x = abs(a)
         x = sign(a)
@@ -847,6 +847,15 @@ COMPILER_SNIPPET_TESTCASES = [
         x = asin(a)
         x = acos(a)
         x = atan(a)
+
+        # double arg op
+        x = vec_angle(a, b)
+        x = vec_len(a, b)
+        x = logn(a, b)
+        x = mod(a, b)
+        x = ushr(a, b)
+        x = angle_diff(a, b)
+        x = noise(a, b)
         """,
         (
             'read x "a" 0',
@@ -857,7 +866,7 @@ COMPILER_SNIPPET_TESTCASES = [
             "wait 10",
             "wait a",
             "set x null",
-            # generated from subop
+            # single arg op
             "op not x a",
             "op abs x a",
             "op sign x a",
@@ -874,6 +883,14 @@ COMPILER_SNIPPET_TESTCASES = [
             "op asin x a",
             "op acos x a",
             "op atan x a",
+            # double arg op
+            "op angle x a b",
+            "op len x a b",
+            "op logn x a b",
+            "op mod x a b",
+            "op ushr x a b",
+            "op angleDiff x a b",
+            "op noise x a b",
         ),
         id="supported-inline-builtin-functions",
     ),

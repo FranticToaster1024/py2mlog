@@ -2,6 +2,7 @@ __all__ = ["FUNC_MAP", "builtin_color"]
 
 
 import logging
+from inspect import cleandoc
 from string import hexdigits
 from typing import cast
 
@@ -49,6 +50,29 @@ def _single_arg_op_builtin_factory(
         return cast("MlogNumberLiteral", call_ctx.output_expr[0])
 
     return _single_arg_op_builtin
+
+
+# something something DRY
+def _double_arg_op_builtin_factory(
+    subop: OperationSuboperation, docstring: str | None = None
+) -> IntrinsicFunc:
+    """
+    Param and return type hints are MlogNumberLiteral.
+    """
+
+    def _double_arg_op_builtin(
+        call_ctx: IntrinsicCallCtx,
+        a: MlogNumberLiteral,
+        b: MlogNumberLiteral,
+        /,
+    ) -> MlogNumberLiteral:
+        _validate_arg_type(MlogNumberLiteral, _double_arg_op_builtin, a, b)
+        _emit_operation_subop(call_ctx, subop, call_ctx.output_expr[0], a, b)
+        return cast("MlogNumberLiteral", call_ctx.output_expr[0])
+
+    if docstring is not None:
+        _double_arg_op_builtin.__doc__ = cleandoc(docstring)
+    return _double_arg_op_builtin
 
 
 # ----------------------------------------
@@ -184,20 +208,9 @@ def _inline_sleep(
 
 
 # ----------------------------------------
-# func map
+# op func maps
 # ----------------------------------------
-FUNC_MAP: IntrinsicFuncMap = {
-    # inline python builtins
-    "ord": _inline_ord,
-    "min": _inline_min,
-    # inline non-python builtins
-    "Color": _inline_Color,
-    "sleep": _inline_sleep,
-    "wait": _inline_sleep,
-    # unsupported python builtins
-    "exec": None,
-    "eval": None,
-} | {
+_SINGLE_ARG_OP_BUILTIN_MAP = {
     "flip": _single_arg_op_builtin_factory(OperationSuboperation.BITWISE_NOT),
     **{
         camel_to_snake(subop.value): _single_arg_op_builtin_factory(subop)
@@ -220,6 +233,75 @@ FUNC_MAP: IntrinsicFuncMap = {
         )
     },
 }
+
+
+def _op_vec_angle(
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, y: MlogNumberLiteral, /
+) -> MlogNumberLiteral:
+    """
+    Similar to atan2.
+    Note that this function takes (x, y) and not (y, x).
+    Returns 0 to 360 **degrees**.
+    """
+    # https://github.com/Anuken/Arc/blob/7445105cd2683daf5b9ac7033ebb07265d3e814d/arc-core/src/arc/math/Angles.java#L58
+    _validate_arg_type(MlogNumberLiteral, _op_vec_angle, x, y)
+    _emit_operation_subop(
+        call_ctx, OperationSuboperation.ANGLE, call_ctx.output_expr[0], x, y
+    )
+    return cast("MlogNumberLiteral", call_ctx.output_expr[0])
+
+
+def _op_logn(
+    call_ctx: IntrinsicCallCtx, x: MlogNumberLiteral, base: MlogNumberLiteral
+) -> MlogNumberLiteral:
+    _validate_arg_type(MlogNumberLiteral, _op_logn, x, base)
+    _emit_operation_subop(
+        call_ctx, OperationSuboperation.LOGN, call_ctx.output_expr[0], x, base
+    )
+    return cast("MlogNumberLiteral", call_ctx.output_expr[0])
+
+
+_DOUBLE_ARG_OP_BUILTIN_MAP = {
+    "vec_angle": _op_vec_angle,
+    "vec_len": _double_arg_op_builtin_factory(OperationSuboperation.LEN),
+    "logn": _op_logn,
+    **{
+        camel_to_snake(subop.value): _double_arg_op_builtin_factory(subop)
+        for subop in (
+            # python uses true modulo
+            # x = a % b
+            # compiles to
+            # op emod x a b
+            #    ^
+            OperationSuboperation.MOD,
+            OperationSuboperation.UNSIGNED_BITSHIFT_RIGHT,
+            OperationSuboperation.ANGLE_DIFF,
+            # docstring would be useful here but im lazy
+            OperationSuboperation.NOISE,
+        )
+    },
+}
+
+
+# ----------------------------------------
+# func map
+# ----------------------------------------
+FUNC_MAP: IntrinsicFuncMap = (
+    {
+        # inline python builtins
+        "ord": _inline_ord,
+        "min": _inline_min,
+        # inline non-python builtins
+        "Color": _inline_Color,
+        "sleep": _inline_sleep,
+        "wait": _inline_sleep,
+        # unsupported python builtins
+        "exec": None,
+        "eval": None,
+    }
+    | _SINGLE_ARG_OP_BUILTIN_MAP
+    | _DOUBLE_ARG_OP_BUILTIN_MAP
+)
 
 _rev_map: IntrinsicFuncRevMap = {}
 for k, v in FUNC_MAP.items():
