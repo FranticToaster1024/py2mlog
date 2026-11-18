@@ -58,7 +58,7 @@ def _screen_clear(
         elif isinstance(arg, MlogNumberLiteral) and not 0 <= arg.value <= 255:  # noqa:PLR2004
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
-                "with value outside bounds.",
+                "with value outside bounds of [0, 255].",
                 get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_clear),
                 arg,
             )
@@ -90,7 +90,7 @@ def _screen_color(
         elif isinstance(arg, MlogNumberLiteral) and not 0 <= arg.value <= 255:  # noqa:PLR2004
             logger.warning(
                 "Called '%s' with number literal arg '%s' "
-                "with value outside bounds.",
+                "with value outside bounds of [0, 255].",
                 get_func_names(NAMESPACE_NAME, _REV_MAP, _screen_color),
                 arg,
             )

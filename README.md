@@ -69,12 +69,13 @@ See [FEATURES.md](doc/FEATURES.md).
 
 
 ## Things to note
-- **Do not** use any variable prefixed with `__p2m`; they are reserved for the compiler.
+- **Do not** use any identifier prefixed with `__p2m`; they are reserved for the compiler.
 - Error messages can sometimes be inaccurate or misleading.
 - The compiler does not currently check and enforce the 1000 instruction mlog limit.
 
 
 ## WIP/To-do list
+- radar instruction as method & builtin
 - more optimization
 - world instructions
 - **Better errors**

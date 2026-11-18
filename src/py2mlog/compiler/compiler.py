@@ -634,10 +634,8 @@ class Compiler:
             )
 
         if not isinstance(func_call.func, ast.Name):
-            # idk what desc to put in the error sooo
-            # misleading error message again
             raise self._unsupported_expr_error(
-                func_call, "with non-identifier/attribute"
+                func_call, " with non-identifier/attribute"
             )
         func_name = func_call.func.id
 

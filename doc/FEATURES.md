@@ -1,3 +1,8 @@
+# Features
+
+> **Note**: Mlog code runs in a loop. As such, your python code does too.
+
+
 Assignment and operators:
 ```py
 x = 42
@@ -98,7 +103,9 @@ z = max(a, b)  # only 2 args for now unfortunately
 ```
 
 
-A few operation instructions (WIP). Note that some python builtins may be shadowed.
+Most operation instructions. A few have been renamed due to ambiguity in a python context.
+e.g. `op angle` is available as `vec_angle()`.
+Note that some python builtins may be shadowed.
 ```py
 x = sin(67)
 x = rand(10)

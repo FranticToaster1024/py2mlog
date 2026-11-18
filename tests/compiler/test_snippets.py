@@ -827,8 +827,16 @@ COMPILER_SNIPPET_TESTCASES = [
         x = ord('a')
         x = min(a, 2)
         # x = min(1, 2, a, b)
+
+        # mlog instructions
         sleep(10)
         x = wait(a)  # why would you do this though
+        print_flush(a)
+        end()
+        top()
+        stop()
+        x = pack_color(a, b, c, d)
+        w, x, y, z = unpack_color(a)
 
         # single arg op
         x = flip(a)
@@ -863,9 +871,16 @@ COMPILER_SNIPPET_TESTCASES = [
             # "op min __p2m_tmp0 b a",
             # "op min __p2m_tmp1 __p2m_tmp0 2",
             # "op min x __p2m_tmp1 1",
+            # mlog instructions
             "wait 10",
             "wait a",
             "set x null",
+            "printflush a",
+            "end",
+            "end",
+            "stop",
+            "packcolor x a b c d",
+            "unpackcolor w x y z a",
             # single arg op
             "op not x a",
             "op abs x a",
