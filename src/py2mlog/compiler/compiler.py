@@ -417,7 +417,9 @@ class Compiler:
                         case "Env":
                             builtin = ENV_ATTR_MAP.get(attr)
                             if builtin is None:
-                                builtin = MlogBuiltin(snake_to_kebab(attr))
+                                # don't use snake_to_kebab helper
+                                # because it forces lowercase
+                                builtin = MlogBuiltin(attr.replace("_", "-"))
                                 logger.warning(
                                     "Unknown Env attribute '%s'. "
                                     "Using '@%s' as fallback.",
