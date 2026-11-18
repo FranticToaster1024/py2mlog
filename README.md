@@ -76,6 +76,7 @@ See [FEATURES.md](doc/FEATURES.md).
 
 ## WIP/To-do list
 - radar instruction as method & builtin
+- avoid per-alias definitions in generated stub, mainly for functions with docstrings
 - more optimization
 - world instructions
 - **Better errors**

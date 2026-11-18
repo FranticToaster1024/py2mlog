@@ -453,16 +453,15 @@ class Compiler:
                         return builtin
 
                 output_expr = self._get_output_expr(output_expr)
-
                 compiled_value = self.compile_expr(value)
-                if attr not in SENSOR_PROPERTIES:
+
+                sensor_property = SENSOR_PROPERTIES.get(attr)
+                if sensor_property is None:
                     raise CompilerError(
                         CompilerErrorType.UNKNOWN_ATTRIBUTE,
                         self._get_src_loc_from_node(expr),
                         attr=f"sensor property '{attr}'. ",
                     )
-
-                sensor_property = MlogBuiltin(snake_to_kebab(attr))
 
                 self.emitter.emit_instruction(
                     Instruction(

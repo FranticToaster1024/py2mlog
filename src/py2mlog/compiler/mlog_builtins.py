@@ -35,8 +35,8 @@ BLOCK_MAP = _build_builtin_map("mimex-blocks.txt")
 
 # TODO: cleanup
 _block_data = (MIMEX_DATA_DIR / "mimex-blocks.txt").read_text(encoding="utf-8")
-BUILDING_TYPES = {
-    kebab_to_snake(s)
+BUILDING_MAP = {
+    kebab_to_snake(s): MlogBuiltin(s)
     for s, c in zip(
         select_col(_block_data, "name"),
         select_col(_block_data, "visibility"),
@@ -44,13 +44,15 @@ BUILDING_TYPES = {
     )
     if c == "shown"  # close enough ig
 }
-PAYLOADS = BUILDING_TYPES | set(UNIT_MAP)
+PAYLOADS = BUILDING_MAP | UNIT_MAP
 
 _laccess_data = (MIMEX_DATA_DIR / "mimex-laccess.txt").read_text(
     encoding="utf-8"
 )
 LACCESS_SENSOR = {
-    kebab_to_snake(s)
+    # these are actual objects you can pass around apparently
+    # TODO: provide a way to access LAccess properties
+    kebab_to_snake(s): MlogBuiltin(s)
     for s, c in zip(
         select_col(_laccess_data, "name"),
         select_col(_laccess_data, "sensor"),
@@ -59,7 +61,7 @@ LACCESS_SENSOR = {
     if c == "true"
 }
 
-SENSOR_PROPERTIES = set(ITEM_MAP | LIQUID_MAP) | PAYLOADS | LACCESS_SENSOR
+SENSOR_PROPERTIES = ITEM_MAP | LIQUID_MAP | PAYLOADS | LACCESS_SENSOR
 
 
 # ----------------------------------------
