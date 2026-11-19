@@ -130,6 +130,50 @@ COMPILER_SNIPPET_TESTCASES = [
         ),
         id="unary-ops",
     ),
+    pytest.param(
+        "result = first and second",
+        ("select result equal first true second first",),
+        id="boolean-and",
+    ),
+    pytest.param(
+        "result = first and second and third and fourth",
+        (
+            "select __p2m_tmp0 equal first true second first",
+            "select __p2m_tmp0 equal __p2m_tmp0 true third __p2m_tmp0",
+            "select result equal __p2m_tmp0 true fourth __p2m_tmp0",
+        ),
+        id="chained-boolean-and",
+    ),
+    pytest.param(
+        "x = a and x and b",
+        (
+            "select __p2m_tmp0 equal a true x a",
+            "select x equal __p2m_tmp0 true b __p2m_tmp0",
+        ),
+        id="chained-bool-and-with-target-reuse",
+    ),
+    pytest.param(
+        "result = first or second",
+        ("select result equal first true first second",),
+        id="boolean-or",
+    ),
+    pytest.param(
+        "result = first or second or third or fourth",
+        (
+            "select __p2m_tmp0 equal first true first second",
+            "select __p2m_tmp0 equal __p2m_tmp0 true __p2m_tmp0 third",
+            "select result equal __p2m_tmp0 true __p2m_tmp0 fourth",
+        ),
+        id="chained-boolean-or",
+    ),
+    pytest.param(
+        "x = a or x or b",
+        (
+            "select __p2m_tmp0 equal a true a x",
+            "select x equal __p2m_tmp0 true __p2m_tmp0 b",
+        ),
+        id="chained-bool-or-with-target-reuse",
+    ),
     *[
         pytest.param(
             f"result = left {operator} right",
@@ -146,38 +190,21 @@ COMPILER_SNIPPET_TESTCASES = [
         )
     ],
     pytest.param(
-        "result = first and second",
-        ("select result equal first true second first",),
-        id="boolean-and",
-    ),
-    pytest.param(
-        "result = first or second",
-        ("select result equal second true second first",),
-        id="boolean-or",
-    ),
-    pytest.param(
-        "result = first and second and third",
+        "result = a < b <= c > d",
         (
-            "select result equal first true second first",
-            "select result equal result true third result",
-        ),
-        id="chained-boolean-and",
-    ),
-    pytest.param(
-        "result = first or second or third",
-        (
-            "select result equal second true second first",
-            "select result equal third true third result",
-        ),
-        id="chained-boolean-or",
-    ),
-    pytest.param(
-        "result = left < middle <= right",
-        (
-            "op lessThan result left middle",
-            "select result lessThanEq middle right result false",
+            "op lessThan __p2m_tmp0 a b",
+            "select __p2m_tmp0 lessThanEq b c __p2m_tmp0 false",
+            "select result greaterThan c d __p2m_tmp0 false",
         ),
         id="chained-comparison-with-different-operators",
+    ),
+    pytest.param(
+        "x = a < x < b",
+        (
+            "op lessThan __p2m_tmp0 a x",
+            "select x lessThan x b __p2m_tmp0 false",
+        ),
+        id="chained-cmp-with-target-reuse",
     ),
     pytest.param(
         "left + right",

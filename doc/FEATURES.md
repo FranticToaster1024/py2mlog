@@ -9,7 +9,24 @@ x = 42
 y = x**2
 y -= 6.7
 z = x < y > (4.2 if x < 123 else 6.7)
+foo = a and b and c
 ```
+
+> **Note**: Proper short-circuiting behaviour is not implemented.
+For example:
+```py
+foo = False or Env.copper  # correctly returns Env.copper
+assert foo == Env.copper
+
+
+def f():
+    print("f() was called!")
+
+
+foo = False and f()  # wrongly calls f() instead of short circuiting
+```
+This also means chaining many BoolOps or comparisons can get quite expensive.
+
 
 
 `If`, `elif` and `else`:

@@ -242,46 +242,72 @@ class Compiler:
 
                 # python BoolOp returns operand value based on short-circuiting
                 if isinstance(op, ast.And):
+                    tmp = None
                     prev = self.compile_expr(values[0])
 
-                    for raw_val in values[1:]:
+                    for raw_val in values[1:-1]:
+                        if tmp is None:
+                            tmp = self.emitter.new_tmp()
+
                         val = self.compile_expr(raw_val)
                         self.emitter.emit_instruction(
                             Instruction(
                                 InstructionType.SELECT,
                                 ConditionOpSuboperation.EQUAL,
                                 (),
-                                (
-                                    output_expr,
-                                    prev,
-                                    MlogBoolLiteral(True),
-                                    val,
-                                    prev,
-                                ),
+                                (tmp, prev, MlogBoolLiteral(True), val, prev),
                             )
                         )
-                        prev = output_expr
+                        prev = tmp
+
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.SELECT,
+                            ConditionOpSuboperation.EQUAL,
+                            (),
+                            (
+                                output_expr,
+                                prev,
+                                MlogBoolLiteral(True),
+                                self.compile_expr(values[-1]),
+                                prev,
+                            ),
+                        )
+                    )
 
                 elif isinstance(op, ast.Or):
+                    tmp = None
                     prev = self.compile_expr(values[0])
 
-                    for raw_val in values[1:]:
+                    for raw_val in values[1:-1]:
+                        if tmp is None:
+                            tmp = self.emitter.new_tmp()
+
                         val = self.compile_expr(raw_val)
                         self.emitter.emit_instruction(
                             Instruction(
                                 InstructionType.SELECT,
                                 ConditionOpSuboperation.EQUAL,
                                 (),
-                                (
-                                    output_expr,
-                                    val,
-                                    MlogBoolLiteral(True),
-                                    val,
-                                    prev,
-                                ),
+                                (tmp, prev, MlogBoolLiteral(True), prev, val),
                             )
                         )
-                        prev = output_expr
+                        prev = tmp
+
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.SELECT,
+                            ConditionOpSuboperation.EQUAL,
+                            (),
+                            (
+                                output_expr,
+                                prev,
+                                MlogBoolLiteral(True),
+                                prev,
+                                self.compile_expr(values[-1]),
+                            ),
+                        )
+                    )
 
                 else:
                     raise self._unsupported_expr_error(expr)
@@ -303,23 +329,32 @@ class Compiler:
                 output_expr = self._get_output_expr(output_expr)
 
                 op_subop = get_subops(0)[0]
+                compiled_left = self.compile_expr(left)
 
+                tmp = self.emitter.new_tmp()
                 prev = self.compile_expr(comparators[0])
+
+                if len(comparators) == 1:
+                    self.emitter.emit_instruction(
+                        Instruction(
+                            InstructionType.OPERATION,
+                            op_subop,
+                            (),
+                            (output_expr, compiled_left, prev),
+                        )
+                    )
+                    return output_expr
 
                 self.emitter.emit_instruction(
                     Instruction(
                         InstructionType.OPERATION,
                         op_subop,
                         (),
-                        (
-                            output_expr,
-                            self.compile_expr(left),
-                            prev,
-                        ),
+                        (tmp, compiled_left, prev),
                     )
                 )
 
-                for i, raw_comparator in enumerate(comparators[1:], 1):
+                for i, raw_comparator in enumerate(comparators[1:-1], 1):
                     cond_op_subop = get_subops(i)[1]
 
                     comparator = self.compile_expr(raw_comparator)
@@ -329,15 +364,31 @@ class Compiler:
                             cond_op_subop,
                             (),
                             (
-                                output_expr,
+                                tmp,
                                 prev,
                                 comparator,
-                                output_expr,
+                                tmp,
                                 MlogBoolLiteral(False),
                             ),
                         )
                     )
                     prev = comparator
+
+                cond_op_subop = get_subops(len(comparators) - 1)[1]
+                self.emitter.emit_instruction(
+                    Instruction(
+                        InstructionType.SELECT,
+                        cond_op_subop,
+                        (),
+                        (
+                            output_expr,
+                            prev,
+                            self.compile_expr(comparators[-1]),
+                            tmp,
+                            MlogBoolLiteral(False),
+                        ),
+                    )
+                )
 
                 return output_expr
 
