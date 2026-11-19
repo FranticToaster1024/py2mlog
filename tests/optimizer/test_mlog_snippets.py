@@ -40,6 +40,64 @@ OPTIMIZER_SNIPPET_TESTCASES = [
         """,
         id="wrapped-jump-always",
     ),
+    pytest.param(
+        """
+        jump l1 equal x true
+        set a 1
+        jump l2 always
+        set b 1
+        l1:
+        set c 1
+        l2:
+        set d 1
+        """,
+        """
+        jump l1 equal x true
+        set a 1
+        jump l2 always
+        l1:
+        set c 1
+        l2:
+        set d 1
+        """,
+        id="unreachable-code-after-end",
+    ),
+    pytest.param(
+        """
+        jump l1 equal x true
+        set a 1
+        end
+        set b 1
+        l1:
+        set c 1
+        """,
+        """
+        jump l1 equal x true
+        set a 1
+        end
+        l1:
+        set c 1
+        """,
+        id="unreachable-code-after-end",
+    ),
+    pytest.param(
+        """
+        jump l1 equal x true
+        set a 1
+        stop
+        set b 1
+        l1:
+        set c 1
+        """,
+        """
+        jump l1 equal x true
+        set a 1
+        stop
+        l1:
+        set c 1
+        """,
+        id="unreachable-code-after-stop",
+    ),
 ]
 
 

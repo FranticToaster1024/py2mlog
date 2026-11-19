@@ -35,7 +35,7 @@ def optimize(
         jump_label_map = _generate_jump_label_map(instrs)
 
         instrs = _optimize_jumps(instrs, jump_label_map=jump_label_map)
-        instrs = _dead_code_elimination(instrs)
+        instrs = _unreachable_code_elimination(instrs)
         instrs = _remove_useless_end(instrs)
 
         if len(instrs) == last_len:
@@ -138,8 +138,33 @@ def _optimize_jumps(
     return tuple(new_instrs)
 
 
-def _dead_code_elimination(
+def _unreachable_code_elimination(
     instrs: tuple[MlogItem, ...], /
+) -> tuple[MlogItem, ...]:
+    instrs = _remove_unreachable_code_after_jump_always(instrs)
+    new_instrs: list[MlogItem] = []
+
+    i = 0
+    while i < len(instrs):
+        instr = instrs[i]
+        if isinstance(instr, Instruction) and instr.type in (
+            InstructionType.END,
+            InstructionType.STOP,
+        ):
+            new_instrs.append(instr)
+            i += 1
+            while i < len(instrs) and not isinstance(instrs[i], Label):
+                i += 1
+            continue
+
+        new_instrs.append(instr)
+        i += 1
+
+    return tuple(new_instrs)
+
+
+def _remove_unreachable_code_after_jump_always(
+    instrs: tuple[MlogItem, ...],
 ) -> tuple[MlogItem, ...]:
     new_instrs: list[MlogItem | None] = list(instrs)
 
