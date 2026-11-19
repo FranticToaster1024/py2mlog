@@ -20,7 +20,16 @@ def test_compile(tmp_path: Path):
     assert out_path.read_text(encoding="utf-8") == mlog
 
 
-_test_output_file_exists_testcases = [
+def _create_filler_input_files(
+    input_file_names: list[str], tmp_path: Path
+) -> None:
+    for file in input_file_names:
+        path = tmp_path / file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("pass")
+
+
+_TEST_OUTPUT_FILE_EXISTS_TESTCASES = [
     pytest.param(
         "py2mlog {} --output {}",
         ["src.py", "out.mlog"],
@@ -110,21 +119,18 @@ _test_output_file_exists_testcases = [
 
 
 @pytest.mark.parametrize(
-    ("cmd", "path_args", "input_files", "output_files"),
-    _test_output_file_exists_testcases,
+    ("cmd", "path_args", "input_file_names", "output_files"),
+    _TEST_OUTPUT_FILE_EXISTS_TESTCASES,
 )
 def test_output_file_exists(
     cmd: str,
     path_args: list[str],
-    input_files: list[str],
+    input_file_names: list[str],
     output_files: list[str],
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ):
-    for file in input_files:
-        path = tmp_path / file
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("pass")
+    _create_filler_input_files(input_file_names, tmp_path)
 
     full_path_args = [str(tmp_path / p) for p in path_args]
     formatted_cmd = cmd.format(*full_path_args)
@@ -137,3 +143,34 @@ def test_output_file_exists(
         assert path.exists()
 
     assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
+_TEST_CLI_ERROR_TESTCASES = [
+    pytest.param("py2mlog --no-file {}", ["file.py"], ["file.py"], 2),
+    pytest.param(
+        "py2mlog --no-file {} -o {}", ["src.py", "out.mlog"], ["src.py"], 2
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("cmd", "path_args", "input_file_names", "sys_exit_code"),
+    _TEST_CLI_ERROR_TESTCASES,
+)
+def test_cli_error(
+    cmd: str,
+    path_args: list[str],
+    input_file_names: list[str],
+    sys_exit_code: int,
+    tmp_path: Path,
+):
+    _create_filler_input_files(input_file_names, tmp_path)
+
+    full_path_args = [str(tmp_path / p) for p in path_args]
+    formatted_cmd = cmd.format(*full_path_args)
+    cmd_name, *argv = formatted_cmd.split()
+    assert cmd_name == "py2mlog"
+
+    with pytest.raises(SystemExit) as e:
+        main(argv)
+    assert e.value.code == sys_exit_code

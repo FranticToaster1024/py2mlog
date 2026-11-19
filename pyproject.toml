@@ -17,6 +17,7 @@ py2mlog = "py2mlog.__main__:main"
 
 
 [project.optional-dependencies]
+clipboard = ["pyperclip"]
 dev = [
     "pytest",
     "pyright",

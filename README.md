@@ -7,17 +7,25 @@ Don't want to deal with all the annoying cli stuff? Try py2mlog out in your brow
 
 
 ## Install
-Since it's a CLI tool, you can use `pipx` or `uv` or something to install it. It's probably the better method, if available. Unless you plan to use the internal modules for some reason?
-
-You can also install it with regular pip:
 ```sh
 # create and activate a venv
 # i guess you could skip this if you wanted to
 python -m venv .venv
 .venv/Scripts/activate.bat  # or however you activate a venv in your shell
-
-pip install "git+https://github.com/FranticToaster1024/py2mlog.git"
 ```
+
+- With clipboard dependency (for copying output using CLI flags):
+    ```sh
+    pip install "py2mlog[clipboard] @ git+https://github.com/FranticToaster1024/py2mlog.git"
+    ```
+
+
+- Without clipboard dependency:
+    ```sh
+    pip install "py2mlog @ git+https://github.com/FranticToaster1024/py2mlog.git"
+    ```
+
+You could probably also use `pipx` or `uv`, but I'm not familiar with their CLIs.
 
 
 ## Usage
@@ -32,17 +40,7 @@ You can also compile all .py files in a folder:
 py2mlog path/to/src/
 ```
 
-You can compile multiple files at once by passing them as space-separated arguments, like so:
-```sh
-py2mlog path/to/your/file.py path/to/your/other/file.py path/to/third/file.py
-```
-
-Same with folders:
-```sh
-py2mlog path/to/dir/ path/to/other/dir/ path/to/third/dir/
-```
-
-You can even mix files and folders:
+You can compile multiple files/folders at once by passing them as space-separated arguments, like so:
 ```sh
 py2mlog path/to/your/file.py path/to/your/other/file.py path/to/dir/
 ```
@@ -57,9 +55,11 @@ In the above example:
 - `path/to/file.py` will compile to `file.mlog`,
 - and `path/to/other/file.py` will compile to `path/to/other/file.mlog`.
 
-You can use `-s` or `--stdout` to print the compiled mlog to stdout. This does not override or clash with the file output.
+You can use `-s` or `--stdout` to print the compiled mlog to stdout. This does not override or clash with the other outputs.
 
-You can use `--no-file` to disable the file output. This must be used with `-s` or `--stdout`, otherwise the compiled program has nowhere to go.
+You can use `-c` or `--copy` to copy the compiled mlog to clipboard. This does not override or clash with the other outputs. This option requires the optional dependency 'pyperclip'.
+
+You can use `--no-file` to disable the file output. This must be used with `-s`, `--stdout`, `-c`, or `--copy` otherwise the compiled program has nowhere to go.
 
 Information, warnings, and other diagnostics are printed to stderr.
 
@@ -76,6 +76,7 @@ See [FEATURES.md](doc/FEATURES.md).
 
 ## WIP/To-do list
 - radar instruction as method & builtin
+- lookup
 - avoid per-alias definitions in generated stub, mainly for functions with docstrings
 - more optimization
 - world instructions

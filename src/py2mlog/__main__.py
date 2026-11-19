@@ -9,6 +9,7 @@ from pathlib import Path
 from textwrap import indent
 from time import perf_counter
 from traceback import print_exception
+from typing import NoReturn
 
 from py2mlog.api import compile_src_to_mlog
 from py2mlog.compiler.error import CompilerError
@@ -21,6 +22,18 @@ VERSION = _version
 
 
 logger = logging.getLogger(__name__)
+
+
+CLIPBOARD_DEPENDENCY_NAME = "pyperclip"
+
+
+def _try_import_clipboard():
+    try:
+        import pyperclip  # pyright: ignore[reportMissingModuleSource] # noqa: PLC0415
+    except ImportError:
+        return None
+    else:
+        return pyperclip
 
 
 # this might need cleanup at some point
@@ -49,11 +62,15 @@ class Py2mlogCLIArgs(argparse.Namespace):
     outputs: list[Path] | None
     stdout: bool
     file: bool
+    copy: bool
 
 
-type COMPILE_PATH_CALLABLE = Callable[
-    [argparse.ArgumentParser, Py2mlogCLIArgs, Path, Path], None
-]
+type COMPILE_PATH_CALLABLE = Callable[[Py2mlogCLIArgs, Path, Path], None]
+
+
+def _log_err_and_exit(msg: str, exit_code: int = 1) -> NoReturn:
+    logger.error(msg)
+    sys.exit(exit_code)
 
 
 def log_compile(
@@ -61,7 +78,6 @@ def log_compile(
 ) -> COMPILE_PATH_CALLABLE:
     @wraps(func)
     def wrapper(
-        parser: argparse.ArgumentParser,
         args: Py2mlogCLIArgs,
         target: Path,
         output: Path,
@@ -73,7 +89,7 @@ def log_compile(
             f" to '{output.name}'" if args.file else "",
         )
 
-        result = func(parser, args, target, output)
+        result = func(args, target, output)
 
         logger.info("Done in %ss.", round(perf_counter() - time_st, 2))
 
@@ -83,27 +99,25 @@ def log_compile(
 
 
 def _compile_path(
-    parser: argparse.ArgumentParser,
     args: Py2mlogCLIArgs,
     target: Path,
     output: Path,
 ) -> None:
     if target.is_file():
-        _compile_file(parser, args, target, output)
+        _compile_file(args, target, output)
 
     elif target.is_dir():
-        _compile_dir(parser, args, target, output)
+        _compile_dir(args, target, output)
 
     elif not target.exists():
-        parser.error(f"Target '{target.resolve()}' does not exist.")
+        _log_err_and_exit(f"Target '{target.resolve()}' does not exist.")
 
     else:
-        parser.error("Something went wrong.")
+        _log_err_and_exit("Something went wrong.")
 
 
 @log_compile
 def _compile_dir(
-    parser: argparse.ArgumentParser,
     args: Py2mlogCLIArgs,
     target: Path,
     output: Path,
@@ -112,7 +126,7 @@ def _compile_dir(
         output.mkdir(parents=True)
 
     if not output.is_dir():
-        parser.error(
+        _log_err_and_exit(
             f"Target '{target.resolve()}' is a directory "
             f"but output '{output.resolve()}' is not a directory."
         )
@@ -121,7 +135,6 @@ def _compile_dir(
         if path.is_file() and path.suffix == ".py":
             with indent_log():
                 _compile_file(
-                    parser,
                     args,
                     path,
                     (output / path.relative_to(target)).with_suffix(".mlog"),
@@ -130,35 +143,30 @@ def _compile_dir(
 
 @log_compile
 def _compile_file(
-    parser: argparse.ArgumentParser,
     args: Py2mlogCLIArgs,
     target: Path,
     output: Path,
 ) -> None:
+    if not target.exists():
+        _log_err_and_exit(f"Target '{target.resolve()}' does not exist.")
     if not target.is_file():
-        parser.error(f"Target '{target.resolve()}' is not a file.")
+        _log_err_and_exit(f"Target '{target.resolve()}' is not a file.")
     if target.suffix != ".py":
-        parser.error(
-            f"Target '{target.resolve()}' does not have a .py extension."
+        logger.warning(
+            "Target '%s' does not have a .py extension.", output.resolve()
         )
 
     if output.exists() and not output.is_file():
-        parser.error(f"Output '{output.resolve()}' is not a file.")
+        _log_err_and_exit(f"Output '{output.resolve()}' is not a file.")
     if output.suffix != ".mlog":
-        parser.error(
-            f"Output '{output.resolve()}' does not have a .mlog extension."
+        logger.warning(
+            "Output '%s' does not have a .mlog extension.", output.resolve()
         )
 
     try:
         src = target.read_text(encoding="utf-8")
-    except PermissionError:
-        parser.error(f"Could not read from '{target.resolve()}'.")
-    except FileNotFoundError:
-        parser.error(f"Could not find '{target.resolve()}'.")
     except OSError as e:
-        parser.error(
-            f"An OS error occurred while reading from '{target.resolve()}': {e}"
-        )
+        _log_err_and_exit(f"Failed to read from '{target.resolve()}': {e!s}")
 
     try:
         mlog = compile_src_to_mlog(src)
@@ -171,32 +179,34 @@ def _compile_file(
         sys.exit(1)
 
     except CompilerError as e:
-        logger.error(  # noqa: TRY400
-            "A compiler error occurred while compiling %s:\n\n%s: %s",
-            target.name,
-            type(e).__name__,
-            e,
+        _log_err_and_exit(
+            f"A compiler error occurred while compiling {target.name}:\n\n"
+            f"{type(e).__name__}: {e!s}",
         )
-        sys.exit(1)
 
     if args.stdout:
         sys.stdout.write(f"\n{indent(mlog, '\t' * (indent_level + 1))}\n\n")
+
+    pyperclip = _try_import_clipboard()
+    if args.copy and pyperclip is not None:
+        try:
+            pyperclip.copy(mlog)
+        except pyperclip.PyperclipException:
+            logger.exception(
+                "An error occurred while copying output to clipboard: %s"
+            )
+            sys.exit(1)
 
     if args.file:
         try:
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(mlog, encoding="utf-8")
-        except PermissionError:
-            parser.error(f"Could not write to '{output.resolve()}'.")
-        except FileNotFoundError:
-            parser.error(f"Could not find '{output.resolve()}'.")
         except OSError as e:
-            parser.error(
-                f"An OS error occurred while writing to '{output.resolve()}': {e}"
-            )
+            _log_err_and_exit(f"Failed to write to '{output.resolve()}': {e!s}")
 
 
-def main(argv: list[str] | None = None) -> None:
+# thx pyndustric <3
+def _create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="py2mlog",
         description="A python to mindustry logic (mlog) compiler.",
@@ -219,7 +229,7 @@ def main(argv: list[str] | None = None) -> None:
         nargs="+",
         default=None,
         type=Path,
-        help="The output file/folder(s) (defaults to path/to/python/src/<target>.mlog).",
+        help="The output file/folder(s) (defaults to path/to/src/<target>.mlog).",
         dest="outputs",
     )
     parser.add_argument(
@@ -227,31 +237,53 @@ def main(argv: list[str] | None = None) -> None:
         "--stdout",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="Whether to print result to standard output (defaults to False).",
+        help="Print result to standard output (defaults to False).",
     )
     parser.add_argument(
-        "-f",
         "--file",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Whether to create output file/folder(s). "
-        "Overrides '--output' when False. Defaults to True.",
+        help="Create output file/folder(s) (defaults to True).",
+    )
+    parser.add_argument(
+        "-c",
+        "--copy",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Copy output to clipboard. "
+        f"Requires optional dependency '{CLIPBOARD_DEPENDENCY_NAME}'. "
+        "Can only be used with singular files. Defaults to False.",
     )
 
-    args = parser.parse_args(argv, namespace=Py2mlogCLIArgs())
+    return parser
 
+
+def main(argv: list[str] | None = None) -> None:
     handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(
-        IndentFormatter("%(levelname)s  %(filename)s: %(message)s")
-    )
+    handler.setFormatter(IndentFormatter("%(levelname)s %(message)s"))
     logging.basicConfig(level=logging.INFO, handlers=[handler])
+
+    parser = _create_parser()
+    args = parser.parse_args(argv, namespace=Py2mlogCLIArgs())
 
     if args.outputs is None:
         args.outputs = []
-
-    if not args.stdout and not args.file:
+    elif not args.file:
         parser.error(
-            "No output provided; cannot disable stdout and file outputs together."
+            "'-o' or '--output' specify the output files."
+            "They cannot be used with '--no-file'."
+        )
+
+    if not args.stdout and not args.file and not args.copy:
+        parser.error(
+            "No output provided; cannot disable stdout, "
+            "file and clipboard outputs together."
+        )
+
+    if args.copy and _try_import_clipboard() is None:
+        _log_err_and_exit(
+            f"Missing dependency '{CLIPBOARD_DEPENDENCY_NAME}' "
+            "for '-c' or '--clip'.",
         )
 
     time_st = perf_counter()
@@ -261,6 +293,6 @@ def main(argv: list[str] | None = None) -> None:
         else:
             output = target.with_suffix(".mlog") if target.is_file() else target
 
-        _compile_path(parser, args, target, output)
+        _compile_path(args, target, output)
 
     logger.info("All done in %ss!", round(perf_counter() - time_st, 2))
