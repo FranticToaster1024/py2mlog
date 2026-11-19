@@ -1,4 +1,24 @@
 const input_textarea = document.getElementById("input");
+
+
+const MIN_DT_MS = 100;
+let live_compile_timeout;
+
+function _clear_timeout_and_compile() {
+    clearTimeout(live_compile_timeout);
+    compile();
+}
+
+function _reset_timeout() {
+    clearTimeout(live_compile_timeout);
+    live_compile_timeout = setTimeout(compile, MIN_DT_MS);
+}
+input_textarea.addEventListener("input", () => {
+    if (live_btn.ariaPressed !== "true") return;
+    _reset_timeout();
+});
+
+
 input_textarea.addEventListener("keydown", e => {
     if (e.key === "Tab") {
         e.preventDefault();
@@ -8,9 +28,10 @@ input_textarea.addEventListener("keydown", e => {
             input_textarea.selectionEnd,
             "end",
         );
+        _reset_timeout();
     } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
-        compile();
+        _clear_timeout_and_compile();
     }
 });
 
@@ -21,20 +42,11 @@ live_btn.addEventListener("click", () => {
     live_btn.ariaPressed = pressed;
 
     if (pressed == "true") {
-        compile();
+        _clear_timeout_and_compile();
     }
 });
 
 
-const MIN_DT_MS = 100;
-let live_compile_timeout;
-
-input_textarea.addEventListener("input", () => {
-    if (live_btn.ariaPressed !== "true") return;
-
-    clearTimeout(live_compile_timeout);
-    live_compile_timeout = setTimeout(compile, MIN_DT_MS);
-});
 
 
 const outputElement = document.getElementById("output");
@@ -59,7 +71,7 @@ document.getElementById("editor").style.display = "flex";
 document.getElementById("loading").style.display = "none";
 
 const compile_button = document.getElementById("compile");
-compile_button.addEventListener("click", compile);
+compile_button.addEventListener("click", _clear_timeout_and_compile);
 
 
 function compile() {
