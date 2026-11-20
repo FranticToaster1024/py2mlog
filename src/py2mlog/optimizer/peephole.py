@@ -1,14 +1,16 @@
 import logging
 from collections import deque
+from itertools import accumulate
 
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
+from py2mlog.mlog.mlog_expressions import MlogStringLiteral
 from py2mlog.mlog.suboperations import (
     NEGATED_COND_OP_SUBOP_MAP,
     ConditionOpSuboperation,
 )
-from py2mlog.optimizer.utils import get_jump_target_name
+from py2mlog.optimizer.utils import get_jump_target_name, mlog_expr_as_print_str
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,225 @@ def peephole(instrs: tuple[MlogItem, ...], /) -> tuple[MlogItem, ...]:
     jump_label_map = _generate_jump_label_map(instrs)
 
     instrs = _remove_useless_end_and_wrap_labels(instrs)
-    return _simplify_adjacent_jumps(instrs, jump_label_map=jump_label_map)
+    instrs = _simplify_adjacent_jumps(instrs, jump_label_map=jump_label_map)
+    return _merge_prints(instrs)
+
+
+# probably shitty time complexity
+def _merge_prints(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
+    new_instrs: list[MlogItem] = []
+
+    # we can't process the string
+    # until we have all the format instrs
+    # (processed, unprocessed)
+    curr_print_strs: tuple[str | None, str | None] = (None, None)
+    # temporary buffer
+    curr_format_instrs: list[Instruction] = []
+    ordered_format_instrs: list[Instruction] = []
+
+    def _flush_instrs():
+        nonlocal curr_print_strs, curr_format_instrs, ordered_format_instrs
+
+        if curr_print_strs != (None, None):
+            processed_str = (
+                "" if curr_print_strs[0] is None else curr_print_strs[0]
+            )
+
+            if curr_print_strs[1] is not None:
+                unprocessed_str = curr_print_strs[1]
+                new_str, format_instrs = (
+                    _rewrite_placeholders_and_reorder_format_instrs(
+                        unprocessed_str, curr_format_instrs
+                    )
+                )
+            else:
+                new_str = ""
+                format_instrs = curr_format_instrs
+
+            ordered_format_instrs.extend(format_instrs)
+            curr_format_instrs = []
+
+            new_instrs.append(
+                Instruction(
+                    InstructionType.PRINT,
+                    None,
+                    (),
+                    (MlogStringLiteral(processed_str + new_str),),
+                )
+            )
+            new_instrs.extend(ordered_format_instrs)
+
+        elif ordered_format_instrs:
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err=r"shouldn't happen ¯\_(ツ)_/¯",
+            )
+
+        curr_print_strs = (None, None)
+        ordered_format_instrs = []
+        curr_format_instrs = []
+
+    i = 0
+    while i < len(instrs):
+        instr = instrs[i]
+        if isinstance(instr, Instruction):
+            if instr.type is InstructionType.PRINT:
+                print_str = mlog_expr_as_print_str(instr.args[0])
+
+                if curr_print_strs[0] is None and curr_print_strs[1] is None:
+                    # we ignore those that are
+                    # - at the start of the chain
+                    # - cannot be statically converted to a string
+                    if print_str is not None:
+                        if curr_format_instrs or ordered_format_instrs:
+                            raise CompilerError(
+                                CompilerErrorType.INTERNAL,
+                                None,
+                                err=r"shouldn't happen ¯\_(ツ)_/¯",
+                            )
+
+                        curr_print_strs = (curr_print_strs[0], print_str)
+
+                        i += 1
+                        continue
+
+                else:
+                    if curr_print_strs[1] is not None:
+                        processed_str = (
+                            ""
+                            if curr_print_strs[0] is None
+                            else curr_print_strs[0]
+                        )
+
+                        new_str, format_instrs = (
+                            _rewrite_placeholders_and_reorder_format_instrs(
+                                curr_print_strs[1], curr_format_instrs
+                            )
+                        )
+                        curr_print_strs = (processed_str + new_str, None)
+
+                        ordered_format_instrs.extend(format_instrs)
+                        curr_format_instrs = []
+
+                    if print_str is None:
+                        curr_print_strs = (
+                            curr_print_strs[0] + "{0}",
+                            curr_print_strs[1],
+                        )
+                        ordered_format_instrs.append(
+                            Instruction(
+                                InstructionType.FORMAT,
+                                None,
+                                (),
+                                (instr.args[0],),
+                            )
+                        )
+
+                        i += 1
+                        continue
+
+                    curr_print_strs = (curr_print_strs[0], print_str)
+
+                    i += 1
+                    continue
+
+            elif (
+                instr.type is InstructionType.FORMAT
+                and curr_print_strs[1] is not None
+            ):
+                curr_format_instrs.append(instr)
+                i += 1
+                continue
+
+        _flush_instrs()
+
+        new_instrs.append(instr)
+        i += 1
+
+    _flush_instrs()
+
+    return tuple(new_instrs)
+
+
+# mindustry only fills one placeholder at once,
+# so we can rewrite every placeholder as {0}
+# if we re-order the format instructions accordingly
+# https://github.com/Anuken/Mindustry/blob/19a0f40d44514f4802a8b79770456e7e32e34da0/core/src/mindustry/logic/LExecutor.java#L1127
+def _rewrite_placeholders_and_reorder_format_instrs(
+    tgt_str: str, format_instrs: list[Instruction]
+) -> tuple[str, list[Instruction]]:
+    """
+    Replaces all placeholders with {0} and reorders format instructions accordingly.
+    Mutates format_instrs.
+    Returns (new_str, format_instrs).
+    """
+    output = list(tgt_str)
+
+    placeholder_str_indexes, placeholder_fill_order = (
+        _get_placeholder_str_indexes_and_fill_order(tgt_str)
+    )
+
+    for i, (str_idx, fill_idx) in enumerate(
+        zip(placeholder_str_indexes, placeholder_fill_order, strict=True)
+    ):
+        # the number inside the placeholder
+        # {0}, {1}, etc
+        #  ^    ^
+        num = int(tgt_str[str_idx])
+
+        if num == 0:
+            continue
+
+        output[str_idx] = "0"
+        format_instrs[fill_idx], format_instrs[i] = (
+            format_instrs[i],
+            format_instrs[fill_idx],
+        )
+
+    return ("".join(output), format_instrs)
+
+
+def _get_placeholder_str_indexes_and_fill_order(
+    tgt_str: str,
+) -> tuple[list[int], list[int]]:
+    placeholder_str_indexes: list[int] = []
+    placeholder_num_counts = [0] * 9
+
+    i = 0
+    while i < len(tgt_str):
+        char = tgt_str[i]
+        if (
+            char == "{"
+            and i + 2 < len(tgt_str)
+            and tgt_str[i + 1].isdigit()
+            and tgt_str[i + 2] == "}"
+        ):
+            num = int(tgt_str[i + 1])
+            placeholder_str_indexes.append(i + 1)
+            placeholder_num_counts[num] += 1
+
+        i += 1
+
+    placeholder_num_cum_counts = list(accumulate(placeholder_num_counts))
+    # ¯\_(ツ)_/¯
+    curr_placeholder_num_counts = [0] * 9
+
+    placeholder_fill_order: list[int] = []
+    for i in placeholder_str_indexes:
+        num = int(tgt_str[i])
+
+        if num == 0:
+            placeholder_fill_order.append(curr_placeholder_num_counts[0])
+        else:
+            placeholder_fill_order.append(
+                curr_placeholder_num_counts[num]
+                + placeholder_num_cum_counts[num - 1]
+            )
+
+        curr_placeholder_num_counts[num] += 1
+
+    return (placeholder_str_indexes, placeholder_fill_order)
 
 
 def _remove_useless_end_and_wrap_labels(

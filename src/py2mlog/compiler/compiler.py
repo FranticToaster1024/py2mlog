@@ -50,14 +50,12 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
     IntrinsicFunc,
 )
-from py2mlog.mlog import codegen
 from py2mlog.mlog.instruction import Instruction, Label
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
     LabelRef,
     MlogBoolLiteral,
     MlogBuiltin,
-    MlogColorLiteral,
     MlogExpr,
     MlogFillerExpr,
     MlogNullLiteral,
@@ -72,6 +70,7 @@ from py2mlog.mlog.suboperations import (
     UnitControlSuboperation,
 )
 from py2mlog.optimizer.peephole import _remove_useless_end_and_wrap_labels  # pyright: ignore[reportPrivateUsage]
+from py2mlog.optimizer.utils import mlog_expr_as_print_str
 
 logger = logging.getLogger(__name__)
 
@@ -947,21 +946,15 @@ class Compiler:
         instrs: list[Instruction] = []
 
         def _format_mlog_expr(e: MlogExpr) -> None:
-            # TODO: do something about the color literals
-            if isinstance(e, (MlogVar, MlogColorLiteral)):
+            print_str = mlog_expr_as_print_str(e)
+            if print_str is None:
                 s.append("{0}")
                 instrs.append(
                     Instruction(InstructionType.FORMAT, None, (), (e,))
                 )
-            elif isinstance(e, MlogBoolLiteral):
-                s.append(str(int(e.value)))
-            elif isinstance(e, MlogBuiltin):
-                s.append(e.name)
-            # generate str instead of 'str'
-            elif isinstance(e, MlogStringLiteral):
-                s.append(e.value)
+
             else:
-                s.append(codegen.arg_to_str(e))
+                s.append(print_str)
 
         for i, arg in enumerate(func_call.args):
             # handling general case first which is a little silly

@@ -81,17 +81,13 @@ See [FEATURES.md](doc/FEATURES.md).
 - more optimization
 - world instructions
 - **Better errors**
-- Inline mlog
 - Config file?
 - CLI upgrade?
-- Passing functions (representing functions as line numbers instead of labels)
-- Recursive functions (stack frames)
 
 
 ## AI assistance
 Some testcases in `tests/` were generated using AI tools and reviewed/rewritten by me.
-Additionally, AI assistance was used for configuration files (such as .github/workflows/ci.yml, pyproject.toml).
-AI assistance was also used in some parts of the source code, such as [`func_utils.py`](src/py2mlog/compiler/func_utils.py) and [`script.js`](web/script.js). All source code was handwritten though.
+Additionally, AI assistance was used for configuration files (such as .github/workflows/ci.yml, pyproject.toml), and in some parts of the source code, such as [`func_utils.py`](src/py2mlog/compiler/func_utils.py) and [`script.js`](web/script.js). All source code was handwritten though.
 
 
 ## Credits

@@ -144,6 +144,7 @@ jump l1 lessThan x 32
 printflush message1
 """)
 ```
+> **Note**: These are parsed and treated identically to compiled mlog instructions; optimizations still apply to them. In other words, what you pass to `mlog_raw()` may be different from the actual mlog output.
 
 
 Non-recursive custom function definitions.

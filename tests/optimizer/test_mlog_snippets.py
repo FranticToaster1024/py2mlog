@@ -98,6 +98,95 @@ OPTIMIZER_SNIPPET_TESTCASES = [
         """,
         id="unreachable-code-after-stop",
     ),
+    pytest.param(
+        """
+        print "foo"
+        print "bar"
+        noop
+        print "foo"
+        print "bar"
+        print "baz"
+        print "idk"
+        """,
+        """
+        print "foobar"
+        noop
+        print "foobarbazidk"
+        """,
+        id="print-merge",
+    ),
+    pytest.param(
+        """
+        print "foo"
+        print a
+        print 123
+        print "bar"
+        print b
+        print "baz"
+        """,
+        """
+        print "foo{0}123bar{0}baz"
+        format a
+        format b
+        """,
+        id="print-merge-with-vars",
+    ),
+    pytest.param(
+        """
+        print "foo{0}{1}{0}foo"
+        format a
+        format b
+        format c
+        """,
+        """
+        print "foo{0}{0}{0}foo"
+        format a
+        format c
+        format b
+        """,
+        id="print-merge-with-format",
+    ),
+    pytest.param(
+        """
+        print "foo{1}foo{0}foo"
+        format a
+        format b
+        print "foo{0}{1}{0}foo"
+        format c
+        format d
+        format e
+        """,
+        """
+        print "foo{0}foo{0}foofoo{0}{0}{0}foo"
+        format b
+        format a
+        format c
+        format e
+        format d
+        """,
+        id="print-merge-with-formats",
+    ),
+    pytest.param("print a", "print a", id="print-var-no-pessimization"),
+    pytest.param(
+        'print "literal"',
+        'print "literal"',
+        id="print-str-pessimization",
+    ),
+    pytest.param(
+        'print "literal"\nnoop',
+        'print "literal"\nnoop',
+        id="multiple-print-str-pessimization",
+    ),
+    pytest.param(
+        "print a\nprint b\nprint c",
+        "print a\nprint b\nprint c",
+        id="multiple-print-var-no-pessimization",
+    ),
+    pytest.param(
+        'print "foo"\nprint a',
+        'print "foo{0}"\nformat a',
+        id="mixed-print-no-pessimization",
+    ),
 ]
 
 
