@@ -63,6 +63,12 @@ for i in range(5):
     for j in range(i, 10 * 2, 3):
         result += j
 ```
+> **Note**: The loop iteration number can be modified directly; be wary of this. For example:
+```py
+for i in range(10):
+    # oh no!
+    i += 10
+```
 
 
 `for ... Env.links()`:
@@ -145,6 +151,7 @@ printflush message1
 """)
 ```
 > **Note**: These are parsed and treated identically to compiled mlog instructions; optimizations still apply to them. In other words, what you pass to `mlog_raw()` may be different from the actual mlog output.
+> **Note**: Absolute line numbers in jump instructions will be interpreted literally, not relative to the function call. Use labels whenever possible.
 
 
 Non-recursive custom function definitions.

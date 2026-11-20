@@ -156,6 +156,31 @@ _test_error_list_testcases = [
         CompilerErrorType.BAD_IMPORT,
         id="bad-imports",
     ),
+    pytest.param(
+        (
+            "inline(func)",
+            *(
+                f"{e}\nfor i in range(5):\n\tpass"
+                for e in (
+                    "unroll()",
+                    "unroll(3.14)",
+                    'unroll("bad str")',
+                    "unroll(-1)",
+                )
+            ),
+            """
+            unroll(8)
+            x += 1
+            """,
+            """
+            unroll("all")
+            for l in Env.links():
+                pass
+            """,
+        ),
+        CompilerErrorType.BAD_DIRECTIVE,
+        id="bad-compiler-directives",
+    ),
 ]
 
 

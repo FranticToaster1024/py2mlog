@@ -376,7 +376,6 @@ COMPILER_SNIPPET_TESTCASES = [
             "__p2m_label1:",
             "jump __p2m_label1 equal condition1 false",
             "__p2m_label0:",
-            # could use optimization here as well
             "jump __p2m_label2 equal condition2 false",
             "jump __p2m_label1 always",
             "__p2m_label2:",
@@ -629,7 +628,6 @@ COMPILER_SNIPPET_TESTCASES = [
             "op mul __p2m_tmp0 __p2m_tmp0 1",
             "op sub __p2m_tmp0 index __p2m_tmp0",
             "__p2m_label0:",
-            # optimization available again
             "jump __p2m_label2 equal should_stop false",
             "jump __p2m_label1 always",
             "__p2m_label2:",
@@ -655,7 +653,6 @@ COMPILER_SNIPPET_TESTCASES = [
             "op mul __p2m_tmp0 __p2m_tmp0 1",
             "op sub __p2m_tmp0 index __p2m_tmp0",
             "__p2m_label0:",
-            # ¯\_(ツ)_/¯
             "jump __p2m_label2 equal should_skip false",
             "jump __p2m_label3 always",
             "__p2m_label2:",
@@ -757,6 +754,45 @@ COMPILER_SNIPPET_TESTCASES = [
             "jump __p2m_label0 notEqual outer __p2m_tmp0",
         ),
         id="nested-for-range-break-continue",
+    ),
+    pytest.param(
+        """
+        unroll("full")
+        for i in range(2):
+            if should_stop:
+                break
+            if should_skip:
+                continue
+            result = i
+
+        else:
+            e = True
+        """,
+        (
+            "__p2m_label3:",
+            "set i 0",
+            "set i 0",  # duplicate
+            "jump __p2m_label2 equal should_stop false",
+            "jump __p2m_label3 always",
+            "__p2m_label2:",
+            "jump __p2m_label4 equal should_skip false",
+            "jump __p2m_label5 always",
+            "__p2m_label4:",
+            "set result i",
+            "__p2m_label5:",
+            "set i 1",
+            "jump __p2m_label6 equal should_stop false",
+            "jump __p2m_label3 always",
+            "__p2m_label6:",
+            "jump __p2m_label7 equal should_skip false",
+            "jump __p2m_label8 always",
+            "__p2m_label7:",
+            "set result i",
+            "__p2m_label8:",
+            "__p2m_label1:",  # no initial check to jump here
+            "set e true",
+        ),
+        id="unrolled-for-range-break-continue-else",
     ),
     pytest.param(
         """

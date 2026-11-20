@@ -7,12 +7,18 @@ from inspect import signature
 
 from py2mlog import intrinsics
 from py2mlog.compiler import config
+from py2mlog.compiler.directives import Directives, UnrollDirective
 from py2mlog.compiler.emitter import Emitter
 from py2mlog.compiler.error import (
     CompilerError,
     CompilerErrorType,
     HasPosition,
     SourceLocation,
+)
+from py2mlog.compiler.for_loop_control_instrs import (
+    LoopLabelRefs,
+    env_links_for_loop_control_instrs,
+    range_for_loop_control_instrs,
 )
 from py2mlog.compiler.func_utils import (
     CompiledFunc,
@@ -107,6 +113,8 @@ class Compiler:
             "print": self._compile_print_call,
             "mlog_raw": self._compile_mlog_raw_call,
         }
+
+        self._unroll: UnrollDirective | None = None
 
     def compile(self):
         for node in self._ast.body:
@@ -692,6 +700,19 @@ class Compiler:
             )
         func_name = func_call.func.id
 
+        # check if it's a compiler directive
+        try:
+            Directives(func_name)
+        except ValueError:
+            pass
+        else:
+            raise CompilerError(
+                CompilerErrorType.BAD_DIRECTIVE,
+                src_loc,
+                err=f"Called compiler directive '{func_name}' "
+                "in disallowed context",
+            )
+
         # basic recursion check
         if f"{PREFIX_FUNC_SCOPE}{func_name}" in self._scope:
             raise self._unsupported_expr_error(func_call, " with recursion")
@@ -857,12 +878,7 @@ class Compiler:
         func_def = inline_func_def.func_def
 
         with self._inline_func_context(func_call, func_def, output_expr):
-            for stmt in func_def.body:
-                self.compile_stmt(stmt)
-                if isinstance(stmt, ast.Return):
-                    break
-            else:
-                self._compile_return(None)
+            self.compile_func_def_body(func_def.body)
 
         return output_expr
 
@@ -1201,7 +1217,75 @@ class Compiler:
         )
 
     def compile_stmt(self, stmt: ast.stmt) -> None:
+        if (
+            isinstance(stmt, ast.Expr)
+            and isinstance(stmt.value, ast.Call)
+            and isinstance(stmt.value.func, ast.Name)
+            and stmt.value.func.id == "unroll"
+        ):
+            src_loc = self._get_src_loc_from_node(stmt)
+            call = stmt.value
+
+            if call.keywords:
+                raise CompilerError(
+                    CompilerErrorType.BAD_DIRECTIVE,
+                    src_loc,
+                    err="'unroll()' takes 0 kwargs",
+                )
+
+            if len(call.args) != 1:
+                raise CompilerError(
+                    CompilerErrorType.BAD_DIRECTIVE,
+                    src_loc,
+                    err="Pos arg count mismatch for 'unroll()': "
+                    f"Expected 1, got {len(call.args)}",
+                )
+
+            if not isinstance(call.args[0], ast.Constant):
+                raise CompilerError(
+                    CompilerErrorType.BAD_DIRECTIVE,
+                    src_loc,
+                    err="Called 'unroll()' with non-literal",
+                )
+
+            factor = call.args[0].value
+            if not isinstance(factor, (int, str)):
+                raise CompilerError(
+                    CompilerErrorType.BAD_DIRECTIVE,
+                    src_loc,
+                    err="Called 'unroll()' with unsupported literal type. "
+                    'Expected int or str literal "all"',
+                )
+
+            if isinstance(factor, str) and factor != "full":
+                raise CompilerError(
+                    CompilerErrorType.BAD_DIRECTIVE,
+                    src_loc,
+                    err="Called 'unroll()' with unsupported string literal. "
+                    f"Expected \"full\", got '{factor}'",
+                )
+
+            if isinstance(factor, int) and factor <= 0:
+                raise CompilerError(
+                    CompilerErrorType.BAD_DIRECTIVE,
+                    src_loc,
+                    err="Called 'unroll()' with non-positive integer: "
+                    f"'{factor}'",
+                )
+
+            self._unroll = UnrollDirective(factor, src_loc)
+
+            return
+
+        compiled = self._compile_stmt(stmt)
+
+        self._check_directives_clear()
+
+        return compiled
+
+    def _compile_stmt(self, stmt: ast.stmt) -> None:
         src_loc = self._get_src_loc_from_node(stmt)
+
         match stmt:
             case ast.Expr(value=value):
                 self.compile_expr(value)
@@ -1344,8 +1428,7 @@ class Compiler:
                     )
                 )
 
-                for stmt_ in body:
-                    self.compile_stmt(stmt_)
+                self.compile_stmt_list(body)
 
                 if orelse:
                     skip_else_label, skip_else_label_ref = (
@@ -1365,13 +1448,22 @@ class Compiler:
 
                 self.emitter.emit_label(else_label)
 
-                for stmt_ in orelse:
-                    self.compile_stmt(stmt_)
+                self.compile_stmt_list(orelse)
 
                 if skip_else_label is not None:
                     self.emitter.emit_label(skip_else_label)
 
             case ast.While(test=test, body=body, orelse=orelse):
+                unroll = self._unroll
+                self._unroll = None
+
+                if unroll is not None:
+                    raise CompilerError(
+                        CompilerErrorType.UNSUPPORTED,
+                        src_loc,
+                        feature="unrolling while loops",
+                    )
+
                 loop_label, loop_label_ref = self.emitter.new_label()
                 else_label, else_label_ref = self.emitter.new_label()
                 break_label = None if orelse else else_label
@@ -1393,8 +1485,7 @@ class Compiler:
                 self.emitter.emit_label(loop_label)
 
                 with self._loop_context(break_label, break_label_ref):
-                    for stmt_ in body:
-                        self.compile_stmt(stmt_)
+                    self.compile_stmt_list(body)
 
                     # this solution is really confusing imo but oh well
                     this_loop_break = self._current_loop_break
@@ -1418,8 +1509,7 @@ class Compiler:
 
                 self.emitter.emit_label(else_label)
 
-                for stmt_ in orelse:
-                    self.compile_stmt(stmt_)
+                self.compile_stmt_list(orelse)
 
                 # to prevent duplicate emission because of my shitty code
                 if orelse and this_loop_break is not None:
@@ -1529,159 +1619,110 @@ class Compiler:
                 pass  # haha funny
 
             case ast.For(target=target, iter=iter_, body=body, orelse=orelse):
+                unroll = self._unroll
+                self._unroll = None
+
                 if not isinstance(target, ast.Name):
                     raise self._unsupported_stmt_error(
                         stmt, " complex loop target"
                     )
 
                 compiled_target = self.compile_target(target)
+
+                loop_label, loop_label_ref = self.emitter.new_label()
+                else_label, else_label_ref = self.emitter.new_label()
+                break_label = None if orelse else else_label
+                break_label_ref = None if orelse else else_label_ref
+
                 if (
                     isinstance(iter_, ast.Call)
                     and isinstance(iter_.func, ast.Name)
                     and iter_.func.id == "range"
                 ):
-                    if len(iter_.args) == 1:
-                        self.emitter.emit_instruction(
-                            Instruction(
-                                InstructionType.SET,
-                                None,
-                                (),
-                                (compiled_target, MlogNumberLiteral(0)),
+                    start, stop, step = self._process_range_call(
+                        iter_, compiled_target, src_loc
+                    )
+
+                    if unroll is not None and unroll.factor == "full":
+                        if (
+                            not isinstance(start, MlogNumberLiteral)
+                            or not isinstance(stop, MlogNumberLiteral)
+                            or not isinstance(step, MlogNumberLiteral)
+                        ):
+                            raise CompilerError(
+                                CompilerErrorType.BAD_DIRECTIVE,
+                                self._get_src_loc_from_node(iter_),
+                                err="Cannot fully unroll 'range()' with non number-literal",
                             )
-                        )
-                        start = compiled_target  # i think this is fine?
-                        stop = self.compile_expr(iter_.args[0])
-                        step = MlogNumberLiteral(1)
-                    elif len(iter_.args) <= 3:  # noqa: PLR2004
-                        start = self.compile_expr(
-                            iter_.args[0], compiled_target
-                        )
-                        stop = self.compile_expr(iter_.args[1])
-                        step = (
-                            MlogNumberLiteral(1)
-                            if len(iter_.args) == 2  # noqa:PLR2004
-                            else self.compile_expr(iter_.args[2])
-                        )
-                    else:
+
+                        if (
+                            not isinstance(start.value, int)
+                            or not isinstance(stop.value, int)
+                            or not isinstance(step.value, int)
+                        ):
+                            raise CompilerError(
+                                CompilerErrorType.BAD_DIRECTIVE,
+                                self._get_src_loc_from_node(iter_),
+                                err="Cannot fully unroll 'range()' with float literal",
+                            )
+
+                        this_loop_break = None
+                        for i in range(start.value, stop.value, step.value):
+                            # ideally this would belong in for_loop_control_instrs.py
+                            self.emitter.emit_instruction(
+                                Instruction(
+                                    InstructionType.SET,
+                                    None,
+                                    (),
+                                    (compiled_target, MlogNumberLiteral(i)),
+                                )
+                            )
+
+                            # recompile body every time
+                            # should prevent tmps from carrying over
+                            # and prevent continue label clashes
+                            with self._loop_context(
+                                break_label, break_label_ref
+                            ):
+                                self.compile_stmt_list(body)
+
+                                this_loop_break = self._current_loop_break
+                                this_loop_break_ref = (
+                                    self._current_loop_break_ref
+                                )
+
+                                if self._current_loop_continue:
+                                    self.emitter.emit_label(
+                                        self._current_loop_continue
+                                    )
+
+                            if break_label is None:
+                                break_label = this_loop_break
+                                break_label_ref = this_loop_break_ref
+
+                        self.emitter.emit_label(else_label)
+                        self.compile_stmt_list(orelse)
+
+                        if orelse and this_loop_break is not None:
+                            self.emitter.emit_label(this_loop_break)
+
+                        return
+
+                    if unroll is not None:
                         raise CompilerError(
-                            CompilerErrorType.BAD_CALL,
-                            self._get_src_loc_from_node(iter_),
-                            err="Too many arguments for range()",
+                            CompilerErrorType.UNSUPPORTED,
+                            unroll.src_loc,
+                            feature="partial unrolling",
                         )
 
-                    loop_label, loop_label_ref = self.emitter.new_label()
-                    else_label, else_label_ref = self.emitter.new_label()
-                    break_label = None if orelse else else_label
-                    break_label_ref = None if orelse else else_label_ref
-
-                    # loop entry
-                    # op sub tmp start stop
-                    # op idiv tmp2 tmp step
-                    # jump skip greaterThanEq tmp2 0
-                    # op mul tmp3 tmp2 step
-                    # op sub end start tmp3
-
-                    # reuse tmp because i can
-                    # notice how in the above commented code,
-                    # tmp is only used to find tmp2
-                    # tmp2 is not used after finding tmp3
-                    # tmp3 is only used to find end
-                    start_minus_stop = negative_len = (
-                        negative_offset_from_start
-                    ) = target_end_val = self.emitter.new_tmp()
-
-                    self.emitter.emit_items(
-                        (
-                            # subtract start from stop to save an instruction, explained below
-                            Instruction(
-                                InstructionType.OPERATION,
-                                OperationSuboperation.SUB,
-                                (),
-                                (start_minus_stop, start, stop),
-                            ),
-                            # negative len to save an instruction
-                            # because with positive len
-                            # i'd need to do ceil and div (2 instructions)
-                            # which is combined into idiv with negative len
-                            Instruction(
-                                InstructionType.OPERATION,
-                                OperationSuboperation.INTEGER_DIV,
-                                (),
-                                (negative_len, start_minus_stop, step),
-                            ),
-                            # `-len >= 0` equivalent to `len <= 0`
-                            Instruction(
-                                InstructionType.JUMP,
-                                ConditionOpSuboperation.GREATER_THAN_OR_EQ,
-                                (),
-                                (
-                                    else_label_ref,
-                                    negative_len,
-                                    MlogNumberLiteral(0),
-                                ),
-                            ),
-                            Instruction(
-                                InstructionType.OPERATION,
-                                OperationSuboperation.MUL,
-                                (),
-                                (
-                                    negative_offset_from_start,
-                                    negative_len,
-                                    step,
-                                ),
-                            ),
-                            # subtract because well the offset is negative
-                            Instruction(
-                                InstructionType.OPERATION,
-                                OperationSuboperation.SUB,
-                                (),
-                                (
-                                    target_end_val,
-                                    start,
-                                    negative_offset_from_start,
-                                ),
-                            ),
-                            loop_label,
-                        )
+                    loop_control_instrs = range_for_loop_control_instrs(
+                        LoopLabelRefs(loop_label_ref, else_label_ref),
+                        compiled_target,
+                        self.emitter.new_tmp(),
+                        start,
+                        stop,
+                        step,
                     )
-
-                    with self._loop_context(break_label, break_label_ref):
-                        for stmt_ in body:
-                            self.compile_stmt(stmt_)
-
-                        this_loop_break = self._current_loop_break
-
-                        # rmb continue label must be before increment
-                        if self._current_loop_continue:
-                            self.emitter.emit_label(self._current_loop_continue)
-
-                    self.emitter.emit_items(
-                        (
-                            Instruction(
-                                InstructionType.OPERATION,
-                                OperationSuboperation.ADD,
-                                (),
-                                (compiled_target, compiled_target, step),
-                            ),
-                            Instruction(
-                                InstructionType.JUMP,
-                                ConditionOpSuboperation.NOT_EQUAL,
-                                (),
-                                (
-                                    loop_label_ref,
-                                    compiled_target,
-                                    target_end_val,
-                                ),
-                            ),
-                            else_label,
-                        )
-                    )
-
-                    for stmt_ in orelse:
-                        self.compile_stmt(stmt_)
-
-                    if orelse and this_loop_break is not None:
-                        self.emitter.emit_label(this_loop_break)
 
                 elif (
                     isinstance(iter_, ast.Call)
@@ -1690,6 +1731,20 @@ class Compiler:
                     and iter_.func.value.id == "Env"
                     and iter_.func.attr == "links"
                 ):
+                    if unroll is not None and unroll.factor == "full":
+                        raise CompilerError(
+                            CompilerErrorType.BAD_DIRECTIVE,
+                            self._get_src_loc_from_node(iter_),
+                            err="Cannot fully unroll 'Env.links()'",
+                        )
+
+                    if unroll is not None:
+                        raise CompilerError(
+                            CompilerErrorType.UNSUPPORTED,
+                            self._get_src_loc_from_node(iter_),
+                            feature="unrolling with 'Env.links()'",
+                        )
+
                     if len(iter_.args) > 0 or len(iter_.keywords) > 0:
                         raise CompilerError(
                             CompilerErrorType.BAD_CALL,
@@ -1697,82 +1752,39 @@ class Compiler:
                             err="Env.links() does not take any arguments.",
                         )
 
-                    loop_label, loop_label_ref = self.emitter.new_label()
-                    else_label, else_label_ref = self.emitter.new_label()
-                    break_label = None if orelse else else_label
-                    break_label_ref = None if orelse else else_label_ref
-
                     loop_iter = self.emitter.new_loop_iter()
 
-                    self.emitter.emit_items(
-                        (
-                            Instruction(
-                                InstructionType.SET,
-                                None,
-                                (),
-                                (loop_iter, MlogNumberLiteral(0)),
-                            ),
-                            Instruction(
-                                InstructionType.JUMP,
-                                ConditionOpSuboperation.EQUAL,
-                                (),
-                                (
-                                    else_label_ref,
-                                    MlogBuiltin("links"),
-                                    MlogNumberLiteral(0),
-                                ),
-                            ),
-                            loop_label,
-                            Instruction(
-                                InstructionType.GET_LINK,
-                                None,
-                                (),
-                                (compiled_target, loop_iter),
-                            ),
-                        )
+                    loop_control_instrs = env_links_for_loop_control_instrs(
+                        LoopLabelRefs(loop_label_ref, else_label_ref),
+                        compiled_target,
+                        loop_iter,
                     )
-
-                    with self._loop_context(break_label, break_label_ref):
-                        for stmt_ in body:
-                            self.compile_stmt(stmt_)
-
-                        this_loop_break = self._current_loop_break
-
-                        if self._current_loop_continue:
-                            self.emitter.emit_label(self._current_loop_continue)
-
-                    self.emitter.emit_items(
-                        (
-                            Instruction(
-                                InstructionType.OPERATION,
-                                OperationSuboperation.ADD,
-                                (),
-                                (loop_iter, loop_iter, MlogNumberLiteral(1)),
-                            ),
-                            Instruction(
-                                InstructionType.JUMP,
-                                ConditionOpSuboperation.LESS_THAN,
-                                (),
-                                (
-                                    loop_label_ref,
-                                    loop_iter,
-                                    MlogBuiltin("links"),
-                                ),
-                            ),
-                            else_label,
-                        )
-                    )
-
-                    for stmt_ in orelse:
-                        self.compile_stmt(stmt_)
-
-                    if orelse and this_loop_break is not None:
-                        self.emitter.emit_label(this_loop_break)
 
                 else:
                     raise self._unsupported_stmt_error(
-                        stmt, " with non-range()/Env.Links iterable"
+                        stmt, " with non-range()/Env.links() iterable"
                     )
+
+                self.emitter.emit_items(loop_control_instrs.loop_start)
+                self.emitter.emit_label(loop_label)
+                self.emitter.emit_items(loop_control_instrs.body_start)
+
+                with self._loop_context(break_label, break_label_ref):
+                    for stmt_ in body:
+                        self.compile_stmt(stmt_)
+
+                    this_loop_break = self._current_loop_break
+
+                    if self._current_loop_continue:
+                        self.emitter.emit_label(self._current_loop_continue)
+
+                self.emitter.emit_items(loop_control_instrs.body_end)
+                self.emitter.emit_label(else_label)
+
+                self.compile_stmt_list(orelse)
+
+                if orelse and this_loop_break is not None:
+                    self.emitter.emit_label(this_loop_break)
 
             case ast.ImportFrom(module=module, level=level):
                 if module != "py2mlog" or level != 0:
@@ -1784,6 +1796,23 @@ class Compiler:
 
             case _:
                 raise self._unsupported_stmt_error(stmt)
+
+    def compile_stmt_list(self, stmts: list[ast.stmt]) -> None:
+        for stmt in stmts:
+            self.compile_stmt(stmt)
+
+        self._check_directives_clear()
+
+    def compile_func_def_body(self, body: list[ast.stmt]) -> None:
+        for stmt in body:
+            self.compile_stmt(stmt)
+            if isinstance(stmt, ast.Return):
+                break
+
+        else:
+            self._compile_return(None)
+
+        self._check_directives_clear()
 
     def _get_mem_expr(self, expr: ast.expr) -> ast.Attribute | None:
         """
@@ -1799,6 +1828,66 @@ class Compiler:
 
         return None
 
+    def _process_range_call(
+        self,
+        iter_: ast.Call,
+        compiled_for_loop_target: MlogExpr,
+        src_loc: SourceLocation,
+    ) -> tuple[
+        MlogNumberLiteral | MlogVar,
+        MlogNumberLiteral | MlogVar,
+        MlogNumberLiteral | MlogVar,
+    ]:
+        if len(iter_.args) == 1:
+            start = MlogNumberLiteral(0)
+            self.emitter.emit_instruction(
+                Instruction(
+                    InstructionType.SET,
+                    None,
+                    (),
+                    (compiled_for_loop_target, start),
+                )
+            )
+            stop = self.compile_expr(iter_.args[0])
+            step = MlogNumberLiteral(1)
+
+        elif 2 <= len(iter_.args) <= 3:  # noqa: PLR2004
+            start = self.compile_expr(iter_.args[0], compiled_for_loop_target)
+            stop = self.compile_expr(iter_.args[1])
+            step = (
+                MlogNumberLiteral(1)
+                if len(iter_.args) == 2  # noqa:PLR2004
+                else self.compile_expr(iter_.args[2])
+            )
+
+        else:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                self._get_src_loc_from_node(iter_),
+                err="Pos arg count mismatch for 'range()': "
+                f"Expected 1 to 3, got {len(iter_.args)}",
+            )
+
+        if (
+            not isinstance(start, (MlogNumberLiteral, MlogVar))
+            or not isinstance(stop, (MlogNumberLiteral, MlogVar))
+            or not isinstance(step, (MlogNumberLiteral, MlogVar))
+        ):
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err="'range()' arguments must be number literal or variable",
+            )
+
+        if any(
+            isinstance(arg.value, float)
+            for arg in (start, stop, step)
+            if isinstance(arg, MlogNumberLiteral)
+        ):
+            logger.warning("Called 'range()' with float literal.")
+
+        return (start, stop, step)
+
     def _compile_func_def(self, func_def: ast.FunctionDef) -> None:
         # TODO: non-special decorators
         inline = False
@@ -1808,12 +1897,12 @@ class Compiler:
                     func_def, " complex decorator"
                 )
 
-            if decor.id == "inline":
+            if decor.id == Directives.INLINE.value:
                 if inline:
                     raise CompilerError(
                         CompilerErrorType.SYNTAX,
                         self._get_src_loc_from_node(func_def),
-                        err=" duplicate '@inline' decorator",
+                        err=f"duplicate '@{Directives.INLINE.value}' decorator",
                     )
                 inline = True
             else:
@@ -1833,13 +1922,7 @@ class Compiler:
             call_label, call_label_ref = self.emitter.new_label()
             self.emitter.emit_label(call_label)
 
-            for stmt in func_def.body:
-                self.compile_stmt(stmt)
-                if isinstance(stmt, ast.Return):
-                    break
-
-            else:
-                self._compile_return(None)
+            self.compile_func_def_body(func_def.body)
 
             self._func_table[scope_str] = CompiledFunc(
                 call_label_ref,
@@ -1931,6 +2014,16 @@ class Compiler:
         self._current_loop_continue_ref = prev_continue_ref
 
     @contextmanager
+    def _clear_instr_list(self) -> Generator[None, None, None]:
+        """*Temporarily* replace emitter instruction list with a fresh one."""
+        old_instructions = self.emitter.instructions
+        self.emitter.instructions = []
+
+        yield
+
+        self.emitter.instructions = old_instructions
+
+    @contextmanager
     def _func_context(
         self,
         func_def: ast.FunctionDef,
@@ -1995,7 +2088,7 @@ class Compiler:
         func_call: ast.Call,
         func_def: ast.FunctionDef,
         output_expr: MlogExpr,
-    ):
+    ) -> Generator[None, None, None]:
         *_, arg_map = resolve_args(
             func_call.args,
             func_call.keywords,
@@ -2024,6 +2117,14 @@ class Compiler:
         return ".".join(  # maybe use '::'?
             [*(self._scope if self._scope[0] else local_), scope_name]
         )
+
+    def _check_directives_clear(self) -> None:
+        if self._unroll is not None:
+            raise CompilerError(
+                CompilerErrorType.BAD_DIRECTIVE,
+                self._unroll.src_loc,
+                err="Unused unroll directive",
+            )
 
     def _unsupported_expr_error(
         self, expr: ast.expr, info: str = ""
