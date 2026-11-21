@@ -1713,15 +1713,26 @@ class Compiler:
 
                         # partial unrolling
 
+                        remainder_loop_label, remainder_loop_label_ref = (
+                            self.emitter.new_label()
+                        )
+                        remainder_else_label, remainder_else_label_ref = (
+                            self.emitter.new_label()
+                        )
+                        # use existing break label
+
                         target_end_val_tmp = self.emitter.new_tmp()
                         unrolled_loop_control_instrs = (
                             unrolled_for_range_loop_control_instrs(
                                 LoopLabelRefs(loop_label_ref, else_label_ref),
+                                remainder_else_label_ref,
                                 compiled_target,
                                 target_end_val_tmp,
+                                start,
                                 stop,
                                 step,
                                 unroll,
+                                self.emitter.new_tmp(),
                             )
                         )
 
@@ -1734,15 +1745,20 @@ class Compiler:
                             unrolled_loop_control_instrs.body_start
                         )
 
-                        this_loop_break = None
                         for _ in range(unroll.factor):
-                            this_loop_break, _ = self._compile_loop_body(
-                                body, else_label, else_label_ref
+                            this_loop_break, this_loop_break_ref = (
+                                self._compile_loop_body(
+                                    body, break_label, break_label_ref
+                                )
                             )
 
                             self.emitter.emit_items(
                                 unrolled_loop_control_instrs.body_end
                             )
+
+                            if break_label is None or break_label_ref is None:
+                                break_label = this_loop_break
+                                break_label_ref = this_loop_break_ref
 
                         self.emitter.emit_items(
                             unrolled_loop_control_instrs.loop_end
@@ -1754,11 +1770,23 @@ class Compiler:
 
                         # remainder loop
 
+                        del (
+                            loop_label,
+                            loop_label_ref,
+                            else_label,
+                            else_label_ref,
+                        )
+
                         # generate a fresh set
-                        loop_label, loop_label_ref = self.emitter.new_label()
-                        else_label, else_label_ref = self.emitter.new_label()
-                        break_label = None if orelse else else_label
-                        break_label_ref = None if orelse else else_label_ref
+                        loop_label, loop_label_ref = (
+                            remainder_loop_label,
+                            remainder_loop_label_ref,
+                        )
+                        else_label, else_label_ref = (
+                            remainder_else_label,
+                            remainder_else_label_ref,
+                        )
+                        # break label and break label ref already generated and used
 
                         loop_control_instrs = (
                             for_range_remainder_loop_control_instrs(
@@ -1774,6 +1802,7 @@ class Compiler:
                             LoopLabelRefs(loop_label_ref, else_label_ref),
                             compiled_target,
                             self.emitter.new_tmp(),
+                            start,
                             stop,
                             step,
                         )
