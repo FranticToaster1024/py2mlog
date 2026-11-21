@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from py2mlog.compiler.directives import UnrollDirective
-from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
@@ -29,6 +28,7 @@ class ForLoopControlInstrs:
     loop_start: tuple[Instruction, ...]
     body_start: tuple[Instruction, ...]
     body_end: tuple[Instruction, ...]
+    loop_end: tuple[Instruction, ...]
 
 
 def for_range_loop_control_instrs(
@@ -39,7 +39,7 @@ def for_range_loop_control_instrs(
     step: MlogExpr,
 ) -> ForLoopControlInstrs:
     return _for_range_loop_control_instrs(
-        label_refs, compiled_target, tmp, stop, step, None, None
+        label_refs, compiled_target, tmp, stop, step, None
     )
 
 
@@ -50,16 +50,9 @@ def unrolled_for_range_loop_control_instrs(
     stop: MlogExpr,
     step: MlogExpr,
     unroll: UnrollDirective,
-    unroll_tmp: MlogExpr,
 ) -> ForLoopControlInstrs:
     return _for_range_loop_control_instrs(
-        label_refs,
-        compiled_target,
-        tmp,
-        stop,
-        step,
-        unroll,
-        unroll_tmp,
+        label_refs, compiled_target, tmp, stop, step, unroll
     )
 
 
@@ -71,29 +64,11 @@ def _for_range_loop_control_instrs(
     stop: MlogExpr,
     step: MlogExpr,
     unroll: UnrollDirective | None,
-    unroll_tmp: MlogExpr | None,
 ) -> ForLoopControlInstrs:
     # reuse tmp because i can
     start_minus_stop = negative_len = negative_offset_from_start = (
         target_end_val
     ) = tmp
-
-    if unroll is not None and isinstance(unroll.factor, int):
-        if unroll_tmp is None:
-            raise CompilerError(
-                CompilerErrorType.INTERNAL,
-                None,
-                err="Invalid call to _for_range_loop_control_instrs",
-            )
-
-        # separate tmp so remainder loop
-        # can use unscaled negative_len and step
-        scaled_negative_len = scaled_step = unroll_tmp
-
-    else:
-        # if not partial unroll, acts as aliases
-        scaled_negative_len = negative_len
-        scaled_step = step
 
     # loop entry
     # op sub tmp start stop
@@ -132,7 +107,7 @@ def _for_range_loop_control_instrs(
                     OperationSuboperation.MUL,
                     (),
                     (
-                        scaled_negative_len,
+                        negative_len,
                         negative_len,
                         MlogNumberLiteral(unroll.factor),
                     ),
@@ -148,7 +123,7 @@ def _for_range_loop_control_instrs(
             (),
             (
                 label_refs.else_label_ref,
-                scaled_negative_len,
+                negative_len,
                 MlogNumberLiteral(0),
             ),
         ),
@@ -156,7 +131,7 @@ def _for_range_loop_control_instrs(
             InstructionType.OPERATION,
             OperationSuboperation.MUL,
             (),
-            (negative_offset_from_start, scaled_negative_len, step),
+            (negative_offset_from_start, negative_len, step),
         ),
         # subtract because the offset is negative
         Instruction(
@@ -165,18 +140,6 @@ def _for_range_loop_control_instrs(
             (),
             # compiled target equal to start before loop start
             (target_end_val, compiled_target, negative_offset_from_start),
-        ),
-        *(
-            (
-                Instruction(
-                    InstructionType.OPERATION,
-                    OperationSuboperation.MUL,
-                    (),
-                    (scaled_step, step, MlogNumberLiteral(unroll.factor)),
-                ),
-            )
-            if unroll is not None and isinstance(unroll.factor, int)
-            else ()
         ),
     )
 
@@ -187,8 +150,11 @@ def _for_range_loop_control_instrs(
             InstructionType.OPERATION,
             OperationSuboperation.ADD,
             (),
-            (compiled_target, compiled_target, scaled_step),
+            (compiled_target, compiled_target, step),
         ),
+    )
+
+    loop_end = (
         Instruction(
             InstructionType.JUMP,
             ConditionOpSuboperation.NOT_EQUAL,
@@ -197,7 +163,7 @@ def _for_range_loop_control_instrs(
         ),
     )
 
-    return ForLoopControlInstrs(loop_start, body_start, body_end)
+    return ForLoopControlInstrs(loop_start, body_start, body_end, loop_end)
 
 
 def for_range_remainder_loop_control_instrs(
@@ -224,6 +190,9 @@ def for_range_remainder_loop_control_instrs(
             (),
             (compiled_target, compiled_target, step),
         ),
+    )
+
+    loop_end = (
         Instruction(
             InstructionType.JUMP,
             ConditionOpSuboperation.NOT_EQUAL,
@@ -232,7 +201,7 @@ def for_range_remainder_loop_control_instrs(
         ),
     )
 
-    return ForLoopControlInstrs(loop_start, body_start, body_end)
+    return ForLoopControlInstrs(loop_start, body_start, body_end, loop_end)
 
 
 def for_env_links_loop_control_instrs(
@@ -267,6 +236,9 @@ def for_env_links_loop_control_instrs(
             (),
             (loop_iter, loop_iter, MlogNumberLiteral(1)),
         ),
+    )
+
+    loop_end = (
         Instruction(
             InstructionType.JUMP,
             ConditionOpSuboperation.LESS_THAN,
@@ -275,4 +247,4 @@ def for_env_links_loop_control_instrs(
         ),
     )
 
-    return ForLoopControlInstrs(loop_start, body_start, body_end)
+    return ForLoopControlInstrs(loop_start, body_start, body_end, loop_end)

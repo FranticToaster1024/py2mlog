@@ -1716,7 +1716,6 @@ class Compiler:
                                 stop,
                                 step,
                                 unroll,
-                                self.emitter.new_tmp(),
                             )
                         )
 
@@ -1735,8 +1734,12 @@ class Compiler:
                                 body, else_label, else_label_ref
                             )
 
+                            self.emitter.emit_items(
+                                unrolled_loop_control_instrs.body_end
+                            )
+
                         self.emitter.emit_items(
-                            unrolled_loop_control_instrs.body_end
+                            unrolled_loop_control_instrs.loop_end
                         )
 
                         self.emitter.emit_label(else_label)
@@ -1820,6 +1823,7 @@ class Compiler:
                 )
 
                 self.emitter.emit_items(loop_control_instrs.body_end)
+                self.emitter.emit_items(loop_control_instrs.loop_end)
 
                 self.emitter.emit_label(else_label)
                 self.compile_stmt_list(orelse)
