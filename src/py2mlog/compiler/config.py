@@ -10,5 +10,5 @@ class ALIAS:
     LINK = True
 
 
-# idk toggle this if optimizer is buggy or something
-OPTIMIZER = True
+# set this to 0 if optimizer is buggy or something
+DEFAULT_OPTIMIZER_ITERATIONS = 5

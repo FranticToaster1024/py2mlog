@@ -1,17 +1,31 @@
+from collections.abc import Callable
+
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.suboperations import ConditionOpSuboperation
 from py2mlog.optimizer.utils import get_jump_target_name
 
+type _OptFunc = Callable[[tuple[MlogItem, ...]], tuple[MlogItem, ...]]
+
+_opts: list[_OptFunc] = []
+
+
+def _add_opt_func(f: _OptFunc) -> _OptFunc:
+    _opts.append(f)
+    return f
+
 
 def dead_code_elimination(
     instrs: tuple[MlogItem, ...], /
 ) -> tuple[MlogItem, ...]:
-    instrs = _unreachable_code_elimination(instrs)
-    return _remove_unreachable_code_after_jump_always(instrs)
+    for opt in _opts:
+        instrs = opt(instrs)
+
+    return instrs
 
 
-def _unreachable_code_elimination(
+@_add_opt_func
+def _remove_unreachable_code_after_end_or_stop(
     instrs: tuple[MlogItem, ...], /
 ) -> tuple[MlogItem, ...]:
     new_instrs: list[MlogItem] = []
@@ -35,6 +49,7 @@ def _unreachable_code_elimination(
     return tuple(new_instrs)
 
 
+@_add_opt_func
 def _remove_unreachable_code_after_jump_always(
     instrs: tuple[MlogItem, ...],
 ) -> tuple[MlogItem, ...]:

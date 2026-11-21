@@ -3,6 +3,7 @@ from textwrap import dedent
 
 import pytest
 
+from py2mlog.compiler import config
 from py2mlog.compiler.error import SourceLocation
 from py2mlog.mlog.codegen import generate_mlog
 from py2mlog.mlog.parser import parse_mlog
@@ -200,5 +201,10 @@ def test_snippet(
     )
     parsed_src = parse_mlog(src, SourceLocation(-1, None))
 
-    assert generate_mlog(optimize(parsed_src)) == expected_str
+    assert (
+        generate_mlog(
+            optimize(parsed_src, iterations=config.DEFAULT_OPTIMIZER_ITERATIONS)
+        )
+        == expected_str
+    )
     assert not [r for r in caplog.records if r.levelno >= logging.WARNING]

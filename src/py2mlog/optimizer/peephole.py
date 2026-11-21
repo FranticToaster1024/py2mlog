@@ -1,5 +1,6 @@
 import logging
 from collections import deque
+from collections.abc import Callable
 from itertools import accumulate
 
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
@@ -14,18 +15,30 @@ from py2mlog.optimizer.utils import get_jump_target_name, mlog_expr_as_print_str
 
 logger = logging.getLogger(__name__)
 
+
+type _OptFunc = Callable[[tuple[MlogItem, ...]], tuple[MlogItem, ...]]
+
+# thanks minpiler <3
+_opts: list[_OptFunc] = []
+
+
+def _add_opt_func(f: _OptFunc) -> _OptFunc:
+    _opts.append(f)
+    return f
+
+
 type JumpLabelMap = dict[str, list[Instruction]]
 
 
 def peephole(instrs: tuple[MlogItem, ...], /) -> tuple[MlogItem, ...]:
-    jump_label_map = _generate_jump_label_map(instrs)
+    for opt in _opts:
+        instrs = opt(instrs)
 
-    instrs = _remove_useless_end_and_wrap_labels(instrs)
-    instrs = _simplify_adjacent_jumps(instrs, jump_label_map=jump_label_map)
-    return _merge_prints(instrs)
+    return instrs
 
 
 # probably shitty time complexity
+@_add_opt_func
 def _merge_prints(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
     new_instrs: list[MlogItem] = []
 
@@ -242,6 +255,7 @@ def _get_placeholder_str_indexes_and_fill_order(
     return (placeholder_str_indexes, placeholder_fill_order)
 
 
+@_add_opt_func
 def _remove_useless_end_and_wrap_labels(
     instrs: tuple[MlogItem, ...],
 ) -> tuple[MlogItem, ...]:
@@ -267,9 +281,12 @@ def _remove_useless_end_and_wrap_labels(
     return tuple(new_instrs)
 
 
+@_add_opt_func
 def _simplify_adjacent_jumps(
-    instrs: tuple[MlogItem, ...], /, jump_label_map: JumpLabelMap
+    instrs: tuple[MlogItem, ...], /
 ) -> tuple[MlogItem, ...]:
+    jump_label_map = _generate_jump_label_map(instrs)
+
     new_instrs: list[MlogItem] = []
 
     # build new_instrs
