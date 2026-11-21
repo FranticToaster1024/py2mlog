@@ -769,6 +769,7 @@ COMPILER_SNIPPET_TESTCASES = [
             e = True
         """,
         (
+            # __p2m_label0 loop label is wasted
             "__p2m_label3:",
             "set i 0",
             "set i 0",  # duplicate
@@ -792,7 +793,54 @@ COMPILER_SNIPPET_TESTCASES = [
             "__p2m_label1:",  # no initial check to jump here
             "set e true",
         ),
-        id="unrolled-for-range-break-continue-else",
+        id="full-unroll-for-range-break-continue-else",
+    ),
+    pytest.param(
+        """
+        unroll(2)
+        for i in range(start, stop, step):
+            result = i
+            break
+            continue
+        else:
+            e = True
+        """,
+        (
+            "__p2m_label6:",
+            "set i start",
+            "op sub __p2m_tmp0 i stop",
+            "op idiv __p2m_tmp0 __p2m_tmp0 step",
+            "op mul __p2m_tmp1 __p2m_tmp0 2",
+            "jump __p2m_label1 greaterThanEq __p2m_tmp1 0",
+            "op mul __p2m_tmp0 __p2m_tmp1 step",
+            "op sub __p2m_tmp0 i __p2m_tmp0",
+            "op mul __p2m_tmp1 step 2",
+            "__p2m_label0:",
+            "set result i",
+            "jump __p2m_label1 always",
+            "jump __p2m_label2 always",
+            "__p2m_label2:",
+            "set result i",
+            "jump __p2m_label1 always",
+            "jump __p2m_label3 always",
+            "__p2m_label3:",
+            "op add i i __p2m_tmp1",
+            "jump __p2m_label0 notEqual i __p2m_tmp0",
+            "__p2m_label1:",
+            # no else block for unrolled loop
+            # remainder loop
+            "jump __p2m_label5 equal i __p2m_tmp0",
+            "__p2m_label4:",
+            "set result i",
+            "jump __p2m_label6 always",
+            "jump __p2m_label7 always",
+            "__p2m_label7:",
+            "op add i i step",
+            "jump __p2m_label4 notEqual i __p2m_tmp0",
+            "__p2m_label5:",
+            "set e true",
+        ),
+        id="partial-unroll-for-range-identifiers-break-continue-else",
     ),
     pytest.param(
         """

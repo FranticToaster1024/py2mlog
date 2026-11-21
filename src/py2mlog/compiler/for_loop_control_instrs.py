@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from py2mlog.compiler.directives import UnrollDirective
+from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
@@ -29,26 +31,78 @@ class ForLoopControlInstrs:
     body_end: tuple[Instruction, ...]
 
 
-def range_for_loop_control_instrs(
+def for_range_loop_control_instrs(
     label_refs: LoopLabelRefs,
     compiled_target: MlogExpr,
     tmp: MlogExpr,
-    _start: MlogExpr,
     stop: MlogExpr,
     step: MlogExpr,
 ) -> ForLoopControlInstrs:
+    return _for_range_loop_control_instrs(
+        label_refs, compiled_target, tmp, stop, step, None, None
+    )
 
-    # loop entry
-    # op sub tmp start stop
-    # op idiv tmp2 tmp step
-    # jump skip greaterThanEq tmp2 0
-    # op mul tmp3 tmp2 step
-    # op sub end start tmp3
 
+def unrolled_for_range_loop_control_instrs(
+    label_refs: LoopLabelRefs,
+    compiled_target: MlogExpr,
+    tmp: MlogExpr,
+    stop: MlogExpr,
+    step: MlogExpr,
+    unroll: UnrollDirective,
+    unroll_tmp: MlogExpr,
+) -> ForLoopControlInstrs:
+    return _for_range_loop_control_instrs(
+        label_refs,
+        compiled_target,
+        tmp,
+        stop,
+        step,
+        unroll,
+        unroll_tmp,
+    )
+
+
+# merging them isn't the best idea but i really don't wanna copy paste the Instruction() blocks
+def _for_range_loop_control_instrs(
+    label_refs: LoopLabelRefs,
+    compiled_target: MlogExpr,
+    tmp: MlogExpr,
+    stop: MlogExpr,
+    step: MlogExpr,
+    unroll: UnrollDirective | None,
+    unroll_tmp: MlogExpr | None,
+) -> ForLoopControlInstrs:
     # reuse tmp because i can
     start_minus_stop = negative_len = negative_offset_from_start = (
         target_end_val
     ) = tmp
+
+    if unroll is not None and isinstance(unroll.factor, int):
+        if unroll_tmp is None:
+            raise CompilerError(
+                CompilerErrorType.INTERNAL,
+                None,
+                err="Invalid call to _for_range_loop_control_instrs",
+            )
+
+        # separate tmp so remainder loop
+        # can use unscaled negative_len and step
+        scaled_negative_len = scaled_step = unroll_tmp
+
+    else:
+        # if not partial unroll, acts as aliases
+        scaled_negative_len = negative_len
+        scaled_step = step
+
+    # loop entry
+    # op sub tmp start stop
+    # op idiv tmp2 tmp step
+    # (op mul scaled tmp2 unroll_factor)
+    # jump skip greaterThanEq scaled/tmp2 0
+    # op mul tmp3 tmp2 step
+    # op sub end start tmp3
+    # (op mul step step unroll_factor)
 
     loop_start = (
         # subtract start from stop to save an instruction, explained below
@@ -71,18 +125,38 @@ def range_for_loop_control_instrs(
             (),
             (negative_len, start_minus_stop, step),
         ),
+        *(
+            (
+                Instruction(
+                    InstructionType.OPERATION,
+                    OperationSuboperation.MUL,
+                    (),
+                    (
+                        scaled_negative_len,
+                        negative_len,
+                        MlogNumberLiteral(unroll.factor),
+                    ),
+                ),
+            )
+            if unroll is not None and isinstance(unroll.factor, int)
+            else ()
+        ),
         # `-len >= 0` equivalent to `len <= 0`
         Instruction(
             InstructionType.JUMP,
             ConditionOpSuboperation.GREATER_THAN_OR_EQ,
             (),
-            (label_refs.else_label_ref, negative_len, MlogNumberLiteral(0)),
+            (
+                label_refs.else_label_ref,
+                scaled_negative_len,
+                MlogNumberLiteral(0),
+            ),
         ),
         Instruction(
             InstructionType.OPERATION,
             OperationSuboperation.MUL,
             (),
-            (negative_offset_from_start, negative_len, step),
+            (negative_offset_from_start, scaled_negative_len, step),
         ),
         # subtract because the offset is negative
         Instruction(
@@ -91,6 +165,53 @@ def range_for_loop_control_instrs(
             (),
             # compiled target equal to start before loop start
             (target_end_val, compiled_target, negative_offset_from_start),
+        ),
+        *(
+            (
+                Instruction(
+                    InstructionType.OPERATION,
+                    OperationSuboperation.MUL,
+                    (),
+                    (scaled_step, step, MlogNumberLiteral(unroll.factor)),
+                ),
+            )
+            if unroll is not None and isinstance(unroll.factor, int)
+            else ()
+        ),
+    )
+
+    body_start = ()
+
+    body_end = (
+        Instruction(
+            InstructionType.OPERATION,
+            OperationSuboperation.ADD,
+            (),
+            (compiled_target, compiled_target, scaled_step),
+        ),
+        Instruction(
+            InstructionType.JUMP,
+            ConditionOpSuboperation.NOT_EQUAL,
+            (),
+            (label_refs.loop_label_ref, compiled_target, target_end_val),
+        ),
+    )
+
+    return ForLoopControlInstrs(loop_start, body_start, body_end)
+
+
+def for_range_remainder_loop_control_instrs(
+    label_refs: LoopLabelRefs,
+    compiled_target: MlogExpr,
+    target_end_val: MlogExpr,
+    step: MlogExpr,
+) -> ForLoopControlInstrs:
+    loop_start = (
+        Instruction(
+            InstructionType.JUMP,
+            ConditionOpSuboperation.EQUAL,
+            (),
+            (label_refs.else_label_ref, compiled_target, target_end_val),
         ),
     )
 
@@ -114,7 +235,7 @@ def range_for_loop_control_instrs(
     return ForLoopControlInstrs(loop_start, body_start, body_end)
 
 
-def env_links_for_loop_control_instrs(
+def for_env_links_loop_control_instrs(
     label_refs: LoopLabelRefs, compiled_target: MlogExpr, loop_iter: MlogExpr
 ) -> ForLoopControlInstrs:
     loop_start = (

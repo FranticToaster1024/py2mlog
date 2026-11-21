@@ -17,8 +17,10 @@ from py2mlog.compiler.error import (
 )
 from py2mlog.compiler.for_loop_control_instrs import (
     LoopLabelRefs,
-    env_links_for_loop_control_instrs,
-    range_for_loop_control_instrs,
+    for_env_links_loop_control_instrs,
+    for_range_loop_control_instrs,
+    for_range_remainder_loop_control_instrs,
+    unrolled_for_range_loop_control_instrs,
 )
 from py2mlog.compiler.func_utils import (
     CompiledFunc,
@@ -1643,86 +1645,129 @@ class Compiler:
                         iter_, compiled_target, src_loc
                     )
 
-                    if unroll is not None and unroll.factor == "full":
-                        if (
-                            not isinstance(start, MlogNumberLiteral)
-                            or not isinstance(stop, MlogNumberLiteral)
-                            or not isinstance(step, MlogNumberLiteral)
-                        ):
-                            raise CompilerError(
-                                CompilerErrorType.BAD_DIRECTIVE,
-                                self._get_src_loc_from_node(iter_),
-                                err="Cannot fully unroll 'range()' with non number-literal",
-                            )
-
-                        if (
-                            not isinstance(start.value, int)
-                            or not isinstance(stop.value, int)
-                            or not isinstance(step.value, int)
-                        ):
-                            raise CompilerError(
-                                CompilerErrorType.BAD_DIRECTIVE,
-                                self._get_src_loc_from_node(iter_),
-                                err="Cannot fully unroll 'range()' with float literal",
-                            )
-
-                        this_loop_break = None
-                        for i in range(start.value, stop.value, step.value):
-                            # ideally this would belong in for_loop_control_instrs.py
-                            self.emitter.emit_instruction(
-                                Instruction(
-                                    InstructionType.SET,
-                                    None,
-                                    (),
-                                    (compiled_target, MlogNumberLiteral(i)),
-                                )
-                            )
-
-                            # recompile body every time
-                            # should prevent tmps from carrying over
-                            # and prevent continue label clashes
-                            with self._loop_context(
-                                break_label, break_label_ref
-                            ):
-                                self.compile_stmt_list(body)
-
-                                this_loop_break = self._current_loop_break
-                                this_loop_break_ref = (
-                                    self._current_loop_break_ref
-                                )
-
-                                if self._current_loop_continue:
-                                    self.emitter.emit_label(
-                                        self._current_loop_continue
-                                    )
-
-                            if break_label is None:
-                                break_label = this_loop_break
-                                break_label_ref = this_loop_break_ref
-
-                        self.emitter.emit_label(else_label)
-                        self.compile_stmt_list(orelse)
-
-                        if orelse and this_loop_break is not None:
-                            self.emitter.emit_label(this_loop_break)
-
-                        return
-
                     if unroll is not None:
-                        raise CompilerError(
-                            CompilerErrorType.UNSUPPORTED,
-                            unroll.src_loc,
-                            feature="partial unrolling",
+                        if unroll.factor == "full":
+                            if (
+                                not isinstance(start, MlogNumberLiteral)
+                                or not isinstance(stop, MlogNumberLiteral)
+                                or not isinstance(step, MlogNumberLiteral)
+                            ):
+                                raise CompilerError(
+                                    CompilerErrorType.BAD_DIRECTIVE,
+                                    self._get_src_loc_from_node(iter_),
+                                    err="Cannot fully unroll 'range()' with non number-literal",
+                                )
+
+                            if (
+                                not isinstance(start.value, int)
+                                or not isinstance(stop.value, int)
+                                or not isinstance(step.value, int)
+                            ):
+                                raise CompilerError(
+                                    CompilerErrorType.BAD_DIRECTIVE,
+                                    self._get_src_loc_from_node(iter_),
+                                    err="Cannot fully unroll 'range()' with float literal",
+                                )
+
+                            this_loop_break = None
+                            for i in range(start.value, stop.value, step.value):
+                                # ideally this would belong in for_loop_control_instrs.py
+                                self.emitter.emit_instruction(
+                                    Instruction(
+                                        InstructionType.SET,
+                                        None,
+                                        (),
+                                        (compiled_target, MlogNumberLiteral(i)),
+                                    )
+                                )
+
+                                # recompile body every time
+                                # should prevent tmps from carrying over
+                                # and prevent continue label clashes
+                                this_loop_break, this_loop_break_ref = (
+                                    self._compile_loop_body(
+                                        body, break_label, break_label_ref
+                                    )
+                                )
+
+                                if (
+                                    break_label is None
+                                    or break_label_ref is None
+                                ):
+                                    break_label = this_loop_break
+                                    break_label_ref = this_loop_break_ref
+
+                            self.emitter.emit_label(else_label)
+                            self.compile_stmt_list(orelse)
+
+                            if orelse and this_loop_break is not None:
+                                self.emitter.emit_label(this_loop_break)
+
+                            return
+
+                        # partial unrolling
+
+                        target_end_val_tmp = self.emitter.new_tmp()
+                        unrolled_loop_control_instrs = (
+                            unrolled_for_range_loop_control_instrs(
+                                LoopLabelRefs(loop_label_ref, else_label_ref),
+                                compiled_target,
+                                target_end_val_tmp,
+                                stop,
+                                step,
+                                unroll,
+                                self.emitter.new_tmp(),
+                            )
                         )
 
-                    loop_control_instrs = range_for_loop_control_instrs(
-                        LoopLabelRefs(loop_label_ref, else_label_ref),
-                        compiled_target,
-                        self.emitter.new_tmp(),
-                        start,
-                        stop,
-                        step,
-                    )
+                        self.emitter.emit_items(
+                            unrolled_loop_control_instrs.loop_start
+                        )
+                        self.emitter.emit_label(loop_label)
+
+                        self.emitter.emit_items(
+                            unrolled_loop_control_instrs.body_start
+                        )
+
+                        this_loop_break = None
+                        for _ in range(unroll.factor):
+                            this_loop_break, _ = self._compile_loop_body(
+                                body, else_label, else_label_ref
+                            )
+
+                        self.emitter.emit_items(
+                            unrolled_loop_control_instrs.body_end
+                        )
+
+                        self.emitter.emit_label(else_label)
+
+                        # don't generate orelse & break label in partially unrolled loop
+
+                        # remainder loop
+
+                        # generate a fresh set
+                        loop_label, loop_label_ref = self.emitter.new_label()
+                        else_label, else_label_ref = self.emitter.new_label()
+                        break_label = None if orelse else else_label
+                        break_label_ref = None if orelse else else_label_ref
+
+                        loop_control_instrs = (
+                            for_range_remainder_loop_control_instrs(
+                                LoopLabelRefs(loop_label_ref, else_label_ref),
+                                compiled_target,
+                                target_end_val_tmp,
+                                step,
+                            )
+                        )
+
+                    else:
+                        loop_control_instrs = for_range_loop_control_instrs(
+                            LoopLabelRefs(loop_label_ref, else_label_ref),
+                            compiled_target,
+                            self.emitter.new_tmp(),
+                            stop,
+                            step,
+                        )
 
                 elif (
                     isinstance(iter_, ast.Call)
@@ -1754,7 +1799,7 @@ class Compiler:
 
                     loop_iter = self.emitter.new_loop_iter()
 
-                    loop_control_instrs = env_links_for_loop_control_instrs(
+                    loop_control_instrs = for_env_links_loop_control_instrs(
                         LoopLabelRefs(loop_label_ref, else_label_ref),
                         compiled_target,
                         loop_iter,
@@ -1767,20 +1812,16 @@ class Compiler:
 
                 self.emitter.emit_items(loop_control_instrs.loop_start)
                 self.emitter.emit_label(loop_label)
+
                 self.emitter.emit_items(loop_control_instrs.body_start)
 
-                with self._loop_context(break_label, break_label_ref):
-                    for stmt_ in body:
-                        self.compile_stmt(stmt_)
-
-                    this_loop_break = self._current_loop_break
-
-                    if self._current_loop_continue:
-                        self.emitter.emit_label(self._current_loop_continue)
+                this_loop_break, _ = self._compile_loop_body(
+                    body, break_label, break_label_ref
+                )
 
                 self.emitter.emit_items(loop_control_instrs.body_end)
-                self.emitter.emit_label(else_label)
 
+                self.emitter.emit_label(else_label)
                 self.compile_stmt_list(orelse)
 
                 if orelse and this_loop_break is not None:
@@ -1983,6 +2024,23 @@ class Compiler:
             Instruction(InstructionType.STOP, None, (), ())
         )
 
+    def _compile_loop_body(
+        self,
+        body: list[ast.stmt],
+        break_label: Label | None,
+        break_label_ref: LabelRef | None,
+    ) -> tuple[Label | None, LabelRef | None]:
+        with self._loop_context(break_label, break_label_ref):
+            self.compile_stmt_list(body)
+
+            this_loop_break = self._current_loop_break
+            this_loop_break_ref = self._current_loop_break_ref
+
+            if self._current_loop_continue:
+                self.emitter.emit_label(self._current_loop_continue)
+
+        return (this_loop_break, this_loop_break_ref)
+
     # this whole loop context thing is so stupid
     # i wonder which fool thought it was a good idea
     @contextmanager
@@ -2012,16 +2070,6 @@ class Compiler:
         self._current_loop_break_ref = prev_break_ref
         self._current_loop_continue = prev_continue
         self._current_loop_continue_ref = prev_continue_ref
-
-    @contextmanager
-    def _clear_instr_list(self) -> Generator[None, None, None]:
-        """*Temporarily* replace emitter instruction list with a fresh one."""
-        old_instructions = self.emitter.instructions
-        self.emitter.instructions = []
-
-        yield
-
-        self.emitter.instructions = old_instructions
 
     @contextmanager
     def _func_context(
