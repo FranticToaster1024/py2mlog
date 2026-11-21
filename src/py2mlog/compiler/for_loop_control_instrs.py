@@ -73,11 +73,11 @@ def _for_range_loop_control_instrs(
     # loop entry
     # op sub tmp start stop
     # op idiv tmp2 tmp step
-    # (op mul scaled tmp2 unroll_factor)
     # jump skip greaterThanEq scaled/tmp2 0
+    # (op div tmp2 tmp2 unroll_factor)
+    # (op ceil tmp2 tmp2)
     # op mul tmp3 tmp2 step
     # op sub end start tmp3
-    # (op mul step step unroll_factor)
 
     loop_start = (
         # subtract start from stop to save an instruction, explained below
@@ -90,7 +90,7 @@ def _for_range_loop_control_instrs(
         ),
         # idiv in mindustry rounds to negative infinity
         # https://github.com/Anuken/Mindustry/blob/19a0f40d44514f4802a8b79770456e7e32e34da0/core/src/mindustry/logic/LogicOp.java#L12
-        # negative len to save an instruction
+        # negative len to save an instruction on non partially-unrolled loops
         # because with positive len
         # i'd need to do ceil and div (2 instructions)
         # which is combined into idiv with negative len
@@ -99,22 +99,6 @@ def _for_range_loop_control_instrs(
             OperationSuboperation.INTEGER_DIV,
             (),
             (negative_len, start_minus_stop, step),
-        ),
-        *(
-            (
-                Instruction(
-                    InstructionType.OPERATION,
-                    OperationSuboperation.MUL,
-                    (),
-                    (
-                        negative_len,
-                        negative_len,
-                        MlogNumberLiteral(unroll.factor),
-                    ),
-                ),
-            )
-            if unroll is not None and isinstance(unroll.factor, int)
-            else ()
         ),
         # `-len >= 0` equivalent to `len <= 0`
         Instruction(
@@ -126,6 +110,28 @@ def _for_range_loop_control_instrs(
                 negative_len,
                 MlogNumberLiteral(0),
             ),
+        ),
+        *(
+            (
+                Instruction(
+                    InstructionType.OPERATION,
+                    OperationSuboperation.DIV,
+                    (),
+                    (
+                        negative_len,
+                        negative_len,
+                        MlogNumberLiteral(unroll.factor),
+                    ),
+                ),
+                Instruction(
+                    InstructionType.OPERATION,
+                    OperationSuboperation.CEIL,
+                    (),
+                    (negative_len, negative_len),
+                ),
+            )
+            if unroll is not None and isinstance(unroll.factor, int)
+            else ()
         ),
         Instruction(
             InstructionType.OPERATION,
