@@ -1110,6 +1110,19 @@ COMPILER_SNIPPET_TESTCASES = [
         id="print-fstring",
     ),
     pytest.param(
+        """
+        print(0.0000001)
+        print(0.9999999)
+        """,
+        (
+            r'print "0\n"',
+            "printflush message1",
+            r'print "1\n"',
+            "printflush message1",
+        ),
+        id="check-print-float-rounding",
+    ),
+    pytest.param(
         "\n".join(
             (
                 "a = b if condition else d",

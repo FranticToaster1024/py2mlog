@@ -8,9 +8,13 @@ from py2mlog.mlog.mlog_expressions import (
     MlogBoolLiteral,
     MlogBuiltin,
     MlogColorLiteral,
+    MlogNumberLiteral,
     MlogStringLiteral,
     MlogVar,
 )
+
+# https://github.com/Anuken/Mindustry/blob/19a0f40d44514f4802a8b79770456e7e32e34da0/core/src/mindustry/logic/LExecutor.java#L1072
+PRINT_FLOAT_EPSILON = 0.00001
 
 
 def mlog_expr_as_print_str(e: MlogArg) -> str | None:
@@ -31,6 +35,13 @@ def mlog_expr_as_print_str(e: MlogArg) -> str | None:
     # generate str instead of 'str'
     if isinstance(e, MlogStringLiteral):
         return e.value
+
+    if (
+        isinstance(e, MlogNumberLiteral)
+        and isinstance(e.value, float)
+        and abs(e.value - round(e.value)) < PRINT_FLOAT_EPSILON
+    ):
+        return str(round(e.value))
     return codegen.arg_to_str(e)
 
 
