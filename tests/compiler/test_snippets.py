@@ -772,7 +772,6 @@ COMPILER_SNIPPET_TESTCASES = [
             # __p2m_label0 loop label is wasted
             "__p2m_label3:",
             "set i 0",
-            "set i 0",  # duplicate
             "jump __p2m_label2 equal should_stop false",
             "jump __p2m_label3 always",
             "__p2m_label2:",
@@ -790,10 +789,33 @@ COMPILER_SNIPPET_TESTCASES = [
             "__p2m_label7:",
             "set result i",
             "__p2m_label8:",
-            "__p2m_label1:",  # no initial check to jump here
             "set e true",
         ),
         id="full-unroll-for-range-break-continue-else",
+    ),
+    pytest.param(
+        """
+        unroll("full")
+        for i in range(10, 7, -1):
+            print(i, flush=False)
+
+        printflush(message1)
+        stop()
+        """,
+        (
+            "set i 10",
+            r'print "{0}\n"',
+            "format i",
+            "set i 9",
+            r'print "{0}\n"',
+            "format i",
+            "set i 8",
+            r'print "{0}\n"',
+            "format i",
+            "printflush message1",
+            "stop",
+        ),
+        id="full-unroll-for-range-multiple-literals",
     ),
     pytest.param(
         """

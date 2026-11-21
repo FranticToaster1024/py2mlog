@@ -1655,7 +1655,7 @@ class Compiler:
                                 raise CompilerError(
                                     CompilerErrorType.BAD_DIRECTIVE,
                                     self._get_src_loc_from_node(iter_),
-                                    err="Cannot fully unroll 'range()' with non number-literal",
+                                    err="Cannot fully unroll 'range()' with non int-literal",
                                 )
 
                             if (
@@ -1670,16 +1670,23 @@ class Compiler:
                                 )
 
                             this_loop_break = None
+                            is_start = True
                             for i in range(start.value, stop.value, step.value):
-                                # ideally this would belong in for_loop_control_instrs.py
-                                self.emitter.emit_instruction(
-                                    Instruction(
-                                        InstructionType.SET,
-                                        None,
-                                        (),
-                                        (compiled_target, MlogNumberLiteral(i)),
+                                # index already set for first iter; avoid duplicating
+                                if not is_start:
+                                    # ideally this would belong in for_loop_control_instrs.py
+                                    self.emitter.emit_instruction(
+                                        Instruction(
+                                            InstructionType.SET,
+                                            None,
+                                            (),
+                                            (
+                                                compiled_target,
+                                                MlogNumberLiteral(i),
+                                            ),
+                                        )
                                     )
-                                )
+                                is_start = False
 
                                 # recompile body every time
                                 # should prevent tmps from carrying over
@@ -1697,7 +1704,6 @@ class Compiler:
                                     break_label = this_loop_break
                                     break_label_ref = this_loop_break_ref
 
-                            self.emitter.emit_label(else_label)
                             self.compile_stmt_list(orelse)
 
                             if orelse and this_loop_break is not None:
@@ -1885,19 +1891,21 @@ class Compiler:
     ]:
         if len(iter_.args) == 1:
             start = MlogNumberLiteral(0)
-            self.emitter.emit_instruction(
-                Instruction(
-                    InstructionType.SET,
-                    None,
-                    (),
-                    (compiled_for_loop_target, start),
-                )
-            )
+            self._set_expr_output(start, compiled_for_loop_target)
+
             stop = self.compile_expr(iter_.args[0])
             step = MlogNumberLiteral(1)
 
         elif 2 <= len(iter_.args) <= 3:  # noqa: PLR2004
-            start = self.compile_expr(iter_.args[0], compiled_for_loop_target)
+            if isinstance(iter_.args[0], ast.Constant):
+                start = self._compile_const(iter_.args[0])
+                self._set_expr_output(start, compiled_for_loop_target)
+
+            else:
+                start = self.compile_expr(
+                    iter_.args[0], compiled_for_loop_target
+                )
+
             stop = self.compile_expr(iter_.args[1])
             step = (
                 MlogNumberLiteral(1)
