@@ -188,6 +188,49 @@ OPTIMIZER_SNIPPET_TESTCASES = [
         'print "foo{0}"\nformat a',
         id="mixed-print-no-pessimization",
     ),
+    pytest.param(
+        'print "{0}"\nformat a', "print a", id="merge-print-format-to-print-var"
+    ),
+    pytest.param(
+        """
+        print "{0}"
+        noop
+        print "{1}"
+        noop
+        format a
+        """,
+        """
+        print "{0}"
+        noop
+        noop
+        print a
+        """,
+        id="merge-print-format-to-print-var-with-gap",
+    ),
+    pytest.param(
+        'print "{0}foo"\nformat 123',
+        'print "123foo"',
+        id="merge-print-format-with-literal",
+    ),
+    pytest.param(
+        """
+        print "foo{0}bar{9}"
+        noop
+        format "baz"
+        noop
+        format 1.23
+        noop
+        format "unused"
+        """,
+        """
+        noop
+        noop
+        print "foobazbar1.23"
+        noop
+        format "unused"
+        """,
+        id="merge-print-format-with-literals-with-gap",
+    ),
 ]
 
 

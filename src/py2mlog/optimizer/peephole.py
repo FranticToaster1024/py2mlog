@@ -37,6 +37,78 @@ def peephole(instrs: tuple[MlogItem, ...], /) -> tuple[MlogItem, ...]:
     return instrs
 
 
+@_add_opt_func
+def _merge_print_format(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
+    new_instrs: list[MlogItem | None] = list(instrs)
+
+    last_print_instr_idx: int | None = None
+
+    for i, instr in enumerate(instrs):
+        if isinstance(instr, Instruction):
+            if instr.type is InstructionType.PRINT:
+                last_print_instr_idx = i
+                continue
+
+            if instr.type is InstructionType.FORMAT:
+                if last_print_instr_idx is None:
+                    continue
+
+                last_print_instr = new_instrs[last_print_instr_idx]
+
+                if not isinstance(
+                    last_print_instr, Instruction
+                ) or not isinstance(
+                    last_print_instr.args[0], MlogStringLiteral
+                ):
+                    continue
+
+                print_str = last_print_instr.args[0].value
+                format_str = mlog_expr_as_print_str(instr.args[0])
+
+                if format_str is None:
+                    # regex would be cleaner
+                    if (
+                        len(print_str) == 3  # noqa: PLR2004
+                        and print_str[0] == "{"
+                        and print_str[1].isdigit()
+                        and print_str[2] == "}"
+                    ):
+                        # print "{0}"
+                        # format foo
+                        # ->
+                        # print foo
+                        new_instrs[last_print_instr_idx] = None
+                        new_instrs[i] = Instruction(
+                            InstructionType.PRINT, None, (), (instr.args[0],)
+                        )
+                        last_print_instr_idx = i
+
+                    continue
+
+                indexes, fill_order = (
+                    _get_placeholder_str_indexes_and_fill_order(print_str)
+                )
+
+                if 0 not in fill_order:
+                    continue
+
+                str_index = indexes[fill_order.index(0)]
+                print_str_list = list(print_str)
+
+                print_str_list[str_index - 1 : str_index + 2] = [format_str]
+
+                new_instrs[last_print_instr_idx] = None
+                new_instrs[i] = Instruction(
+                    InstructionType.PRINT,
+                    None,
+                    (),
+                    (MlogStringLiteral("".join(print_str_list)),),
+                )
+                last_print_instr_idx = i
+
+    return tuple(e for e in new_instrs if e is not None)
+
+
 # probably shitty time complexity
 @_add_opt_func
 def _merge_prints(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
@@ -217,7 +289,7 @@ def _get_placeholder_str_indexes_and_fill_order(
     tgt_str: str,
 ) -> tuple[list[int], list[int]]:
     placeholder_str_indexes: list[int] = []
-    placeholder_num_counts = [0] * 9
+    placeholder_num_counts = [0] * 10
 
     i = 0
     while i < len(tgt_str):
@@ -236,7 +308,7 @@ def _get_placeholder_str_indexes_and_fill_order(
 
     placeholder_num_cum_counts = list(accumulate(placeholder_num_counts))
     # ¯\_(ツ)_/¯
-    curr_placeholder_num_counts = [0] * 9
+    curr_placeholder_num_counts = [0] * 10
 
     placeholder_fill_order: list[int] = []
     for i in placeholder_str_indexes:
