@@ -1,6 +1,3 @@
-__all__ = ["FUNC_MAP", "builtin_color"]
-
-
 import logging
 from inspect import cleandoc
 from string import hexdigits
@@ -9,6 +6,7 @@ from typing import cast
 from py2mlog.compiler.error import (
     CompilerError,
     CompilerErrorType,
+    SourceLocation,
 )
 from py2mlog.compiler.mimex_utils import camel_to_snake
 from py2mlog.intrinsics.intrinsic_func_utils import (
@@ -24,12 +22,17 @@ from py2mlog.intrinsics.intrinsic_func_utils import (
 from py2mlog.mlog.instruction import Instruction
 from py2mlog.mlog.instruction_types import InstructionType
 from py2mlog.mlog.mlog_expressions import (
+    MlogBoolLiteral,
     MlogColorLiteral,
     MlogExpr,
     MlogNullLiteral,
     MlogNumberLiteral,
     MlogStringLiteral,
     MlogVar,
+)
+from py2mlog.mlog.selectable_params import (
+    RadarSortSelectableParam,
+    RadarTargetSelectableParam,
 )
 from py2mlog.mlog.suboperations import OperationSuboperation
 
@@ -329,6 +332,162 @@ def _unpack_color(
 
 
 # ----------------------------------------
+# utils for radar & uradar
+# ----------------------------------------
+_RADAR_TARGET_NAME_MAP = {t.value: t for t in RadarTargetSelectableParam}
+_RADAR_SORT_NAME_MAP = {
+    name: sel_param
+    for sel_param in RadarSortSelectableParam
+    for name in (
+        sel_param.value,
+        camel_to_snake(sel_param.value),
+        sel_param.value.lower(),
+    )
+}
+_RADAR_ORDER_NAMES = {
+    # im not sure if 'min' and 'max' are fully accurate
+    # but pyndustric compatibility so
+    "min": MlogBoolLiteral(True),
+    "True": MlogBoolLiteral(True),
+    "1": MlogBoolLiteral(True),
+    "max": MlogBoolLiteral(False),
+    "False": MlogBoolLiteral(False),
+    "0": MlogBoolLiteral(False),
+}
+RadarTargetSelParam_Any = MlogStringLiteral("any")
+RadarSortSelParam_Distance = MlogStringLiteral("distance")
+MlogBoolLiteral_True = MlogBoolLiteral(True)
+
+
+def resolve_radar_args(
+    filter1: MlogExpr,
+    filter2: MlogExpr,
+    filter3: MlogExpr,
+    order: MlogExpr,
+    key: MlogExpr,
+    /,
+    *,
+    func_name: str,
+    src_loc: SourceLocation,
+    logger_: logging.Logger,
+) -> tuple[
+    tuple[RadarTargetSelectableParam, ...], RadarSortSelectableParam, MlogExpr
+]:
+    filter_sel_params: list[RadarTargetSelectableParam] = []
+    for arg in (filter1, filter2, filter3):
+        if not isinstance(arg, (MlogStringLiteral, MlogVar)):
+            # raise an error instead of the usual warning
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err=f"Called '{func_name}' with arg '{arg}'. "
+                f"Expected type: '{MlogStringLiteral.__name__}' "
+                f"or '{MlogVar.__name__}'",
+            )
+
+        arg_str = arg.value if isinstance(arg, MlogStringLiteral) else arg.name
+        filter_sel_param = _RADAR_TARGET_NAME_MAP.get(arg_str)
+        if filter_sel_param is None:
+            raise CompilerError(
+                CompilerErrorType.BAD_CALL,
+                src_loc,
+                err=f"Called '{func_name}' with unknown filter type '{arg_str}'. "
+                f"Allowed types: '{', '.join(_RADAR_TARGET_NAME_MAP)}'",
+            )
+
+        filter_sel_params.append(filter_sel_param)
+
+    if not isinstance(key, (MlogStringLiteral, MlogVar)):
+        raise CompilerError(
+            CompilerErrorType.BAD_CALL,
+            src_loc,
+            err=f"Called '{func_name}' with arg '{arg}' for param 'key'. "
+            f"Expected type: '{MlogStringLiteral.__name__}' "
+            f"or '{MlogVar.__name__}'",
+        )
+    key_str = key.value if isinstance(key, MlogStringLiteral) else key.name
+    key_sel_param = _RADAR_SORT_NAME_MAP.get(key_str)
+    if key_sel_param is None:
+        raise CompilerError(
+            CompilerErrorType.BAD_CALL,
+            src_loc,
+            err=f"Called '{func_name}' with unknown key type '{arg_str}'. "
+            f"Allowed types: '{', '.join(_RADAR_TARGET_NAME_MAP)}'",
+        )
+
+    if not isinstance(
+        order, (MlogVar, MlogNumberLiteral, MlogBoolLiteral, MlogStringLiteral)
+    ):
+        logger_.warning(
+            "Called '%s' with literal of type '%s' for 'order' kwarg.",
+            func_name,
+            type(order).__name__,
+        )
+
+    if isinstance(order, MlogStringLiteral):
+        mapped = _RADAR_ORDER_NAMES.get(order.value)
+        if mapped is None:
+            logger_.warning(
+                "Called '%s' with unrecognised string literal '%s'. Defaulting to '%s'.",
+                func_name,
+                order.value,
+                MlogBoolLiteral_True.value,
+            )
+            mapped = MlogBoolLiteral_True
+
+        order = mapped
+
+    elif isinstance(order, MlogVar):
+        mapped = _RADAR_ORDER_NAMES.get(order.name)
+        if mapped is not None:
+            order = mapped
+
+    return (tuple(filter_sel_params), key_sel_param, order)
+
+
+# ----------------------------------------
+# radar
+# ----------------------------------------
+def _radar(
+    call_ctx: IntrinsicCallCtx,
+    building: MlogExpr,
+    filter1: MlogStringLiteral | MlogVar = RadarTargetSelParam_Any,
+    filter2: MlogStringLiteral | MlogVar = RadarTargetSelParam_Any,
+    filter3: MlogStringLiteral | MlogVar = RadarTargetSelParam_Any,
+    /,
+    *,
+    order: MlogBoolLiteral
+    | MlogNumberLiteral
+    | MlogStringLiteral = MlogBoolLiteral_True,
+    key: MlogStringLiteral | MlogVar = RadarSortSelParam_Distance,
+) -> MlogExpr:
+
+    filter_sel_params, key_sel_param, order_ = resolve_radar_args(
+        filter1,
+        filter2,
+        filter3,
+        order,
+        key,
+        func_name=get_func_names("", _REV_MAP, _radar),
+        src_loc=call_ctx.src_loc,
+        logger_=logger,
+    )
+
+    call_ctx.emitter.emit_instruction(
+        Instruction(
+            InstructionType.RADAR,
+            None,
+            (*filter_sel_params, key_sel_param),
+            (building, order_, call_ctx.output_expr[0]),
+        )
+    )
+    return call_ctx.output_expr[0]
+
+
+FUNC_MAP_RADAR_ENTRY = {"radar": _radar}
+
+
+# ----------------------------------------
 # op funcs
 # ----------------------------------------
 def _op_vec_angle(
@@ -431,6 +590,7 @@ _func_map: IntrinsicFuncMap = (
         "pack_color": _pack_color,
         "unpack_color": _unpack_color,
     }
+    | FUNC_MAP_RADAR_ENTRY
     | _SINGLE_ARG_OP_BUILTIN_MAP
     | _DOUBLE_ARG_OP_BUILTIN_MAP
 )

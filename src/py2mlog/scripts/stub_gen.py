@@ -142,7 +142,7 @@ def _stubs_from_func_map(
 gen = f"""
 from abc import ABC
 from collections.abc import Iterator
-from typing import Any, Literal, overload
+from typing import Any, Literal, LiteralString, overload
 
 from py2mlog._types import ColorType, Content
 
@@ -269,7 +269,28 @@ def print(
     \"""
     Param 'flush' defaults to 'message1'. Set 'flush' to False to omit 'printflush'.
     \"""
-{_stubs_from_func_map(intrinsics.builtins.FUNC_MAP, is_method=False)}
+
+def mlog_raw(src: LiteralString, /) -> None:
+    \"""
+    Emit raw mlog. Use a raw string so that escape sequences work properly.
+    \"""
+
+def radar(
+    building: Building,
+    filter1: str | Any = "any",
+    filter2: str | Any = "any",
+    filter3: str | Any = "any",
+    /,
+    *,
+    order: bool | float | str = True,
+    key: str = "distance",
+) -> UnitObj | None: ...
+
+{
+    _stubs_from_func_map(
+        intrinsics.builtins.FUNC_MAP, is_method=False, exclude=("radar",)
+    )
+}
 
 
 
@@ -280,10 +301,24 @@ class Unit:
     def bind(type: str | UnitType | UnitObj, /) -> None: ...
 
 
+    @staticmethod
+    def radar(
+        filter1: str | Any = "any",
+        filter2: str | Any = "any",
+        filter3: str | Any = "any",
+        /,
+        *,
+        order: bool | float | str = True,
+        key: str = "distance",
+    ) -> UnitObj | None: ...
+
+
     @overload
     @staticmethod
     # Any here for var name as subop name (e.g. subop=ore instead of subop="ore")
-    def locate(subop: Literal["ore"] | Any, /, *, ore_type: Item) -> None: ...
+    def locate(
+        subop: Literal["ore"] | Any, /, *, ore_type: Item
+    ) -> tuple[float, float, bool]: ...
 
     @overload
     @staticmethod
@@ -293,11 +328,13 @@ class Unit:
         *,
         block_flag: str | Any,
         is_enemy_building: bool | int | str,
-    ) -> None: ...
+    ) -> tuple[float, float, bool, Building | None]: ...
 
     @overload
     @staticmethod
-    def locate(subop: Literal["spawn", "damaged"] | Any, /) -> None: ...
+    def locate(
+        subop: Literal["spawn", "damaged"] | Any, /
+    ) -> tuple[float, float, bool, Building | None]: ...
 
 
     @overload
@@ -354,6 +391,7 @@ class Unit:
         intrinsics.unit.FUNC_MAP,
         exclude=(
             "locate",
+            "radar",
             "bind",
             "shoot",
             "targetp",

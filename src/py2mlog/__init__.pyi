@@ -5,7 +5,7 @@ Avoid importing them for regular use.
 """
 
 from collections.abc import Callable
-from typing import Literal, LiteralString
+from typing import Literal
 
 from py2mlog._gen import *  # noqa: F403
 
@@ -21,9 +21,4 @@ def unroll(factor: int | Literal["all"], /) -> None:
     Unroll the loop directly below if present, raises otherwise.
     'factor' must be a literal, not variable.
     Can only be called as standalone function call.
-    """
-
-def mlog_raw(src: LiteralString, /) -> None:
-    """
-    Emit raw mlog. Use a raw string so that escape sequences work properly.
     """

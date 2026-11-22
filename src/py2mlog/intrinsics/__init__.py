@@ -4,6 +4,7 @@ from . import builtins, control, mem, screen, unit
 from .intrinsic_func_utils import IntrinsicFuncMap
 
 __all__ = [
+    "INSTANCE_METHOD_FUNC_MAP",
     "NAMESPACES_NAME_TO_FUNC_MAP_MAP",
     "builtins",
     "control",
@@ -11,6 +12,11 @@ __all__ = [
     "screen",
     "unit",
 ]
+
+
+INSTANCE_METHOD_FUNC_MAP: IntrinsicFuncMap = (
+    control.FUNC_MAP | builtins.FUNC_MAP_RADAR_ENTRY
+)
 
 
 def _get_namespaces_name_to_func_map_map() -> dict[str, IntrinsicFuncMap]:

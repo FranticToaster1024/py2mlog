@@ -287,7 +287,7 @@ Screen.flush()  # default is 'display1'
 All unit operations, through the `Unit.*` namespace. Basically same thing as above; should be compatible with pyndustric. This namespace includes `ubind` as `Unit.bind()`, `uradar` as `Unit.radar()` etc. You can access unit types through the `Units.*` namespace.
 
 
-All control operations, through the `Control.*` namespace or through method calls (just like pyndustric):
+All control operations, through the `Control.*` namespace, as well as method calls for control operations and `radar`:
 ```py
 Control.enabled(reactor1, True)
 Control.enable(reactor1)  # equivalent to above
@@ -297,6 +297,8 @@ reactor1.disable()  # equivalent to above
 Control.shoot(foo, 100, 100, True)
 Control.shoot(foo, 100, 100)  # default is True
 foo.shoot(100, 100)  # equivalent to above
+
+x = turret1.radar("enemy", "flying", order=1, key="max_health")
 
 ...
 ```

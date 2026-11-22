@@ -980,6 +980,7 @@ COMPILER_SNIPPET_TESTCASES = [
         stop()
         x = pack_color(a, b, c, d)
         w, x, y, z = unpack_color(a)
+        x = radar(turret1, "enemy", "flying", order=True, key="shield")
 
         # single arg op
         x = flip(a)
@@ -1030,6 +1031,7 @@ COMPILER_SNIPPET_TESTCASES = [
             "stop",
             "packcolor x a b c d",
             "unpackcolor w x y z a",
+            "radar enemy flying any shield turret1 true x",
             # single arg op
             "op not x a",
             "op abs x a",
@@ -1823,6 +1825,7 @@ COMPILER_SNIPPET_TESTCASES = [
         foo.shootp(Env.this)
         foo.color(Color("008080"))
         sorter1.config(Env.copper)
+        x = turret1.radar("enemy", "flying", order=1, key="max_health")
         """,
         (
             # Control.*
@@ -1847,6 +1850,7 @@ COMPILER_SNIPPET_TESTCASES = [
             "control shootp foo @this true",
             "control color foo %008080",
             "control config sorter1 @copper",
+            "radar enemy flying any maxHealth turret1 1 x",
         ),
         id="control-operations-and-methods",
     ),

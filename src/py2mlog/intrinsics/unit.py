@@ -2,7 +2,6 @@ __all__ = ["FUNC_MAP"]
 
 import logging
 from collections.abc import Callable
-from typing import cast
 
 from py2mlog.compiler.error import (
     CompilerError,
@@ -10,6 +9,12 @@ from py2mlog.compiler.error import (
 )
 from py2mlog.compiler.mimex_utils import camel_to_snake
 from py2mlog.compiler.mlog_builtins import UNIT_MAP
+from py2mlog.intrinsics.builtins import (
+    MlogBoolLiteral_True,
+    RadarSortSelParam_Distance,
+    RadarTargetSelParam_Any,
+    resolve_radar_args,
+)
 from py2mlog.intrinsics.intrinsic_func_utils import (
     IntrinsicCallCtx,
     IntrinsicFuncMap,
@@ -33,8 +38,6 @@ from py2mlog.mlog.mlog_expressions import (
     MlogVar,
 )
 from py2mlog.mlog.selectable_params import (
-    RadarSortSelectableParam,
-    RadarTargetSelectableParam,
     UnitLocateBuildingSelectableParam,
 )
 from py2mlog.mlog.suboperations import (
@@ -90,118 +93,29 @@ def _unit_bind(
     return MlogNullLiteral()
 
 
-_RADAR_TARGET_NAME_MAP = {t.value: t for t in RadarTargetSelectableParam}
-_RADAR_SORT_NAME_MAP = {
-    name: sel_param
-    for sel_param in RadarSortSelectableParam
-    for name in (
-        sel_param.value,
-        camel_to_snake(sel_param.value),
-        sel_param.value.lower(),
-    )
-}
-_RADAR_ORDER_NAMES = {
-    # im not sure if 'min' and 'max' are fully accurate
-    # but pyndustric compatibility so
-    "min": MlogBoolLiteral(True),
-    "True": MlogBoolLiteral(True),
-    "1": MlogBoolLiteral(True),
-    "max": MlogBoolLiteral(False),
-    "False": MlogBoolLiteral(False),
-    "0": MlogBoolLiteral(False),
-}
-_RadarTargetSelParam_Any = MlogStringLiteral("any")
-_RadarSortSelParam_Distance = MlogStringLiteral("distance")
-_MlogBoolLiteral_True = MlogBoolLiteral(True)
-
-
 def _unit_radar(
     call_ctx: IntrinsicCallCtx,
-    filter1: MlogStringLiteral | MlogVar = _RadarTargetSelParam_Any,
-    filter2: MlogStringLiteral | MlogVar = _RadarTargetSelParam_Any,
-    filter3: MlogStringLiteral | MlogVar = _RadarTargetSelParam_Any,
+    filter1: MlogStringLiteral | MlogVar = RadarTargetSelParam_Any,
+    filter2: MlogStringLiteral | MlogVar = RadarTargetSelParam_Any,
+    filter3: MlogStringLiteral | MlogVar = RadarTargetSelParam_Any,
     /,
     *,
     order: MlogBoolLiteral
     | MlogNumberLiteral
-    | MlogStringLiteral = _MlogBoolLiteral_True,
-    key: MlogStringLiteral = _RadarSortSelParam_Distance,
+    | MlogStringLiteral = MlogBoolLiteral_True,
+    key: MlogStringLiteral = RadarSortSelParam_Distance,
 ) -> MlogExpr:
-    order_ = cast("MlogExpr", order)
-    key_ = cast("MlogExpr", key)
 
-    this_func_name = get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_radar)
-
-    filter_sel_params: list[RadarTargetSelectableParam] = []
-    for arg in (filter1, filter2, filter3):
-        arg = cast("MlogExpr", arg)
-
-        if not isinstance(arg, (MlogStringLiteral, MlogVar)):
-            # raise an error instead of the usual warning
-            raise CompilerError(
-                CompilerErrorType.BAD_CALL,
-                call_ctx.src_loc,
-                err=f"Called '{this_func_name}' "
-                f"with arg '{arg}'. Expected type: '{MlogStringLiteral.__name__}' "
-                f"or '{MlogVar.__name__}'",
-            )
-
-        arg_str = arg.value if isinstance(arg, MlogStringLiteral) else arg.name
-        filter_sel_param = _RADAR_TARGET_NAME_MAP.get(arg_str)
-        if filter_sel_param is None:
-            raise CompilerError(
-                CompilerErrorType.BAD_CALL,
-                call_ctx.src_loc,
-                err=f"Called '{this_func_name}' with unknown filter type '{arg_str}'. "
-                f"Allowed types: '{', '.join(_RADAR_TARGET_NAME_MAP)}'",
-            )
-
-        filter_sel_params.append(filter_sel_param)
-
-    if not isinstance(key_, (MlogStringLiteral, MlogVar)):
-        raise CompilerError(
-            CompilerErrorType.BAD_CALL,
-            call_ctx.src_loc,
-            err=f"Called '{this_func_name}' with arg '{arg}' for param 'key'. "
-            f"Expected type: '{MlogStringLiteral.__name__}' "
-            f"or '{MlogVar.__name__}'",
-        )
-    key_str = key_.value if isinstance(key_, MlogStringLiteral) else key_.name
-    key_sel_param = _RADAR_SORT_NAME_MAP.get(key_str)
-    if key_sel_param is None:
-        raise CompilerError(
-            CompilerErrorType.BAD_CALL,
-            call_ctx.src_loc,
-            err=f"Called '{this_func_name}' with unknown key type '{arg_str}'. "
-            f"Allowed types: '{', '.join(_RADAR_TARGET_NAME_MAP)}'",
-        )
-
-    if not isinstance(
-        order_, (MlogVar, MlogNumberLiteral, MlogBoolLiteral, MlogStringLiteral)
-    ):
-        logger.warning(
-            "Called '%s' with literal of type '%s' for 'order' kwarg.",
-            this_func_name,
-            type(order_).__name__,
-        )
-
-    if isinstance(order_, MlogStringLiteral):
-        mapped = _RADAR_ORDER_NAMES.get(order_.value)
-        if mapped is None:
-            logger.warning(
-                "Called '%s' with unrecognised string literal '%s'. Defaulting to '%s'.",
-                this_func_name,
-                order_.value,
-                _MlogBoolLiteral_True.value,
-            )
-            mapped = _MlogBoolLiteral_True
-
-        order_ = mapped
-
-    elif isinstance(order_, MlogVar):
-        mapped = _RADAR_ORDER_NAMES.get(order_.name)
-        if mapped is not None:
-            order_ = mapped
+    filter_sel_params, key_sel_param, order_ = resolve_radar_args(
+        filter1,
+        filter2,
+        filter3,
+        order,
+        key,
+        func_name=get_func_names(NAMESPACE_NAME, _REV_MAP, _unit_radar),
+        src_loc=call_ctx.src_loc,
+        logger_=logger,
+    )
 
     call_ctx.emitter.emit_instruction(
         Instruction(

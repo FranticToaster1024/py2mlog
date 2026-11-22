@@ -813,7 +813,7 @@ class Compiler:
 
             return func
 
-        method = intrinsics.control.FUNC_MAP.get(func_name)
+        method = intrinsics.INSTANCE_METHOD_FUNC_MAP.get(func_name)
         if method is None:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
@@ -822,10 +822,12 @@ class Compiler:
             )
 
         def _func(
-            call_ctx: IntrinsicCallCtx, *args: MlogExpr
+            call_ctx: IntrinsicCallCtx, *args: MlogExpr, **kwargs: MlogExpr
         ) -> MlogExpr | tuple[MlogExpr, ...]:
             try:
-                return method(call_ctx, MlogVar(attr_target_name), *args)
+                return method(
+                    call_ctx, MlogVar(attr_target_name), *args, **kwargs
+                )
 
             except TypeError as e:
                 raise CompilerError(
