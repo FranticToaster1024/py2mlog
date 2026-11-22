@@ -169,9 +169,7 @@ OPTIMIZER_SNIPPET_TESTCASES = [
     ),
     pytest.param("print a", "print a", id="print-var-no-pessimization"),
     pytest.param(
-        'print "literal"',
-        'print "literal"',
-        id="print-str-pessimization",
+        'print "literal"', 'print "literal"', id="print-str-no-pessimization"
     ),
     pytest.param(
         'print "literal"\nnoop',
@@ -192,22 +190,6 @@ OPTIMIZER_SNIPPET_TESTCASES = [
         'print "{0}"\nformat a', "print a", id="merge-print-format-to-print-var"
     ),
     pytest.param(
-        """
-        print "{0}"
-        noop
-        print "{1}"
-        noop
-        format a
-        """,
-        """
-        print "{0}"
-        noop
-        noop
-        print a
-        """,
-        id="merge-print-format-to-print-var-with-gap",
-    ),
-    pytest.param(
         'print "{0}foo"\nformat 123',
         'print "123foo"',
         id="merge-print-format-with-literal",
@@ -215,21 +197,42 @@ OPTIMIZER_SNIPPET_TESTCASES = [
     pytest.param(
         """
         print "foo{0}bar{9}"
-        noop
+        jump l1 equal x true
         format "baz"
-        noop
         format 1.23
+        l1:
         noop
-        format "unused"
         """,
         """
+        print "foo{0}bar{9}"
+        jump l1 equal x true
+        format "baz"
+        format 1.23
+        l1:
         noop
-        noop
-        print "foobazbar1.23"
-        noop
-        format "unused"
         """,
-        id="merge-print-format-with-literals-with-gap",
+        id="no-merge-print-format-with-jump-divider",
+    ),
+    pytest.param(
+        """
+        print "{0}"
+        format a
+        format b
+        print "{0}{1}foo"
+        format 123
+        format 3.14
+        format 321
+        """,
+        """
+        print a
+        format b
+        print "1233.14foo"
+        format 321
+        """,
+        id="extra-format-instr-no-crash",
+    ),
+    pytest.param(
+        'print "{0}foo"', 'print "{0}foo"', id="missing-format-instr-no-crash"
     ),
     pytest.param(
         """

@@ -88,6 +88,9 @@ def _merge_print_format(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
                         )
                         last_print_instr_idx = i
 
+                    else:
+                        last_print_instr_idx = None
+
                     continue
 
                 indexes, fill_order = (
@@ -110,6 +113,8 @@ def _merge_print_format(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
                     (MlogStringLiteral("".join(print_str_list)),),
                 )
                 last_print_instr_idx = i
+
+        last_print_instr_idx = None
 
     return tuple(e for e in new_instrs if e is not None)
 
@@ -273,6 +278,9 @@ def _rewrite_placeholders_and_reorder_format_instrs(
     for i, (str_idx, fill_idx) in enumerate(
         zip(placeholder_str_indexes, placeholder_fill_order, strict=True)
     ):
+        if i >= len(format_instrs) or fill_idx >= len(format_instrs):
+            continue
+
         # the number inside the placeholder
         # {0}, {1}, etc
         #  ^    ^
