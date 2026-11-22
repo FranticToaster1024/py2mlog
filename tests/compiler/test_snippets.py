@@ -968,7 +968,13 @@ COMPILER_SNIPPET_TESTCASES = [
         # mlog instructions
         sleep(10)
         x = wait(a)  # why would you do this though
+        print_raw("foo{0}bar")
+        format_raw(a)
+        print_char(65)
         print_flush(a)
+        print_flush()
+        set_rate(10)
+        set_ipt(10)
         end()
         top()
         stop()
@@ -1012,7 +1018,13 @@ COMPILER_SNIPPET_TESTCASES = [
             "wait 10",
             "wait a",
             "set x null",
+            'print "foo{0}bar"',
+            "format a",
+            "printchar 65",
             "printflush a",
+            "printflush message1",
+            "setrate 10",
+            "setrate 10",
             "end",
             "end",
             "stop",

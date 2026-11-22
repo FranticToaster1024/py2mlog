@@ -138,6 +138,15 @@ x = sqrt(16)
 ```
 
 
+Some mlog instructions:
+```py
+set_rate(5)  # setrate 5
+print_char(0x41)  # printchar 65
+print_raw("foo{0}bar")  # print "foo{0}bar"
+format_raw(123)  # format 123
+```
+
+
 Raw mlog using `mlog_raw()`:
 ```py
 mlog_raw(r"""

@@ -264,7 +264,7 @@ def print(
     *args: Any,
     sep: str = " ",
     end: str = r"\\n",
-    flush: Any = ...,
+    flush: Building | Literal[False] = ...,
 ) -> None:
     \"""
     Param 'flush' defaults to 'message1'. Set 'flush' to False to omit 'printflush'.

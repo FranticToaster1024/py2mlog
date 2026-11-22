@@ -203,14 +203,47 @@ def _Color(  # noqa: N802
 def _sleep(
     call_ctx: IntrinsicCallCtx, t: MlogNumberLiteral, /
 ) -> MlogNullLiteral:
+    _validate_arg_type(MlogNumberLiteral, _sleep, t)
     call_ctx.emitter.emit_instruction(
         Instruction(InstructionType.WAIT, None, (), (t,))
     )
     return MlogNullLiteral()
 
 
+def _print_raw(
+    call_ctx: IntrinsicCallCtx, value: MlogExpr, /
+) -> MlogNullLiteral:
+    call_ctx.emitter.emit_instruction(
+        Instruction(InstructionType.PRINT, None, (), (value,))
+    )
+    return MlogNullLiteral()
+
+
+def _print_char(
+    call_ctx: IntrinsicCallCtx, value: MlogNumberLiteral, /
+) -> MlogNullLiteral:
+    _validate_arg_type(MlogNumberLiteral, _print_char, value)
+    call_ctx.emitter.emit_instruction(
+        Instruction(InstructionType.PRINT_CHAR, None, (), (value,))
+    )
+    return MlogNullLiteral()
+
+
+def _format_raw(
+    call_ctx: IntrinsicCallCtx, value: MlogVar, /
+) -> MlogNullLiteral:
+    _validate_arg_type(MlogVar, _format_raw, value)
+    call_ctx.emitter.emit_instruction(
+        Instruction(InstructionType.FORMAT, None, (), (value,))
+    )
+    return MlogNullLiteral()
+
+
+_MlogVar_message1 = MlogVar("message1")
+
+
 def _print_flush(
-    call_ctx: IntrinsicCallCtx, tgt: MlogVar, /
+    call_ctx: IntrinsicCallCtx, tgt: MlogVar = _MlogVar_message1, /
 ) -> MlogNullLiteral:
     _validate_arg_type(MlogVar, _print_flush, tgt)
     call_ctx.emitter.emit_instruction(
@@ -222,7 +255,7 @@ def _print_flush(
 def _end(call_ctx: IntrinsicCallCtx) -> MlogNullLiteral:
     """
     Jump to the top of the program.
-    Does NOT terminate the program; use 'stop()' instead.
+    Does NOT terminate the program; use 'stop()' for that instead.
     """
     # end gets emitted first
     # so if user tries to assign to result
@@ -238,6 +271,16 @@ def _stop(call_ctx: IntrinsicCallCtx) -> MlogNullLiteral:
     """Terminates the program."""
     call_ctx.emitter.emit_instruction(
         Instruction(InstructionType.STOP, None, (), ())
+    )
+    return MlogNullLiteral()
+
+
+def _set_rate(
+    call_ctx: IntrinsicCallCtx, rate: MlogNumberLiteral, /
+) -> MlogNullLiteral:
+    _validate_arg_type(MlogNumberLiteral, _set_rate, rate)
+    call_ctx.emitter.emit_instruction(
+        Instruction(InstructionType.SET_RATE, None, (), (rate,))
     )
     return MlogNullLiteral()
 
@@ -376,10 +419,15 @@ _func_map: IntrinsicFuncMap = (
         "Color": _Color,
         "sleep": _sleep,
         "wait": _sleep,
+        "print_raw": _print_raw,
+        "print_char": _print_char,
+        "format_raw": _format_raw,
         "print_flush": _print_flush,
         "end": _end,
         "top": _end,
         "stop": _stop,
+        "set_rate": _set_rate,
+        "set_ipt": _set_rate,
         "pack_color": _pack_color,
         "unpack_color": _unpack_color,
     }
