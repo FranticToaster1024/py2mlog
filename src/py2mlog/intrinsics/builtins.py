@@ -382,9 +382,6 @@ _func_map: IntrinsicFuncMap = (
         "stop": _stop,
         "pack_color": _pack_color,
         "unpack_color": _unpack_color,
-        # unsupported python builtins
-        "exec": None,
-        "eval": None,
     }
     | _SINGLE_ARG_OP_BUILTIN_MAP
     | _DOUBLE_ARG_OP_BUILTIN_MAP

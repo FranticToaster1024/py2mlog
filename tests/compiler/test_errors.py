@@ -26,14 +26,6 @@ def test_error(src: str, error_type: CompilerErrorType):
 _test_error_list_testcases = [
     pytest.param(
         (
-            'exec("x = 123")',
-            'eval("1 + 2")',
-        ),
-        CompilerErrorType.UNSUPPORTED,
-        id="unsupported-builtin-functions",
-    ),
-    pytest.param(
-        (
             "abs()",
             "abs(x=1)",
             "abs(1, 2, 3)",

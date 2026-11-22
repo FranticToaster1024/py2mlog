@@ -747,12 +747,8 @@ class Compiler:
             return _compile_special_builtin(func_call)
 
         # TODO: non-inline builtins
-        inline_builtin = intrinsics.builtins.FUNC_MAP.get(func_name, ...)
+        inline_builtin = intrinsics.builtins.FUNC_MAP.get(func_name)
         if inline_builtin is None:
-            raise self._unsupported_expr_error(
-                func_call, f" with builtin {func_name}"
-            )
-        if inline_builtin is ...:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
                 src_loc,

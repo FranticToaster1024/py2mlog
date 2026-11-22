@@ -24,8 +24,8 @@ class IntrinsicCallCtx:
 type IntrinsicFunc = Callable[
     Concatenate[IntrinsicCallCtx, ...], MlogExpr | tuple[MlogExpr, ...]
 ]
-type IntrinsicFuncMap = dict[str, IntrinsicFunc | None]
-type IntrinsicFuncRevMap = dict[IntrinsicFunc | None, list[str]]
+type IntrinsicFuncMap = dict[str, IntrinsicFunc]
+type IntrinsicFuncRevMap = dict[IntrinsicFunc, list[str]]
 
 
 def get_func_names(
