@@ -231,6 +231,37 @@ OPTIMIZER_SNIPPET_TESTCASES = [
         """,
         id="merge-print-format-with-literals-with-gap",
     ),
+    pytest.param(
+        """
+        set 1 2
+        set x x
+        set @counter @counter
+        set x 1
+        set x y
+        op add 0 1 1
+        op abs "abc" -5
+        op add x 0 x
+        op add x x 0
+        op sub x x 0
+        op mul x x 1
+        op mul x 1 x
+        op div x x 1
+        op idiv x x 1
+        op add x y 1
+        op sub x 0 x
+        op mul x y 2
+        op div x 1 y
+        """,
+        """
+        set x 1
+        set x y
+        op add x y 1
+        op sub x 0 x
+        op mul x y 2
+        op div x 1 y
+        """,
+        id="remove-useless-instrs",
+    ),
 ]
 
 

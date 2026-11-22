@@ -6,10 +6,15 @@ from itertools import accumulate
 from py2mlog.compiler.error import CompilerError, CompilerErrorType
 from py2mlog.mlog.instruction import Instruction, Label, MlogItem
 from py2mlog.mlog.instruction_types import InstructionType
-from py2mlog.mlog.mlog_expressions import MlogStringLiteral
+from py2mlog.mlog.mlog_expressions import (
+    MlogLiteral,
+    MlogNumberLiteral,
+    MlogStringLiteral,
+)
 from py2mlog.mlog.suboperations import (
     NEGATED_COND_OP_SUBOP_MAP,
     ConditionOpSuboperation,
+    OperationSuboperation,
 )
 from py2mlog.optimizer.utils import get_jump_target_name, mlog_expr_as_print_str
 
@@ -473,3 +478,120 @@ def _generate_jump_label_map(
                 jump_label_map_entry.append(instr)
 
     return jump_label_map
+
+
+@_add_opt_func
+def _remove_no_op_instrs(
+    instrs: tuple[MlogItem, ...],
+) -> tuple[MlogItem, ...]:
+    """
+    Does not remove literal 'noop' instructions for testing purposes.
+    """
+    new_instrs: list[MlogItem] = []
+
+    for instr in instrs:
+        if isinstance(instr, Instruction):
+            if instr.type is InstructionType.SET:
+                # e.g.
+                # set 0 foo
+                # set "abc" foo
+                if isinstance(instr.args[0], MlogLiteral):
+                    continue
+
+                # e.g.
+                # set x x
+                # set @counter @counter
+                if instr.args[0] == instr.args[1]:
+                    continue
+
+            # e.g.
+            # op add 0 foo bar
+            # op abs "abc" foo
+            elif instr.type is InstructionType.OPERATION and isinstance(
+                instr.args[0], MlogLiteral
+            ):
+                continue
+
+        new_instrs.append(instr)
+
+    return tuple(new_instrs)
+
+
+@_add_opt_func
+def _simplify_ops(instrs: tuple[MlogItem, ...]) -> tuple[MlogItem, ...]:
+    new_instrs: list[MlogItem] = []
+
+    for instr in instrs:
+        if (
+            isinstance(instr, Instruction)
+            and instr.type is InstructionType.OPERATION
+        ):
+            # op add foo bar 0
+            # op add foo 0 bar
+            if instr.suboperation is OperationSuboperation.ADD:
+                val = None
+                if instr.args[1] == MlogNumberLiteral(0):
+                    val = instr.args[2]
+
+                elif instr.args[2] == MlogNumberLiteral(0):
+                    val = instr.args[1]
+
+                if val is not None:
+                    new_instrs.append(
+                        Instruction(
+                            InstructionType.SET, None, (), (instr.args[0], val)
+                        )
+                    )
+                    continue
+
+            # op sub foo bar 0
+            if instr.suboperation is OperationSuboperation.SUB and instr.args[
+                2
+            ] == MlogNumberLiteral(0):
+                new_instrs.append(
+                    Instruction(
+                        InstructionType.SET,
+                        None,
+                        (),
+                        (instr.args[0], instr.args[1]),
+                    )
+                )
+                continue
+
+            # op mul foo bar 1
+            # op mul foo 1 bar
+            if instr.suboperation is OperationSuboperation.MUL:
+                val = None
+                if instr.args[1] == MlogNumberLiteral(1):
+                    val = instr.args[2]
+
+                elif instr.args[2] == MlogNumberLiteral(1):
+                    val = instr.args[1]
+
+                if val is not None:
+                    new_instrs.append(
+                        Instruction(
+                            InstructionType.SET, None, (), (instr.args[0], val)
+                        )
+                    )
+                    continue
+
+            # op div foo bar 1
+            # op idiv foo bar 1
+            if instr.suboperation in (
+                OperationSuboperation.DIV,
+                OperationSuboperation.INTEGER_DIV,
+            ) and instr.args[2] == MlogNumberLiteral(1):
+                new_instrs.append(
+                    Instruction(
+                        InstructionType.SET,
+                        None,
+                        (),
+                        (instr.args[0], instr.args[1]),
+                    )
+                )
+                continue
+
+        new_instrs.append(instr)
+
+    return tuple(new_instrs)

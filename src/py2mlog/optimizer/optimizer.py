@@ -8,8 +8,6 @@ from py2mlog.optimizer.peephole import peephole
 logger = logging.getLogger(__name__)
 
 
-# TODO: maybe special classes to avoid recomputing metadata?
-# optimize the optimizer, heh
 def optimize(
     _instructions: list[MlogItem], /, *, iterations: int
 ) -> list[MlogItem]:

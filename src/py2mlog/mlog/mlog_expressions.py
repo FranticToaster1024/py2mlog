@@ -10,49 +10,53 @@ class LabelRef:
     name: str
 
 
-class MlogExpr:
-    pass
-
-
 @dataclass(frozen=True)
-class MlogFillerExpr(MlogExpr):
+class MlogFillerExpr:
     """Use sparingly."""
 
 
 @dataclass(frozen=True)
-class MlogBuiltin(MlogExpr):
+class MlogBuiltin:
     name: str
 
 
 @dataclass(frozen=True)
-class MlogStringLiteral(MlogExpr):
+class MlogStringLiteral:
     value: str
 
 
 @dataclass(frozen=True)
-class MlogNumberLiteral(MlogExpr):
+class MlogNumberLiteral:
     value: int | float
 
 
 @dataclass(frozen=True)
-class MlogBoolLiteral(MlogExpr):
+class MlogBoolLiteral:
     value: bool
 
 
 @dataclass(frozen=True)
-class MlogColorLiteral(MlogExpr):
+class MlogColorLiteral:
     value: str
 
 
-class MlogNullLiteral(MlogExpr):
+class MlogNullLiteral:
     pass
 
 
 @dataclass(frozen=True)
-class MlogVar(MlogExpr):
+class MlogVar:
     name: str
 
 
+MlogLiteral = (
+    MlogStringLiteral
+    | MlogNumberLiteral
+    | MlogBoolLiteral
+    | MlogColorLiteral
+    | MlogNullLiteral
+)
+MlogExpr = MlogFillerExpr | MlogBuiltin | MlogLiteral | MlogVar
 type MlogArg = MlogExpr | LabelRef
 
 
