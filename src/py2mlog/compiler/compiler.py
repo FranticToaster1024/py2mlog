@@ -16,10 +16,13 @@ from py2mlog.compiler.error import (
     SourceLocation,
 )
 from py2mlog.compiler.for_loop_control_instrs import (
+    ForLoopControlInstrs,
     LoopLabelRefs,
     for_env_links_loop_control_instrs,
+    for_env_links_remainder_loop_control_instrs,
     for_range_loop_control_instrs,
     for_range_remainder_loop_control_instrs,
+    unrolled_for_env_links_loop_control_instrs,
     unrolled_for_range_loop_control_instrs,
 )
 from py2mlog.compiler.func_utils import (
@@ -1307,7 +1310,6 @@ class Compiler:
                             (self.compile_expr(value),),
                         )
                     )
-                    # don't wanna use return in case i add stuff to bottom of compile_stmt later
 
                 elif any(isinstance(t, ast.Tuple) for t in targets):
                     if len(targets) > 1:
@@ -1734,37 +1736,17 @@ class Compiler:
                             )
                         )
 
-                        self.emitter.emit_items(
-                            unrolled_loop_control_instrs.loop_start
-                        )
-                        self.emitter.emit_label(loop_label)
-
-                        self.emitter.emit_items(
-                            unrolled_loop_control_instrs.body_start
-                        )
-
-                        for _ in range(unroll.factor):
-                            this_loop_break, this_loop_break_ref = (
-                                self._compile_loop_body(
-                                    body, break_label, break_label_ref
-                                )
+                        break_label, break_label_ref = (
+                            self._emit_partially_unrolled_loop(
+                                unroll.factor,
+                                unrolled_loop_control_instrs,
+                                body=body,
+                                loop_label=loop_label,
+                                else_label=else_label,
+                                break_label=break_label,
+                                break_label_ref=break_label_ref,
                             )
-
-                            self.emitter.emit_items(
-                                unrolled_loop_control_instrs.body_end
-                            )
-
-                            if break_label is None or break_label_ref is None:
-                                break_label = this_loop_break
-                                break_label_ref = this_loop_break_ref
-
-                        self.emitter.emit_items(
-                            unrolled_loop_control_instrs.loop_end
                         )
-
-                        self.emitter.emit_label(else_label)
-
-                        # don't generate orelse & break label in partially unrolled loop
 
                         # remainder loop
 
@@ -1775,7 +1757,6 @@ class Compiler:
                             else_label_ref,
                         )
 
-                        # generate a fresh set
                         loop_label, loop_label_ref = (
                             remainder_loop_label,
                             remainder_loop_label_ref,
@@ -1812,20 +1793,6 @@ class Compiler:
                     and iter_.func.value.id == "Env"
                     and iter_.func.attr == "links"
                 ):
-                    if unroll is not None and unroll.factor == "full":
-                        raise CompilerError(
-                            CompilerErrorType.BAD_DIRECTIVE,
-                            self._get_src_loc_from_node(iter_),
-                            err="Cannot fully unroll 'Env.links()'",
-                        )
-
-                    if unroll is not None:
-                        raise CompilerError(
-                            CompilerErrorType.UNSUPPORTED,
-                            self._get_src_loc_from_node(iter_),
-                            feature="unrolling with 'Env.links()'",
-                        )
-
                     if len(iter_.args) > 0 or len(iter_.keywords) > 0:
                         raise CompilerError(
                             CompilerErrorType.BAD_CALL,
@@ -1835,11 +1802,60 @@ class Compiler:
 
                     loop_iter = self.emitter.new_loop_iter()
 
-                    loop_control_instrs = for_env_links_loop_control_instrs(
-                        LoopLabelRefs(loop_label_ref, else_label_ref),
-                        compiled_target,
-                        loop_iter,
-                    )
+                    if unroll is not None:
+                        if unroll.factor == "full":
+                            raise CompilerError(
+                                CompilerErrorType.BAD_DIRECTIVE,
+                                self._get_src_loc_from_node(iter_),
+                                err="Cannot fully unroll 'Env.links()'",
+                            )
+
+                        unrolled_loop_control_instrs = (
+                            unrolled_for_env_links_loop_control_instrs(
+                                LoopLabelRefs(loop_label_ref, else_label_ref),
+                                compiled_target,
+                                loop_iter,
+                                unroll.factor,
+                                self.emitter.new_tmp(),
+                            )
+                        )
+
+                        break_label, break_label_ref = (
+                            self._emit_partially_unrolled_loop(
+                                unroll.factor,
+                                unrolled_loop_control_instrs,
+                                body=body,
+                                loop_label=loop_label,
+                                else_label=else_label,
+                                break_label=break_label,
+                                break_label_ref=break_label_ref,
+                            )
+                        )
+
+                        del (
+                            loop_label,
+                            loop_label_ref,
+                            else_label,
+                            else_label_ref,
+                        )
+
+                        loop_label, loop_label_ref = self.emitter.new_label()
+                        else_label, else_label_ref = self.emitter.new_label()
+
+                        loop_control_instrs = (
+                            for_env_links_remainder_loop_control_instrs(
+                                LoopLabelRefs(loop_label_ref, else_label_ref),
+                                compiled_target,
+                                loop_iter,
+                            )
+                        )
+
+                    else:
+                        loop_control_instrs = for_env_links_loop_control_instrs(
+                            LoopLabelRefs(loop_label_ref, else_label_ref),
+                            compiled_target,
+                            loop_iter,
+                        )
 
                 else:
                     raise self._unsupported_stmt_error(
@@ -1905,6 +1921,41 @@ class Compiler:
             return expr.value
 
         return None
+
+    def _emit_partially_unrolled_loop(
+        self,
+        unroll_factor: int,
+        unrolled_loop_control_instrs: ForLoopControlInstrs,
+        *,
+        body: list[ast.stmt],
+        loop_label: Label,
+        else_label: Label,
+        break_label: Label | None,
+        break_label_ref: LabelRef | None,
+    ) -> tuple[Label | None, LabelRef | None]:
+        self.emitter.emit_items(unrolled_loop_control_instrs.loop_start)
+        self.emitter.emit_label(loop_label)
+
+        for _ in range(unroll_factor):
+            self.emitter.emit_items(unrolled_loop_control_instrs.body_start)
+
+            this_loop_break, this_loop_break_ref = self._compile_loop_body(
+                body, break_label, break_label_ref
+            )
+
+            self.emitter.emit_items(unrolled_loop_control_instrs.body_end)
+
+            if break_label is None or break_label_ref is None:
+                break_label = this_loop_break
+                break_label_ref = this_loop_break_ref
+
+        self.emitter.emit_items(unrolled_loop_control_instrs.loop_end)
+
+        self.emitter.emit_label(else_label)
+
+        # don't generate orelse & break label in partially unrolled loop
+
+        return (break_label, break_label_ref)
 
     def _process_range_call(
         self,

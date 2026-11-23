@@ -165,8 +165,14 @@ _test_error_list_testcases = [
             x += 1
             """,
             """
-            unroll("all")
+            unroll("full")
             for l in Env.links():
+                pass
+            """,
+            """
+            for _ in Env.links():
+                unroll(5)
+            for _ in Env.links():
                 pass
             """,
         ),

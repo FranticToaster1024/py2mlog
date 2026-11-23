@@ -927,6 +927,86 @@ COMPILER_SNIPPET_TESTCASES = [
     ),
     pytest.param(
         """
+        unroll(3)
+        for l in Env.links():
+            l.disable()
+        """,
+        (
+            "__p2m_label3:",
+            "set __p2m_loop_iter0 0",
+            "jump __p2m_label1 lessThan @links 3",
+            "op mod __p2m_tmp0 @links 3",
+            "op sub __p2m_tmp0 @links __p2m_tmp0",
+            "__p2m_label0:",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "jump __p2m_label0 lessThan __p2m_loop_iter0 __p2m_tmp0",
+            "__p2m_label1:",
+            # remainder loop
+            "jump __p2m_label3 greaterThanEq __p2m_loop_iter0 @links",
+            "__p2m_label2:",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "jump __p2m_label2 lessThan __p2m_loop_iter0 @links",
+        ),
+        id="partial-unroll-for-env-links",
+    ),
+    pytest.param(
+        """
+        unroll(2)
+        for l in Env.links():
+            l.disable()
+            break
+            continue
+        else:
+            e = True
+        """,
+        (
+            "__p2m_label2:",
+            "set __p2m_loop_iter0 0",
+            "jump __p2m_label1 lessThan @links 2",
+            "op mod __p2m_tmp0 @links 2",
+            "op sub __p2m_tmp0 @links __p2m_tmp0",
+            "__p2m_label0:",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "jump __p2m_label2 always",
+            "jump __p2m_label3 always",
+            "__p2m_label3:",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "jump __p2m_label2 always",
+            "jump __p2m_label4 always",
+            "__p2m_label4:",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "jump __p2m_label0 lessThan __p2m_loop_iter0 __p2m_tmp0",
+            "__p2m_label1:",
+            # remainder loop
+            "jump __p2m_label6 greaterThanEq __p2m_loop_iter0 @links",
+            "__p2m_label5:",
+            "getlink l __p2m_loop_iter0",
+            "control enabled l false",
+            "jump __p2m_label2 always",
+            "jump __p2m_label7 always",
+            "__p2m_label7:",
+            "op add __p2m_loop_iter0 __p2m_loop_iter0 1",
+            "jump __p2m_label5 lessThan __p2m_loop_iter0 @links",
+            "__p2m_label6:",
+            "set e true",
+        ),
+        id="partial-unroll-for-env-links-break-continue-else",
+    ),
+    pytest.param(
+        """
         assert False, "abc"
         x = 123
         """,

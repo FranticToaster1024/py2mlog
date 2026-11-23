@@ -340,3 +340,113 @@ def for_env_links_loop_control_instrs(
     )
 
     return ForLoopControlInstrs(loop_start, body_start, body_end, loop_end)
+
+
+def unrolled_for_env_links_loop_control_instrs(
+    label_refs: LoopLabelRefs,
+    compiled_target: MlogExpr,
+    loop_iter: MlogExpr,
+    unroll_factor: int,
+    unroll_tmp: MlogExpr,
+) -> ForLoopControlInstrs:
+    iter_count = unroll_tmp
+
+    loop_start = (
+        Instruction(
+            InstructionType.SET,
+            None,
+            (),
+            (loop_iter, MlogNumberLiteral(0)),
+        ),
+        Instruction(
+            InstructionType.JUMP,
+            ConditionOpSuboperation.LESS_THAN,
+            (),
+            (
+                label_refs.else_label_ref,
+                MlogBuiltin("links"),
+                MlogNumberLiteral(unroll_factor),
+            ),
+        ),
+        Instruction(
+            InstructionType.OPERATION,
+            OperationSuboperation.MOD,
+            (),
+            (
+                unroll_tmp,
+                MlogBuiltin("links"),
+                MlogNumberLiteral(unroll_factor),
+            ),
+        ),
+        Instruction(
+            InstructionType.OPERATION,
+            OperationSuboperation.SUB,
+            (),
+            (iter_count, MlogBuiltin("links"), unroll_tmp),
+        ),
+    )
+
+    body_start = (
+        Instruction(
+            InstructionType.GET_LINK, None, (), (compiled_target, loop_iter)
+        ),
+    )
+
+    body_end = (
+        Instruction(
+            InstructionType.OPERATION,
+            OperationSuboperation.ADD,
+            (),
+            (loop_iter, loop_iter, MlogNumberLiteral(1)),
+        ),
+    )
+
+    loop_end = (
+        Instruction(
+            InstructionType.JUMP,
+            ConditionOpSuboperation.LESS_THAN,
+            (),
+            (label_refs.loop_label_ref, loop_iter, iter_count),
+        ),
+    )
+
+    return ForLoopControlInstrs(loop_start, body_start, body_end, loop_end)
+
+
+def for_env_links_remainder_loop_control_instrs(
+    label_refs: LoopLabelRefs, compiled_target: MlogExpr, loop_iter: MlogExpr
+) -> ForLoopControlInstrs:
+    loop_start = (
+        Instruction(
+            InstructionType.JUMP,
+            ConditionOpSuboperation.GREATER_THAN_OR_EQ,  # equal should suffice but this won't hurt right
+            (),
+            (label_refs.else_label_ref, loop_iter, MlogBuiltin("links")),
+        ),
+    )
+
+    body_start = (
+        Instruction(
+            InstructionType.GET_LINK, None, (), (compiled_target, loop_iter)
+        ),
+    )
+
+    body_end = (
+        Instruction(
+            InstructionType.OPERATION,
+            OperationSuboperation.ADD,
+            (),
+            (loop_iter, loop_iter, MlogNumberLiteral(1)),
+        ),
+    )
+
+    loop_end = (
+        Instruction(
+            InstructionType.JUMP,
+            ConditionOpSuboperation.LESS_THAN,
+            (),
+            (label_refs.loop_label_ref, loop_iter, MlogBuiltin("links")),
+        ),
+    )
+
+    return ForLoopControlInstrs(loop_start, body_start, body_end, loop_end)
