@@ -114,9 +114,18 @@ class Compiler:
         self._assert_error_label = Label(f"{PREFIX_LABEL}_err_assert")
         self._assert_error_label_ref = LabelRef(self._assert_error_label.name)
 
-        self._SPECIAL_BUILTINS: dict[str, Callable[[ast.Call], MlogExpr]] = {
+        self._SPECIAL_BUILTINS: dict[
+            str,
+            Callable[
+                [ast.Call, tuple[MlogExpr, ...]],
+                MlogExpr | tuple[MlogExpr, ...],
+            ],
+        ] = {
             "print": self._compile_print_call,
             "mlog_raw": self._compile_mlog_raw_call,
+            "create_links": lambda _, out_expr: (
+                (MlogFillerExpr(),) * len(out_expr)
+            ),
         }
 
         self._unroll: UnrollDirective | None = None
@@ -711,7 +720,7 @@ class Compiler:
 
         _compile_special_builtin = self._SPECIAL_BUILTINS.get(func_name)
         if _compile_special_builtin is not None:
-            return _compile_special_builtin(func_call)
+            return _compile_special_builtin(func_call, output_expr)
 
         # TODO: non-inline builtins
         inline_builtin = intrinsics.builtins.FUNC_MAP.get(func_name)
@@ -924,7 +933,9 @@ class Compiler:
 
         return compiled_func.scoped_ret_val
 
-    def _compile_print_call(self, func_call: ast.Call) -> MlogNullLiteral:
+    def _compile_print_call(
+        self, func_call: ast.Call, _: tuple[MlogExpr, ...]
+    ) -> MlogNullLiteral:
         src_loc = self._get_src_loc_from_node(func_call)
 
         # TODO: so many things
@@ -1031,7 +1042,9 @@ class Compiler:
             )
         return MlogNullLiteral()
 
-    def _compile_mlog_raw_call(self, func_call: ast.Call) -> MlogNullLiteral:
+    def _compile_mlog_raw_call(
+        self, func_call: ast.Call, _: tuple[MlogExpr, ...]
+    ) -> MlogNullLiteral:
         # intercept at ast level instead of as builtin
         # because compiling string literals messes up newlines and such
         src_loc = self._get_src_loc_from_node(func_call)

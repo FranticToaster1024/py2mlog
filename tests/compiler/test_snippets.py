@@ -2244,6 +2244,11 @@ COMPILER_SNIPPET_TESTCASES = [
         ),
         id="mlog-raw",
     ),
+    pytest.param(
+        "router1, = create_links()\nrouter1, junction1 = create_links()",
+        (),
+        id="create-links-noop",
+    ),
 ]
 
 

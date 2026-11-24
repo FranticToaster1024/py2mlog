@@ -260,6 +260,23 @@ class Colors:
 
 
 
+# add args and kwargs cuz the compiler technically allows them
+def create_links(*args: Any, **kwargs: Any) -> tuple[Building, ...]:
+    \"""
+    Noop. Args are ignored by compiler. Used for typing.
+    e.g.
+    router1, junction1 = create_links()
+
+    For single elements, still use tuple unpacking, like so:
+
+    router1, = create_links()
+           ^  notice the comma
+    \"""
+
+
+
+
+
 def print(
     *args: Any,
     sep: str = " ",
