@@ -1288,7 +1288,7 @@ class Compiler:
                     CompilerErrorType.BAD_DIRECTIVE,
                     src_loc,
                     err="Called 'unroll()' with unsupported literal type. "
-                    'Expected int or str literal "all"',
+                    'Expected int or str literal "full"',
                 )
 
             if isinstance(factor, str) and factor != "full":

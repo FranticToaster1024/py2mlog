@@ -15,7 +15,7 @@ def inline[**P, R](f: Callable[P, R]) -> Callable[P, R]:
     Can only be used as decorator.
     """
 
-def unroll(factor: int | Literal["all"], /) -> None:
+def unroll(factor: int | Literal["full"], /) -> None:
     """
     (Compiler Directive)
     Unroll the loop directly below if present, raises otherwise.
