@@ -1753,6 +1753,8 @@ COMPILER_SNIPPET_TESTCASES = [
         a = Env.counter
         a = Env.time
         a = Env.null  # ;-;
+
+        Env.counter += 2
         """,
         (
             "set a @copper",
@@ -1762,6 +1764,7 @@ COMPILER_SNIPPET_TESTCASES = [
             "set a @counter",
             "set a @time",
             "set a null",
+            "op add @counter @counter 2",
         ),
         id="env-attr",
     ),

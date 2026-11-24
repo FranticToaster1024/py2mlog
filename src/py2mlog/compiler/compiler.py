@@ -475,47 +475,14 @@ class Compiler:
 
             case ast.Attribute(value=value, attr=attr):
                 if isinstance(value, ast.Name):
-                    builtin_namespace = True
-                    builtin = None
+                    builtin_var = self._get_builtin_attr_var(
+                        value.id,
+                        attr,
+                        src_loc=self._get_src_loc_from_node(expr),
+                    )
 
-                    match value.id:
-                        case "Env":
-                            builtin = ENV_ATTR_MAP.get(attr)
-                            if builtin is None:
-                                # don't use snake_to_kebab helper
-                                # because it forces lowercase
-                                builtin = MlogBuiltin(attr.replace("_", "-"))
-                                logger.warning(
-                                    "Unknown Env attribute '%s'. "
-                                    "Using '@%s' as fallback.",
-                                    attr,
-                                    builtin.name,
-                                )
-
-                            return builtin
-
-                        case "Align":
-                            builtin = ALIGN_MAP.get(attr)
-
-                        case "Units":
-                            builtin = UNIT_MAP.get(attr)
-
-                        case "Colors":
-                            builtin = COLOR_MAP.get(attr)
-
-                        # TODO: predefined colors from mimex
-
-                        case _:
-                            builtin_namespace = False
-
-                    if builtin_namespace:
-                        if builtin is None:
-                            raise CompilerError(
-                                CompilerErrorType.UNKNOWN_ATTRIBUTE,
-                                self._get_src_loc_from_node(expr),
-                                attr=f"Unknown attribute '{value.id}.{attr}'",
-                            )
-                        return builtin
+                    if builtin_var is not None:
+                        return builtin_var
 
                 output_expr = self._get_output_expr(output_expr)
                 compiled_value = self.compile_expr(value)
@@ -1167,6 +1134,22 @@ class Compiler:
                     name, MlogVar(self._get_scope_str(name))
                 )
 
+            case ast.Attribute(value=value, attr=attr):
+                if isinstance(value, ast.Name):
+                    builtin_var = self._get_builtin_attr_var(
+                        value.id,
+                        attr,
+                        src_loc=self._get_src_loc_from_node(expr),
+                    )
+                    if builtin_var is not None:
+                        return builtin_var
+
+                raise CompilerError(
+                    CompilerErrorType.UNSUPPORTED,
+                    self._get_src_loc_from_node(expr),
+                    err="Non-builtin attribute expression in store context",
+                )
+
             case ast.Subscript(slice=slice):
                 if input_expr is None:
                     raise CompilerError(
@@ -1197,6 +1180,52 @@ class Compiler:
 
             case _:
                 raise self._unsupported_expr_error(expr)
+
+    def _get_builtin_attr_var(
+        self, value_name: str, attr: str, *, src_loc: SourceLocation
+    ) -> MlogExpr | None:
+        builtin_namespace = True
+        builtin = None
+
+        match value_name:
+            case "Env":
+                builtin = ENV_ATTR_MAP.get(attr)
+                if builtin is None:
+                    # don't use snake_to_kebab helper
+                    # because it forces lowercase
+                    builtin = MlogBuiltin(attr.replace("_", "-"))
+                    logger.warning(
+                        "Unknown Env attribute '%s'. Using '@%s' as fallback.",
+                        attr,
+                        builtin.name,
+                    )
+
+                return builtin
+
+            case "Align":
+                builtin = ALIGN_MAP.get(attr)
+
+            case "Units":
+                builtin = UNIT_MAP.get(attr)
+
+            case "Colors":
+                builtin = COLOR_MAP.get(attr)
+
+            # TODO: predefined colors from mimex
+
+            case _:
+                builtin_namespace = False
+
+        if builtin_namespace:
+            if builtin is None:
+                raise CompilerError(
+                    CompilerErrorType.UNKNOWN_ATTRIBUTE,
+                    src_loc,
+                    attr=f"Unknown attribute '{value_name}.{attr}'",
+                )
+            return builtin
+
+        return None
 
     def compile_condition(
         self,

@@ -76,6 +76,7 @@ See [FEATURES.md](doc/FEATURES.md).
 
 ## WIP/To-do list
 - lookup instruction
+- disallow accessing constant builtins in store context
 - avoid per-alias definitions in generated stub, mainly for functions with docstrings
 - more optimization
 - world instructions
