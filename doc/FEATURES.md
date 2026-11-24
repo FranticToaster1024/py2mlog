@@ -78,6 +78,36 @@ for l in Env.links():
 ```
 
 
+For loops can be unrolled using the `unroll()` compiler directive. Unrolling while loops are not supported.
+```py
+unroll("full")
+for i in range(1, 10, 2):
+    print(i, flush=False)
+
+printflush()
+
+
+# full unrolling can only be done with range() and number literals
+unroll("full")
+for i in range(foo, 10, 2):  # error!
+    pass
+
+unroll("full")
+for l in Env.links():  # error!
+    pass
+
+# partial unrolling.
+# A secondary, regular 'remainder' loop is used to handle remaining iterations.
+unroll(8)
+for i in range(foo, 10, 2):  # this can be used with variables
+    pass
+
+unroll(8)
+for l in Env.links():  # or on Env.links()
+    l.disable()
+```
+
+
 `print()` with fstring support:
 ```py
 print("Hello World!")

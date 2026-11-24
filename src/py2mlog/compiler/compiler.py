@@ -723,15 +723,12 @@ class Compiler:
             raise self._unsupported_expr_error(func_call, " with recursion")
 
         # TODO: LEGB, passing function references
-        # TODO: check outer scopes
 
-        scope_str = self._get_scope_str(func_name)
-
-        compiled_func = self._func_table.get(scope_str)
+        compiled_func = self._get_compiled_func(func_name)
         if compiled_func is not None:
             return self._compile_non_inline_func_call(func_call, compiled_func)
 
-        inline_func_def = self._inline_func_table.get(scope_str)
+        inline_func_def = self._get_inline_func_def(func_name)
         if inline_func_def is not None:
             if len(output_expr) != 1:
                 raise CompilerError(
@@ -761,6 +758,40 @@ class Compiler:
         return self._compile_builtin_func_call(
             func_call, output_expr, func_kwargs, inline_builtin
         )
+
+    def _get_compiled_func(self, func_name: str) -> CompiledFunc | None:
+        curr_scope = self._scope.copy()
+
+        compiled_func = None
+        # this'll also pop the global scope but that won't break anything
+        while self._scope:
+            scope_str = self._get_scope_str(func_name)
+
+            compiled_func = self._func_table.get(scope_str)
+            if compiled_func is not None:
+                break
+
+            self._scope.pop()
+
+        self._scope = curr_scope
+        return compiled_func
+
+    def _get_inline_func_def(self, func_name: str) -> InlineFuncDef | None:
+        curr_scope = self._scope.copy()
+
+        compiled_func = None
+        # this'll also pop the global scope but that won't break anything
+        while self._scope:
+            scope_str = self._get_scope_str(func_name)
+
+            compiled_func = self._inline_func_table.get(scope_str)
+            if compiled_func is not None:
+                break
+
+            self._scope.pop()
+
+        self._scope = curr_scope
+        return compiled_func
 
     def _compile_builtin_func_call(
         self,

@@ -1583,6 +1583,33 @@ COMPILER_SNIPPET_TESTCASES = [
     ),
     pytest.param(
         """
+        def x():
+            print("foo")
+
+        def y():
+            x()
+
+        y()
+        """,
+        (
+            "op add __p2m_func_scope_y.__p2m_func_ret_addr @counter 2",
+            "jump __p2m_label1 always",
+            "end",
+            "__p2m_label0:",
+            r'print "foo\n"',
+            "printflush message1",
+            "set __p2m_func_scope_x.__p2m_func_ret_val null",
+            "set @counter __p2m_func_scope_x.__p2m_func_ret_addr",
+            "__p2m_label1:",
+            "op add __p2m_func_scope_x.__p2m_func_ret_addr @counter 2",
+            "jump __p2m_label0 always",
+            "set __p2m_func_scope_y.__p2m_func_ret_val null",
+            "set @counter __p2m_func_scope_y.__p2m_func_ret_addr",
+        ),
+        id="global-func-call-in-func-def",
+    ),
+    pytest.param(
+        """
         @inline
         def inline_func():
             return 42
@@ -1683,6 +1710,27 @@ COMPILER_SNIPPET_TESTCASES = [
         """,
         ("op mul a 2 2", "op mul b 4 2"),
         id="multiple-inline-func-calls",
+    ),
+    pytest.param(
+        """
+        @inline
+        def x():
+            print("foo")
+
+        @inline
+        def y():
+            x()
+
+        y()
+        """,
+        (
+            r'print "foo\n"',
+            "printflush message1",
+            # more tmps wasted on calls
+            "set __p2m_tmp1 null",
+            "set __p2m_tmp0 null",
+        ),
+        id="global-inline-func-call-in-inline-func-def",
     ),
     pytest.param(
         "a = b if condition1 else (c if condition2 else d)",
