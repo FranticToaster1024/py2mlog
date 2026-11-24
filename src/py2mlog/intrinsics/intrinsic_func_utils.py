@@ -94,7 +94,7 @@ def validate_arg_type_factory(
                     "Called '%s' with arg '%s'. Expected type(s): %s%s.",
                     get_func_names(namespace_name, rev_map, func),
                     arg,
-                    ", ".join(type(t).__name__ for t in types),
+                    ", ".join(t.__name__ for t in types),
                     ", 'MlogVar'" if MlogVar not in types else "",
                 )
 

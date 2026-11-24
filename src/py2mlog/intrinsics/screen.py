@@ -99,10 +99,14 @@ def _screen_color(
     return MlogNullLiteral()
 
 
+# MlogBuiltin not in type hint again because type hint is a lie
+# Colors.* enum already typed as ColorType
+# however they still compile as MlogBuiltin,
+# so it must be included in validation for logger
 def _screen_col(
     call_ctx: IntrinsicCallCtx, color: MlogColorLiteral, /
 ) -> MlogNullLiteral:
-    _validate_arg_type(MlogColorLiteral, _screen_col, color)
+    _validate_arg_type((MlogColorLiteral, MlogBuiltin), _screen_col, color)
     _emit_draw_subop(call_ctx, DrawSuboperation.COL, color)
     return MlogNullLiteral()
 

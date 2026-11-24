@@ -75,6 +75,7 @@ See [FEATURES.md](doc/FEATURES.md).
 
 
 ## WIP/To-do list
+- get rid of stupid "lying in intrinsic type hints to generate type stubs"
 - lookup instruction
 - disallow accessing constant builtins in store context
 - avoid per-alias definitions in generated stub, mainly for functions with docstrings

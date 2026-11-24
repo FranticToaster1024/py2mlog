@@ -1887,6 +1887,7 @@ COMPILER_SNIPPET_TESTCASES = [
         Screen.color(a, b, c)
         Screen.color(a, b, c, d)
         Screen.col(Color("%ffffff"))
+        Screen.col(Colors.RED)
         Screen.stroke(3)
         Screen.line(0, 0, x2=80, y2=160)
         Screen.rect(0, 0, 80, height=160)
@@ -1912,6 +1913,7 @@ COMPILER_SNIPPET_TESTCASES = [
             "draw color a b c 255",
             "draw color a b c d",
             "draw col %ffffff",
+            "draw col @colorRed",
             "draw stroke 3",
             "draw line 0 0 80 160",
             "draw rect 0 0 80 160",
