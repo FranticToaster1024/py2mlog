@@ -1242,9 +1242,21 @@ def printchar(value: float, /) -> None: ...
 def format_raw(value: Any, /) -> None: ...
 def formatRaw(value: Any, /) -> None: ...
 def formatraw(value: Any, /) -> None: ...
-def print_flush(tgt: Any = ..., /) -> None: ...
-def printFlush(tgt: Any = ..., /) -> None: ...
-def printflush(tgt: Any = ..., /) -> None: ...
+def print_flush(tgt: Any = ..., /) -> None:
+    """
+    Param 'tgt' defaults to 'message1'.
+    """
+
+def printFlush(tgt: Any = ..., /) -> None:
+    """
+    Param 'tgt' defaults to 'message1'.
+    """
+
+def printflush(tgt: Any = ..., /) -> None:
+    """
+    Param 'tgt' defaults to 'message1'.
+    """
+
 def end() -> None:
     """
     Jump to the top of the program.

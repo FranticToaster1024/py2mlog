@@ -248,6 +248,7 @@ _MlogVar_message1 = MlogVar("message1")
 def _print_flush(
     call_ctx: IntrinsicCallCtx, tgt: MlogVar = _MlogVar_message1, /
 ) -> MlogNullLiteral:
+    """Param 'tgt' defaults to 'message1'."""
     _validate_arg_type(MlogVar, _print_flush, tgt)
     call_ctx.emitter.emit_instruction(
         Instruction(InstructionType.PRINT_FLUSH, None, (), (tgt,))

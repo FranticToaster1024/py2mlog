@@ -311,11 +311,12 @@ _MlogVar_display1 = MlogVar("display1")
 
 
 def _screen_flush(
-    call_ctx: IntrinsicCallCtx, target: MlogExpr = _MlogVar_display1
+    call_ctx: IntrinsicCallCtx, tgt: MlogExpr = _MlogVar_display1, /
 ) -> MlogNullLiteral:
-    _validate_arg_type(MlogVar, _screen_flush, target)
+    """Param 'tgt' defaults to 'display1'."""
+    _validate_arg_type(MlogVar, _screen_flush, tgt)
     call_ctx.emitter.emit_instruction(
-        Instruction(InstructionType.DRAW_FLUSH, None, (), (target,))
+        Instruction(InstructionType.DRAW_FLUSH, None, (), (tgt,))
     )
     return MlogNullLiteral()
 
