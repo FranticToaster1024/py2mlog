@@ -274,6 +274,22 @@ def create_links(*args: Any, **kwargs: Any) -> tuple[Building, ...]:
     \"""
 
 
+def create_vars(*args: Any, **kwargs: Any) -> tuple[None, ...]:
+    \"""
+    Noop. Args are ignored by compiler. Used for typing,
+    to intentionally suppress "variable possibly unbound"
+    when intentionally using mlog undefined variable behaviour.
+
+    e.g.
+    x, y = create_vars()
+
+    For single elements, still use tuple unpacking, like so:
+
+    x, = create_vars()
+     ^  notice the comma
+    \"""
+
+
 
 
 

@@ -2249,6 +2249,9 @@ COMPILER_SNIPPET_TESTCASES = [
         (),
         id="create-links-noop",
     ),
+    pytest.param(
+        "x, = create_vars()\nx, y = create_vars()", (), id="create-vars-noop"
+    ),
 ]
 
 

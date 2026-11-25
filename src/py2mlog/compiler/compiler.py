@@ -126,6 +126,9 @@ class Compiler:
             "create_links": lambda _, out_expr: (
                 (MlogFillerExpr(),) * len(out_expr)
             ),
+            "create_vars": lambda _, out_expr: (
+                (MlogFillerExpr(),) * len(out_expr)
+            ),
         }
 
         self._unroll: UnrollDirective | None = None
