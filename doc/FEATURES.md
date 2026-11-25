@@ -218,6 +218,109 @@ y = func(42)
 > **Note**: **Recursive functions are unsupported!** There is a very basic check in place, but it probably doesn't cover all cases.
 
 
+Usage of the `global` keyword to read or write to global variables:
+```py
+x = 0
+
+
+def inc():
+    global x
+    x += 42
+
+
+@inline
+def inc_inline():
+    global x
+    x += 67
+
+
+inc()
+inc_inline()
+
+print(x)
+```
+This overrides parameters:
+```py
+x = 42
+
+
+def func(x):
+    print(x, flush=False)
+    global x
+    print(x, flush=False)
+
+
+@inline
+def func_inline(x):
+    print(x, flush=False)
+    global x
+    print(x, flush=False)
+
+
+func(67)
+func_inline(67)
+
+printflush()
+
+# output:
+# 67
+# 42
+# 67
+# 42
+```
+The effect of `global` only applies to the current scope; Inner scopes retain default variable behaviour if unless redeclared:
+```py
+# ❌
+x = 42
+
+
+@inline
+def func():
+    global x
+    print(x, flush=False)
+
+    @inline
+    def inner():
+        print(x, flush=False)  # undefined!
+
+    inner()
+
+
+func()
+printflush()
+
+# output:
+# 42
+# null
+```
+```py
+# ✅
+x = 42
+
+
+@inline
+def func():
+    global x
+    print(x, flush=False)
+
+    @inline
+    def inner():
+        global x  # redeclare!
+        print(x, flush=False)
+
+    inner()
+
+
+func()
+printflush()
+
+# output:
+# 42
+# 42
+```
+
+
+
 Imports from `py2mlog`, which don't actually do anything except please your type checker. Only the name of the module (i.e. `py2mlog`) is checked.
 ```py
 from py2mlog import Env, Links, sin

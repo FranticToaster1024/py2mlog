@@ -103,9 +103,17 @@ class Compiler:
         self._current_loop_continue_ref: LabelRef | None = None
 
         self._scope = deque([GLOBAL_SCOPE])
-        # misleading name ¯\_(ツ)_/¯
-        self._func_table: dict[str, CompiledFunc] = {}
+
+        # shared between regular & inline funcs
         self._arg_table: dict[str, MlogExpr] = {}
+        # vars in the current function (outer scopes not included)
+        # that have been declared using the 'global' keyword
+        self._func_global_vars: set[str] = set()
+
+        # regular funcs only
+        self._func_table: dict[str, CompiledFunc] = {}
+
+        # inline funcs only
         self._inline_func_ret_target: MlogExpr | None = None
         self._inline_func_table: dict[str, InlineFuncDef] = {}
         self._filling_inline_arg_table: bool = False
@@ -202,6 +210,9 @@ class Compiler:
                 return self._compile_const(expr)
 
             case ast.Name(id=name):
+                if name in self._func_global_vars:
+                    return MlogVar(name)
+
                 return self._arg_table.get(
                     name,
                     MlogVar(name)
@@ -1146,6 +1157,9 @@ class Compiler:
                 #        self._get_scope_str(PREFIX_FUNC_ARG) + name
                 #    )
 
+                if name in self._func_global_vars:
+                    return MlogVar(name)
+
                 return self._arg_table.get(
                     name, MlogVar(self._get_scope_str(name))
                 )
@@ -1964,6 +1978,9 @@ class Compiler:
                         err="non 'py2mlog' import",
                     )
 
+            case ast.Global(names=names):
+                self._func_global_vars.update(names)
+
             case _:
                 raise self._unsupported_stmt_error(stmt)
 
@@ -2286,10 +2303,16 @@ class Compiler:
         if clear_emitter:
             self.emitter.instructions = []
 
+        prev_func_global_vars = self._func_global_vars
+        # don't carry over from outer scopes
+        self._func_global_vars = set()
+
         # only reason in_loop as arg exists,
         # and hijacking the loop context is probably a bad idea
         with self._loop_context(None, None, in_loop=False):
             yield
+
+        self._func_global_vars = prev_func_global_vars
 
         self._scope.pop()
         self._arg_table = {}

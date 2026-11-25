@@ -1733,6 +1733,145 @@ COMPILER_SNIPPET_TESTCASES = [
         id="global-inline-func-call-in-inline-func-def",
     ),
     pytest.param(
+        """
+        x = 0
+
+        def inc():
+            global x
+            x += 42
+
+        @inline
+        def inc_inline():
+            global x
+            x += 67
+
+        inc()
+        inc_inline()
+
+        print(x)
+        """,
+        (
+            "set x 0",
+            "op add __p2m_func_scope_inc.__p2m_func_ret_addr @counter 2",
+            "jump __p2m_label0 always",
+            "op add x x 67",
+            "set __p2m_tmp1 null",
+            r'print "{0}\n"',
+            "format x",
+            "printflush message1",
+            "end",
+            "__p2m_label0:",
+            "op add x x 42",
+            "set __p2m_func_scope_inc.__p2m_func_ret_val null",
+            "set @counter __p2m_func_scope_inc.__p2m_func_ret_addr",
+        ),
+        id="global-keyword-in-func-and-inline-func",
+    ),
+    pytest.param(
+        """
+        x = 42
+
+        def func(x):
+            print(x, flush=False)
+            global x
+            print(x, flush=False)
+
+
+        @inline
+        def func_inline(x):
+            print(x, flush=False)
+            global x
+            print(x, flush=False)
+
+
+        func(67)
+        func_inline(67)
+
+        printflush()
+        """,
+        (
+            "set x 42",
+            "set __p2m_func_scope_func.__p2m_func_arg_x 67",
+            "op add __p2m_func_scope_func.__p2m_func_ret_addr @counter 2",
+            "jump __p2m_label0 always",
+            r'print "67\n"',
+            r'print "{0}\n"',
+            "format x",
+            "set __p2m_tmp3 null",
+            "printflush message1",
+            "end",
+            "__p2m_label0:",
+            r'print "{0}\n"',
+            "format __p2m_func_scope_func.__p2m_func_arg_x",
+            r'print "{0}\n"',
+            "format x",
+            "set __p2m_func_scope_func.__p2m_func_ret_val null",
+            "set @counter __p2m_func_scope_func.__p2m_func_ret_addr",
+        ),
+        id="global-keyword-override-param",
+    ),
+    pytest.param(
+        """
+        x = 42
+
+        @inline
+        def func():
+            global x
+            print(x, flush=False)
+
+            @inline
+            def inner():
+                print(x, flush=False)  # undefined!
+
+            inner()
+
+        func()
+        printflush()
+        """,
+        (
+            "set x 42",
+            r'print "{0}\n"',
+            "format x",
+            r'print "{0}\n"',
+            "format __p2m_func_scope_func.__p2m_func_scope_inner.x",
+            "set __p2m_tmp2 null",
+            "set __p2m_tmp0 null",
+            "printflush message1",
+        ),
+        id="global-keyword-no-inherit-in-nested-scope",
+    ),
+    pytest.param(
+        """
+        x = 42
+
+        @inline
+        def func():
+            global x
+            print(x, flush=False)
+
+            @inline
+            def inner():
+                global x # redeclare!
+                print(x, flush=False)
+
+            inner()
+
+        func()
+        printflush()
+        """,
+        (
+            "set x 42",
+            r'print "{0}\n"',
+            "format x",
+            r'print "{0}\n"',
+            "format x",
+            "set __p2m_tmp2 null",
+            "set __p2m_tmp0 null",
+            "printflush message1",
+        ),
+        id="global-keyword-redeclare-in-nested-scope",
+    ),
+    pytest.param(
         "a = b if condition1 else (c if condition2 else d)",
         (
             "__p2m_label1:",
