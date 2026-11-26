@@ -32,6 +32,14 @@ UNIT_MAP = _build_builtin_map("mimex-units.txt")
 ITEM_MAP = _build_builtin_map("mimex-items.txt")
 LIQUID_MAP = _build_builtin_map("mimex-liquids.txt")
 BLOCK_MAP = _build_builtin_map("mimex-blocks.txt")
+TEAM_MAP = {
+    kebab_to_snake(s): MlogBuiltin(s)
+    for s in select_col(
+        (MIMEX_DATA_DIR / "mimex-teams.txt").read_text(encoding="utf-8"), "name"
+    )
+    if not s.startswith("team#")
+}
+
 
 # TODO: cleanup
 _block_data = (MIMEX_DATA_DIR / "mimex-blocks.txt").read_text(encoding="utf-8")

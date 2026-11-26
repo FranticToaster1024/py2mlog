@@ -12,7 +12,9 @@ class Block(Content):
     Includes terrain blocks, not just building types.
     """
 
+class BuildingType(Block): ...
 class UnitType(Content): ...
+class Team(Content): ...
 
 class Senseable(ABC):
     def __getitem__(self, i: Item | Liquid | str | Any) -> Any: ...
@@ -354,6 +356,13 @@ class Senseable(ABC):
     scathe_missile_surge: int
     scathe_missile_surge_split: int
     turret_unit_build_tower: int
+    derelict: int
+    sharded: int
+    crux: int
+    malis: int
+    green: int
+    blue: int
+    neoplastic: int
     # TODO: manually type these attributes or something
     ammo: Any
     ammocapacity: Any
@@ -705,235 +714,235 @@ class Env:
     graphitic_wall: Block
     ore_wall_graphite: Block
     ore_wall_tungsten: Block
-    graphite_press: Block
-    multi_press: Block
-    silicon_smelter: Block
-    silicon_crucible: Block
-    kiln: Block
-    plastanium_compressor: Block
-    phase_weaver: Block
-    surge_smelter: Block
-    cryofluid_mixer: Block
-    pyratite_mixer: Block
-    blast_mixer: Block
-    melter: Block
-    separator: Block
-    disassembler: Block
-    spore_press: Block
-    pulverizer: Block
-    coal_centrifuge: Block
-    incinerator: Block
-    silicon_arc_furnace: Block
-    electrolyzer: Block
-    atmospheric_concentrator: Block
-    oxidation_chamber: Block
-    electric_heater: Block
-    slag_heater: Block
-    phase_heater: Block
-    heat_redirector: Block
-    small_heat_redirector: Block
-    heat_router: Block
-    slag_incinerator: Block
-    carbide_crucible: Block
+    graphite_press: BuildingType
+    multi_press: BuildingType
+    silicon_smelter: BuildingType
+    silicon_crucible: BuildingType
+    kiln: BuildingType
+    plastanium_compressor: BuildingType
+    phase_weaver: BuildingType
+    surge_smelter: BuildingType
+    cryofluid_mixer: BuildingType
+    pyratite_mixer: BuildingType
+    blast_mixer: BuildingType
+    melter: BuildingType
+    separator: BuildingType
+    disassembler: BuildingType
+    spore_press: BuildingType
+    pulverizer: BuildingType
+    coal_centrifuge: BuildingType
+    incinerator: BuildingType
+    silicon_arc_furnace: BuildingType
+    electrolyzer: BuildingType
+    atmospheric_concentrator: BuildingType
+    oxidation_chamber: BuildingType
+    electric_heater: BuildingType
+    slag_heater: BuildingType
+    phase_heater: BuildingType
+    heat_redirector: BuildingType
+    small_heat_redirector: BuildingType
+    heat_router: BuildingType
+    slag_incinerator: BuildingType
+    carbide_crucible: BuildingType
     slag_centrifuge: Block
-    surge_crucible: Block
-    cyanogen_synthesizer: Block
-    phase_synthesizer: Block
+    surge_crucible: BuildingType
+    cyanogen_synthesizer: BuildingType
+    phase_synthesizer: BuildingType
     heat_reactor: Block
-    copper_wall: Block
-    copper_wall_large: Block
-    titanium_wall: Block
-    titanium_wall_large: Block
-    plastanium_wall: Block
-    plastanium_wall_large: Block
-    thorium_wall: Block
-    thorium_wall_large: Block
-    phase_wall: Block
-    phase_wall_large: Block
-    surge_wall: Block
-    surge_wall_large: Block
-    door: Block
-    door_large: Block
-    scrap_wall: Block
-    scrap_wall_large: Block
-    scrap_wall_huge: Block
-    scrap_wall_gigantic: Block
+    copper_wall: BuildingType
+    copper_wall_large: BuildingType
+    titanium_wall: BuildingType
+    titanium_wall_large: BuildingType
+    plastanium_wall: BuildingType
+    plastanium_wall_large: BuildingType
+    thorium_wall: BuildingType
+    thorium_wall_large: BuildingType
+    phase_wall: BuildingType
+    phase_wall_large: BuildingType
+    surge_wall: BuildingType
+    surge_wall_large: BuildingType
+    door: BuildingType
+    door_large: BuildingType
+    scrap_wall: BuildingType
+    scrap_wall_large: BuildingType
+    scrap_wall_huge: BuildingType
+    scrap_wall_gigantic: BuildingType
     thruster: Block
-    beryllium_wall: Block
-    beryllium_wall_large: Block
-    tungsten_wall: Block
-    tungsten_wall_large: Block
-    blast_door: Block
-    reinforced_surge_wall: Block
-    reinforced_surge_wall_large: Block
-    carbide_wall: Block
-    carbide_wall_large: Block
-    shielded_wall: Block
-    mender: Block
-    mend_projector: Block
-    overdrive_projector: Block
-    overdrive_dome: Block
-    force_projector: Block
-    shock_mine: Block
+    beryllium_wall: BuildingType
+    beryllium_wall_large: BuildingType
+    tungsten_wall: BuildingType
+    tungsten_wall_large: BuildingType
+    blast_door: BuildingType
+    reinforced_surge_wall: BuildingType
+    reinforced_surge_wall_large: BuildingType
+    carbide_wall: BuildingType
+    carbide_wall_large: BuildingType
+    shielded_wall: BuildingType
+    mender: BuildingType
+    mend_projector: BuildingType
+    overdrive_projector: BuildingType
+    overdrive_dome: BuildingType
+    force_projector: BuildingType
+    shock_mine: BuildingType
     radar: Block
-    build_tower: Block
-    regen_projector: Block
-    shockwave_tower: Block
+    build_tower: BuildingType
+    regen_projector: BuildingType
+    shockwave_tower: BuildingType
     shield_projector: Block
     large_shield_projector: Block
-    conveyor: Block
-    titanium_conveyor: Block
-    plastanium_conveyor: Block
-    armored_conveyor: Block
-    junction: Block
-    bridge_conveyor: Block
-    phase_conveyor: Block
-    sorter: Block
-    inverted_sorter: Block
-    router: Block
-    distributor: Block
-    overflow_gate: Block
-    underflow_gate: Block
-    unloader: Block
-    mass_driver: Block
-    duct: Block
-    armored_duct: Block
-    duct_router: Block
-    overflow_duct: Block
-    underflow_duct: Block
-    duct_bridge: Block
-    duct_unloader: Block
-    surge_conveyor: Block
-    surge_router: Block
-    unit_cargo_loader: Block
-    unit_cargo_unload_point: Block
-    mechanical_pump: Block
-    rotary_pump: Block
-    impulse_pump: Block
-    conduit: Block
-    pulse_conduit: Block
-    plated_conduit: Block
-    liquid_router: Block
-    liquid_container: Block
-    liquid_tank: Block
-    liquid_junction: Block
-    bridge_conduit: Block
-    phase_conduit: Block
-    reinforced_pump: Block
-    reinforced_conduit: Block
-    reinforced_liquid_junction: Block
-    reinforced_bridge_conduit: Block
-    reinforced_liquid_router: Block
-    reinforced_liquid_container: Block
-    reinforced_liquid_tank: Block
-    power_node: Block
-    power_node_large: Block
-    surge_tower: Block
-    diode: Block
-    battery: Block
-    battery_large: Block
-    combustion_generator: Block
-    thermal_generator: Block
-    steam_generator: Block
-    differential_generator: Block
-    rtg_generator: Block
-    solar_panel: Block
-    solar_panel_large: Block
-    thorium_reactor: Block
-    impact_reactor: Block
-    beam_node: Block
-    beam_tower: Block
-    beam_link: Block
-    turbine_condenser: Block
-    chemical_combustion_chamber: Block
-    pyrolysis_generator: Block
-    flux_reactor: Block
-    neoplasia_reactor: Block
-    mechanical_drill: Block
-    pneumatic_drill: Block
-    laser_drill: Block
-    blast_drill: Block
-    water_extractor: Block
-    cultivator: Block
-    oil_extractor: Block
-    vent_condenser: Block
-    cliff_crusher: Block
-    large_cliff_crusher: Block
-    plasma_bore: Block
-    large_plasma_bore: Block
-    impact_drill: Block
-    eruption_drill: Block
+    conveyor: BuildingType
+    titanium_conveyor: BuildingType
+    plastanium_conveyor: BuildingType
+    armored_conveyor: BuildingType
+    junction: BuildingType
+    bridge_conveyor: BuildingType
+    phase_conveyor: BuildingType
+    sorter: BuildingType
+    inverted_sorter: BuildingType
+    router: BuildingType
+    distributor: BuildingType
+    overflow_gate: BuildingType
+    underflow_gate: BuildingType
+    unloader: BuildingType
+    mass_driver: BuildingType
+    duct: BuildingType
+    armored_duct: BuildingType
+    duct_router: BuildingType
+    overflow_duct: BuildingType
+    underflow_duct: BuildingType
+    duct_bridge: BuildingType
+    duct_unloader: BuildingType
+    surge_conveyor: BuildingType
+    surge_router: BuildingType
+    unit_cargo_loader: BuildingType
+    unit_cargo_unload_point: BuildingType
+    mechanical_pump: BuildingType
+    rotary_pump: BuildingType
+    impulse_pump: BuildingType
+    conduit: BuildingType
+    pulse_conduit: BuildingType
+    plated_conduit: BuildingType
+    liquid_router: BuildingType
+    liquid_container: BuildingType
+    liquid_tank: BuildingType
+    liquid_junction: BuildingType
+    bridge_conduit: BuildingType
+    phase_conduit: BuildingType
+    reinforced_pump: BuildingType
+    reinforced_conduit: BuildingType
+    reinforced_liquid_junction: BuildingType
+    reinforced_bridge_conduit: BuildingType
+    reinforced_liquid_router: BuildingType
+    reinforced_liquid_container: BuildingType
+    reinforced_liquid_tank: BuildingType
+    power_node: BuildingType
+    power_node_large: BuildingType
+    surge_tower: BuildingType
+    diode: BuildingType
+    battery: BuildingType
+    battery_large: BuildingType
+    combustion_generator: BuildingType
+    thermal_generator: BuildingType
+    steam_generator: BuildingType
+    differential_generator: BuildingType
+    rtg_generator: BuildingType
+    solar_panel: BuildingType
+    solar_panel_large: BuildingType
+    thorium_reactor: BuildingType
+    impact_reactor: BuildingType
+    beam_node: BuildingType
+    beam_tower: BuildingType
+    beam_link: BuildingType
+    turbine_condenser: BuildingType
+    chemical_combustion_chamber: BuildingType
+    pyrolysis_generator: BuildingType
+    flux_reactor: BuildingType
+    neoplasia_reactor: BuildingType
+    mechanical_drill: BuildingType
+    pneumatic_drill: BuildingType
+    laser_drill: BuildingType
+    blast_drill: BuildingType
+    water_extractor: BuildingType
+    cultivator: BuildingType
+    oil_extractor: BuildingType
+    vent_condenser: BuildingType
+    cliff_crusher: BuildingType
+    large_cliff_crusher: BuildingType
+    plasma_bore: BuildingType
+    large_plasma_bore: BuildingType
+    impact_drill: BuildingType
+    eruption_drill: BuildingType
     core_shard: Block
-    core_foundation: Block
-    core_nucleus: Block
-    core_bastion: Block
-    core_citadel: Block
-    core_acropolis: Block
-    container: Block
-    vault: Block
-    reinforced_container: Block
-    reinforced_vault: Block
-    duo: Block
-    scatter: Block
-    scorch: Block
-    hail: Block
-    wave: Block
-    lancer: Block
-    arc: Block
-    parallax: Block
-    swarmer: Block
-    salvo: Block
-    segment: Block
-    tsunami: Block
-    fuse: Block
-    ripple: Block
-    cyclone: Block
-    foreshadow: Block
-    spectre: Block
-    meltdown: Block
-    breach: Block
-    diffuse: Block
-    sublimate: Block
-    titan: Block
-    disperse: Block
-    afflict: Block
-    lustre: Block
-    scathe: Block
-    smite: Block
-    malign: Block
-    ground_factory: Block
-    air_factory: Block
-    naval_factory: Block
-    additive_reconstructor: Block
-    multiplicative_reconstructor: Block
-    exponential_reconstructor: Block
-    tetrative_reconstructor: Block
-    repair_point: Block
-    repair_turret: Block
-    tank_fabricator: Block
-    ship_fabricator: Block
-    mech_fabricator: Block
-    tank_refabricator: Block
-    ship_refabricator: Block
-    mech_refabricator: Block
-    prime_refabricator: Block
-    tank_assembler: Block
-    ship_assembler: Block
-    mech_assembler: Block
-    basic_assembler_module: Block
-    unit_repair_tower: Block
-    payload_conveyor: Block
-    payload_router: Block
-    reinforced_payload_conveyor: Block
-    reinforced_payload_router: Block
-    payload_mass_driver: Block
-    large_payload_mass_driver: Block
-    small_deconstructor: Block
-    deconstructor: Block
-    constructor: Block
-    large_constructor: Block
-    payload_loader: Block
-    payload_unloader: Block
+    core_foundation: BuildingType
+    core_nucleus: BuildingType
+    core_bastion: BuildingType
+    core_citadel: BuildingType
+    core_acropolis: BuildingType
+    container: BuildingType
+    vault: BuildingType
+    reinforced_container: BuildingType
+    reinforced_vault: BuildingType
+    duo: BuildingType
+    scatter: BuildingType
+    scorch: BuildingType
+    hail: BuildingType
+    wave: BuildingType
+    lancer: BuildingType
+    arc: BuildingType
+    parallax: BuildingType
+    swarmer: BuildingType
+    salvo: BuildingType
+    segment: BuildingType
+    tsunami: BuildingType
+    fuse: BuildingType
+    ripple: BuildingType
+    cyclone: BuildingType
+    foreshadow: BuildingType
+    spectre: BuildingType
+    meltdown: BuildingType
+    breach: BuildingType
+    diffuse: BuildingType
+    sublimate: BuildingType
+    titan: BuildingType
+    disperse: BuildingType
+    afflict: BuildingType
+    lustre: BuildingType
+    scathe: BuildingType
+    smite: BuildingType
+    malign: BuildingType
+    ground_factory: BuildingType
+    air_factory: BuildingType
+    naval_factory: BuildingType
+    additive_reconstructor: BuildingType
+    multiplicative_reconstructor: BuildingType
+    exponential_reconstructor: BuildingType
+    tetrative_reconstructor: BuildingType
+    repair_point: BuildingType
+    repair_turret: BuildingType
+    tank_fabricator: BuildingType
+    ship_fabricator: BuildingType
+    mech_fabricator: BuildingType
+    tank_refabricator: BuildingType
+    ship_refabricator: BuildingType
+    mech_refabricator: BuildingType
+    prime_refabricator: BuildingType
+    tank_assembler: BuildingType
+    ship_assembler: BuildingType
+    mech_assembler: BuildingType
+    basic_assembler_module: BuildingType
+    unit_repair_tower: BuildingType
+    payload_conveyor: BuildingType
+    payload_router: BuildingType
+    reinforced_payload_conveyor: BuildingType
+    reinforced_payload_router: BuildingType
+    payload_mass_driver: BuildingType
+    large_payload_mass_driver: BuildingType
+    small_deconstructor: BuildingType
+    deconstructor: BuildingType
+    constructor: BuildingType
+    large_constructor: BuildingType
+    payload_loader: BuildingType
+    payload_unloader: BuildingType
     power_source: Block
     power_void: Block
     item_source: Block
@@ -954,23 +963,30 @@ class Env:
     advanced_launch_pad: Block
     landing_pad: Block
     interplanetary_accelerator: Block
-    message: Block
-    switch: Block
-    micro_processor: Block
-    logic_processor: Block
-    hyper_processor: Block
-    memory_cell: Block
-    memory_bank: Block
-    logic_display: Block
-    large_logic_display: Block
-    tile_logic_display: Block
-    canvas: Block
-    large_canvas: Block
-    reinforced_message: Block
+    message: BuildingType
+    switch: BuildingType
+    micro_processor: BuildingType
+    logic_processor: BuildingType
+    hyper_processor: BuildingType
+    memory_cell: BuildingType
+    memory_bank: BuildingType
+    logic_display: BuildingType
+    large_logic_display: BuildingType
+    tile_logic_display: BuildingType
+    canvas: BuildingType
+    large_canvas: BuildingType
+    reinforced_message: BuildingType
     world_processor: Block
     world_cell: Block
     world_message: Block
     world_switch: Block
+    derelict: Team
+    sharded: Team
+    crux: Team
+    malis: Team
+    green: Team
+    blue: Team
+    neoplastic: Team
 
     @staticmethod
     def links() -> Iterator[Building]:
@@ -1245,15 +1261,37 @@ def mlog_raw(src: LiteralString, /) -> None:
     Emit raw mlog. Use a raw string so that escape sequences work properly.
     """
 
+def lookup(
+    content_type: Literal["block", "unit", "item", "liquid", "team"] | Any,
+    id: int,
+) -> BuildingType | UnitType | Item | Liquid | Team: ...
 def radar(
     building: Building,
-    filter1: str | Any = "any",
-    filter2: str | Any = "any",
-    filter3: str | Any = "any",
+    filter1: Literal[
+        "any", "enemy", "ally", "player", "attacker", "flying", "boss", "ground"
+    ]
+    | Any = "any",
+    filter2: Literal[
+        "any", "enemy", "ally", "player", "attacker", "flying", "boss", "ground"
+    ]
+    | Any = "any",
+    filter3: Literal[
+        "any", "enemy", "ally", "player", "attacker", "flying", "boss", "ground"
+    ]
+    | Any = "any",
     /,
     *,
     order: bool | float | str = True,
-    key: str = "distance",
+    key: Literal[
+        "distance",
+        "health",
+        "shield",
+        "armor",
+        "maxHealth",
+        "max_health",
+        "maxhealth",
+    ]
+    | Any = "distance",
 ) -> UnitObj | None: ...
 def ord(character: str, /) -> float: ...
 def min(arg1: float, arg2: float) -> float: ...

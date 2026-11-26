@@ -31,6 +31,7 @@ from py2mlog.mlog.mlog_expressions import (
     MlogVar,
 )
 from py2mlog.mlog.selectable_params import (
+    LookupSelectableParam,
     RadarSortSelectableParam,
     RadarTargetSelectableParam,
 )
@@ -333,10 +334,60 @@ def _unpack_color(
 
 
 # ----------------------------------------
+# lookup
+# ----------------------------------------
+LOOKUP_SEL_PARAM_MAP = {s.value: s for s in LookupSelectableParam}
+
+
+def _lookup(
+    call_ctx: IntrinsicCallCtx,
+    content_type: MlogExpr,
+    id: MlogExpr,  # noqa: A002
+) -> MlogExpr:
+    func_name = get_func_names("", _REV_MAP, _lookup)
+
+    if not isinstance(content_type, (MlogStringLiteral, MlogVar)):
+        raise CompilerError(
+            CompilerErrorType.BAD_CALL,
+            call_ctx.src_loc,
+            err=f"Called '{func_name}' with content type '{content_type}'. "
+            f"Expected types: '{MlogStringLiteral.__name__}' "
+            f"or '{MlogVar.__name__}'",
+        )
+
+    content_type_str = (
+        content_type.value
+        if isinstance(content_type, MlogStringLiteral)
+        else content_type.name
+    )
+
+    sel_param = LOOKUP_SEL_PARAM_MAP.get(content_type_str)
+    if sel_param is None:
+        raise CompilerError(
+            CompilerErrorType.BAD_CALL,
+            call_ctx.src_loc,
+            err=f"Called '{func_name}' "
+            f"with unknown content type '{content_type_str}'. "
+            f"Allowed types: '{', '.join(LOOKUP_SEL_PARAM_MAP)}'",
+        )
+
+    call_ctx.emitter.emit_instruction(
+        Instruction(
+            InstructionType.LOOKUP,
+            None,
+            (sel_param,),
+            (call_ctx.output_expr[0], id),
+        )
+    )
+
+    return call_ctx.output_expr[0]
+
+
+# ----------------------------------------
 # utils for radar & uradar
 # ----------------------------------------
-_RADAR_TARGET_NAME_MAP = {t.value: t for t in RadarTargetSelectableParam}
-_RADAR_SORT_NAME_MAP = {
+RADAR_TARGET_NAME_MAP = {t.value: t for t in RadarTargetSelectableParam}
+RADAR_SORT_NAME_MAP = {
     name: sel_param
     for sel_param in RadarSortSelectableParam
     for name in (
@@ -345,7 +396,7 @@ _RADAR_SORT_NAME_MAP = {
         sel_param.value.lower(),
     )
 }
-_RADAR_ORDER_NAMES = {
+RADAR_ORDER_NAMES = {
     # im not sure if 'min' and 'max' are fully accurate
     # but pyndustric compatibility so
     "min": MlogBoolLiteral(True),
@@ -382,18 +433,18 @@ def resolve_radar_args(
                 CompilerErrorType.BAD_CALL,
                 src_loc,
                 err=f"Called '{func_name}' with arg '{arg}'. "
-                f"Expected type: '{MlogStringLiteral.__name__}' "
+                f"Expected types: '{MlogStringLiteral.__name__}' "
                 f"or '{MlogVar.__name__}'",
             )
 
         arg_str = arg.value if isinstance(arg, MlogStringLiteral) else arg.name
-        filter_sel_param = _RADAR_TARGET_NAME_MAP.get(arg_str)
+        filter_sel_param = RADAR_TARGET_NAME_MAP.get(arg_str)
         if filter_sel_param is None:
             raise CompilerError(
                 CompilerErrorType.BAD_CALL,
                 src_loc,
                 err=f"Called '{func_name}' with unknown filter type '{arg_str}'. "
-                f"Allowed types: '{', '.join(_RADAR_TARGET_NAME_MAP)}'",
+                f"Allowed types: '{', '.join(RADAR_TARGET_NAME_MAP)}'",
             )
 
         filter_sel_params.append(filter_sel_param)
@@ -407,13 +458,13 @@ def resolve_radar_args(
             f"or '{MlogVar.__name__}'",
         )
     key_str = key.value if isinstance(key, MlogStringLiteral) else key.name
-    key_sel_param = _RADAR_SORT_NAME_MAP.get(key_str)
+    key_sel_param = RADAR_SORT_NAME_MAP.get(key_str)
     if key_sel_param is None:
         raise CompilerError(
             CompilerErrorType.BAD_CALL,
             src_loc,
             err=f"Called '{func_name}' with unknown key type '{arg_str}'. "
-            f"Allowed types: '{', '.join(_RADAR_TARGET_NAME_MAP)}'",
+            f"Allowed types: '{', '.join(RADAR_TARGET_NAME_MAP)}'",
         )
 
     if not isinstance(
@@ -426,7 +477,7 @@ def resolve_radar_args(
         )
 
     if isinstance(order, MlogStringLiteral):
-        mapped = _RADAR_ORDER_NAMES.get(order.value)
+        mapped = RADAR_ORDER_NAMES.get(order.value)
         if mapped is None:
             logger_.warning(
                 "Called '%s' with unrecognised string literal '%s'. Defaulting to '%s'.",
@@ -439,7 +490,7 @@ def resolve_radar_args(
         order = mapped
 
     elif isinstance(order, MlogVar):
-        mapped = _RADAR_ORDER_NAMES.get(order.name)
+        mapped = RADAR_ORDER_NAMES.get(order.name)
         if mapped is not None:
             order = mapped
 

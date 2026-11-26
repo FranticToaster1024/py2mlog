@@ -15,11 +15,13 @@ from py2mlog.compiler import config
 from py2mlog.compiler.mlog_builtins import (
     ALIGN_MAP,
     BLOCK_MAP,
+    BUILDING_MAP,
     COLOR_MAP,
     ITEM_MAP,
     LACCESS_SENSOR,
     LIQUID_MAP,
     PAYLOADS,
+    TEAM_MAP,
     UNIT_MAP,
 )
 from py2mlog.intrinsics.intrinsic_func_utils import (
@@ -154,11 +156,18 @@ class Block(Content):
     Includes terrain blocks, not just building types.
     \"""
 
+class BuildingType(Block): ...
 class UnitType(Content): ...
+class Team(Content): ...
+
 
 class Senseable(ABC):
     def __getitem__(self, i: Item | Liquid | str | Any) -> Any: ...
-{"\n".join(f"{INDENT}{s}: int" for s in ITEM_MAP | LIQUID_MAP | PAYLOADS)}
+{
+    "\n".join(
+        f"{INDENT}{s}: int" for s in ITEM_MAP | LIQUID_MAP | PAYLOADS | TEAM_MAP
+    )
+}
     # TODO: manually type these attributes or something
 {"\n".join(f"{INDENT}{s}: Any" for s in sorted(LACCESS_SENSOR))}
 
@@ -234,7 +243,13 @@ class Env:
 
 {"\n".join(f"{INDENT}{s}: Item" for s in ITEM_MAP)}
 {"\n".join(f"{INDENT}{s}: Liquid" for s in LIQUID_MAP)}
-{"\n".join(f"{INDENT}{s}: Block" for s in BLOCK_MAP)}
+{
+    "\n".join(
+        f"{INDENT}{s}: {'BuildingType' if s in BUILDING_MAP else 'Block'}"
+        for s in BLOCK_MAP
+    )
+}
+{"\n".join(f"{INDENT}{s}: Team" for s in TEAM_MAP)}
 
     @staticmethod
     def links() -> Iterator[Building]:
@@ -308,20 +323,38 @@ def mlog_raw(src: LiteralString, /) -> None:
     Emit raw mlog. Use a raw string so that escape sequences work properly.
     \"""
 
+
+def lookup(
+    content_type: Literal[{
+    ", ".join(f'"{c}"' for c in intrinsics.builtins.LOOKUP_SEL_PARAM_MAP)
+}] | Any,
+    id: int,
+) -> BuildingType | UnitType | Item | Liquid | Team: ...
+
 def radar(
     building: Building,
-    filter1: str | Any = "any",
-    filter2: str | Any = "any",
-    filter3: str | Any = "any",
+    filter1: Literal[{
+    ", ".join(f'"{t}"' for t in intrinsics.builtins.RADAR_TARGET_NAME_MAP)
+}] | Any = "any",
+    filter2: Literal[{
+    ", ".join(f'"{t}"' for t in intrinsics.builtins.RADAR_TARGET_NAME_MAP)
+}] | Any = "any",
+    filter3: Literal[{
+    ", ".join(f'"{t}"' for t in intrinsics.builtins.RADAR_TARGET_NAME_MAP)
+}] | Any = "any",
     /,
     *,
     order: bool | float | str = True,
-    key: str = "distance",
+    key: Literal[{
+    ", ".join(f'"{s}"' for s in intrinsics.builtins.RADAR_SORT_NAME_MAP)
+}] | Any = "distance",
 ) -> UnitObj | None: ...
 
 {
     _stubs_from_func_map(
-        intrinsics.builtins.FUNC_MAP, is_method=False, exclude=("radar",)
+        intrinsics.builtins.FUNC_MAP,
+        is_method=False,
+        exclude=("lookup", "radar"),
     )
 }
 
